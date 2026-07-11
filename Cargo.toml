@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "crates/fusion-core",
+  "crates/fusion-wasm",
+]
+resolver = "2"

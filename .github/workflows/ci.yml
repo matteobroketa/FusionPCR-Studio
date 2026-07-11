@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install web dependencies
+        run: npm ci
+      - name: Run web tests
+        run: npm run test
+      - name: Build web app
+        run: npm run build
+      - name: Run Rust tests
+        run: cargo test --workspace

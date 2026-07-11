@@ -1,0 +1,18 @@
+LOCUS       EXAMPLE_A                 39 bp    DNA     linear   SYN 11-JUL-2026
+DEFINITION  Example imported sequence.
+ACCESSION   .
+VERSION     .
+KEYWORDS    .
+SOURCE      synthetic DNA construct
+  ORGANISM  synthetic DNA construct
+            other sequences; artificial sequences.
+FEATURES             Location/Qualifiers
+     source          1..39
+                     /organism="synthetic DNA construct"
+                     /mol_type="other DNA"
+     CDS             4..18
+                     /label="Example CDS"
+                     /gene="exA"
+ORIGIN
+        1 atggccattg taatgggccg ctgaaagggt gcccgatag
+//

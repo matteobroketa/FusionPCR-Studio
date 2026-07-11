@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: FusionPCR Studio
+message: If you use this repository, please cite the software using the metadata below.
+type: software
+license: MIT
+version: 0.1.0
+authors:
+  - family-names: Broketa
+    given-names: Matteo
+abstract: >
+  Local-first overlap-extension PCR design, simulation, validation, and protocol planning
+  with a React/Vite interface and an emerging Rust/WASM calculation core.
+keywords:
+  - PCR
+  - overlap-extension PCR
+  - primer design
+  - synthetic biology
+  - Rust

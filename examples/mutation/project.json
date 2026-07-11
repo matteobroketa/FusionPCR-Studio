@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "0.2.0",
+  "engineVersion": "0.2.0",
+  "name": "Substitution example",
+  "polymeraseId": "q5",
+  "mode": "substitution",
+  "insertSequence": "GACGAC",
+  "notes": "Replace a short internal segment by representing the target as left flank plus payload plus right flank.",
+  "coding": {
+    "upstreamFrame": 0,
+    "downstreamFrame": 0,
+    "retainUpstreamStop": false,
+    "retainDownstreamStart": false,
+    "linkerRequired": false,
+    "preserveProtein": false,
+    "flexibleCodons": 0
+  },
+  "reactionConditions": {
+    "monovalentMillimolar": 50,
+    "magnesiumMillimolar": 1.5,
+    "dntpMillimolar": 0.2,
+    "oligoNanomolar": 500,
+    "dmsoPercent": 0,
+    "dmsoFactor": 0.6
+  },
+  "protocolSettings": {
+    "stageAConcentrationNgPerUl": 15,
+    "stageBConcentrationNgPerUl": 15,
+    "totalTemplatePmol": 0.05,
+    "mixStrategy": "equimolar",
+    "stageMixRatioA": 1,
+    "stageMixRatioB": 1,
+    "primerStockMicromolar": 100,
+    "primerWorkingMicromolar": 10,
+    "workingStockPrepMicroliters": 100,
+    "primerPerReactionMicroliters": 1,
+    "stage1TemplatePerReactionMicroliters": 1,
+    "reactionVolumeMicroliters": 25,
+    "stage1ReactionCountPerProduct": 2,
+    "finalReactionCount": 1,
+    "overfillPercent": 10,
+    "stage1Cycles": 28,
+    "finalCycles": 22
+  },
+  "editorLocks": {
+    "fragmentA": false,
+    "fragmentB": false,
+    "fragmentABoundaries": false,
+    "fragmentBBoundaries": false,
+    "insertSequence": false,
+    "polymeraseSettings": false
+  },
+  "changeApprovals": {
+    "removeUpstreamStop": false,
+    "removeDownstreamStart": false,
+    "acceptedSynonymousChanges": []
+  },
+  "genomicSpecificity": {
+    "organism": "",
+    "database": "refseq_representative_genomes",
+    "notes": ""
+  },
+  "fragmentA": {
+    "label": "Left flank",
+    "sequence": "GCCGCTGAAAGGGTGCCCGATAGATGGCCATTGTAATGGGCC",
+    "start": 1,
+    "end": 21,
+    "topology": "linear",
+    "sourceFormat": "plain",
+    "importedName": "Mutated template",
+    "checksum": "fnv1a-18b9c3a9",
+    "ambiguousBases": [],
+    "features": [],
+    "reverseComplemented": false
+  },
+  "fragmentB": {
+    "label": "Right flank",
+    "sequence": "GCCGCTGAAAGGGTGCCCGATAGATGGCCATTGTAATGGGCC",
+    "start": 28,
+    "end": 43,
+    "topology": "linear",
+    "sourceFormat": "plain",
+    "importedName": "Mutated template",
+    "checksum": "fnv1a-18b9c3a9",
+    "ambiguousBases": [],
+    "features": [],
+    "reverseComplemented": false
+  },
+  "createdAt": "2026-07-11T00:00:00.000Z",
+  "modifiedAt": "2026-07-11T00:00:00.000Z"
+}
