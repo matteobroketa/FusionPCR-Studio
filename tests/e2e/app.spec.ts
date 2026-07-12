@@ -5,7 +5,7 @@ import { expect, test, waitForDesignReady } from './fixtures';
 test.describe('FusionPCR Studio production build', () => {
   test('starts the design worker, renders a runnable example, and loads every built-in example', async ({ page }) => {
     const workerPromise = page.waitForEvent('worker');
-    await page.goto('/');
+    await page.goto('./');
 
     const worker = await workerPromise;
     expect(worker.url()).toContain('design.worker');
@@ -30,7 +30,7 @@ test.describe('FusionPCR Studio production build', () => {
   });
 
   test('renders blocking issues instead of a runnable design for invalid sequence input', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('./');
     await waitForDesignReady(page);
 
     await page.getByPlaceholder('Paste fragment A DNA sequence').fill('ATGB');
@@ -41,7 +41,7 @@ test.describe('FusionPCR Studio production build', () => {
   });
 
   test('exports every principal artifact from the production build', async ({ page }, testInfo) => {
-    await page.goto('/');
+    await page.goto('./');
     await waitForDesignReady(page);
 
     const exportExpectations: Array<{
