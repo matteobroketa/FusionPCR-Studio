@@ -5,37 +5,80 @@
 The repository currently verifies:
 
 - TypeScript/Vite application build via `npm run build`
-- Web utility and engine behavior via `npm run test`
-- GitHub Pages asset-path and no-external-font smoke checks via `npm run smoke:pages`
-- Rust workspace compilation and unit tests via `cargo test --workspace`
+- Vitest unit and integration coverage via `npm run test`
+- Playwright browser coverage against the production Vite build via `npm run test:e2e`
+- GitHub Pages built-asset smoke checks via `npm run smoke:pages:dist`
+- Rust workspace compilation and tests via `cargo test --workspace`
+- Post-deployment Playwright smoke checks against the public Pages URL in [.github/workflows/deploy-pages.yml](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/.github/workflows/deploy-pages.yml)
 
-## Implemented automated checks
+## Fixture inventory
 
-- DNA normalization and reverse-complement handling
-- Two-fragment target construction
-- Circular origin-crossing selection reconstruction
-- Feature-location parsing and feature-driven fragment range application
-- Browser interaction flows for example loading, import application, mutation planning, export download wiring, and saved-project reload
-- Mutation-planner transformations
-- Primer/protocol export helpers
-- Protocol mixing and recipe generation
-- Reference Tm fixtures in [test-data/reference/tm-reference.json](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/test-data/reference/tm-reference.json)
-- Reference product-reconstruction fixtures in [test-data/reference/product-reconstruction.json](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/test-data/reference/product-reconstruction.json)
-- Local editor operations
-- Protein-fusion approval flow for coding-sequence changes
-- Rust-side sequence parsing, target construction, and unit conversions
-- GitHub Pages relative-asset and external-font deployment smoke checks
+- Tm reference fixtures: `32`
+  Source: [test-data/reference/tm-reference.json](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/test-data/reference/tm-reference.json)
+  Coverage: sequence composition, oligo length, monovalent salt, Mg, dNTP chelation, DMSO, concentration, symmetry, and rejection cases.
+- OE-PCR reconstruction fixtures: `12`
+  Source: [test-data/reference/product-reconstruction.json](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/test-data/reference/product-reconstruction.json)
+  Coverage: exact fusion, linker insertion, insertion, deletion, substitution, circular selections, coding-frame preservation, approved coding-sequence edits, and blocking failures.
 
-## Not yet covered
+## Browser-test coverage
 
-- Full end-to-end browser interaction coverage for the entire workspace
-- Wet-lab validation dataset
-- Cross-implementation parity tests between TypeScript and Rust calculations
-- Genome-scale specificity result validation
+The Playwright suite currently covers:
 
-## Recommended next validation steps
+- worker startup from the production Vite build
+- loading all four built-in examples
+- primer generation visibility and final-product verification on a runnable design
+- blocking-issue rendering for invalid input
+- all 14 principal exports:
+  `project JSON`, `primer CSV`, `primer FASTA`, `final FASTA`, `stage-product FASTA`, `annotated GenBank`, `protocol`, `pipetting table`, `thermocycler program`, `junction report`, `validation report`, `expected gel`, `calculation manifest`, and `Primer-BLAST handoff`
+- a deployed-pages smoke pass against the public GitHub Pages URL
 
-1. Add browser tests for import, mutation planning, compare mode, and export.
-2. Add parity tests that compare selected TypeScript and Rust sequence/assembly outputs.
-3. Add curated OE-PCR example fixtures under `test-data/`.
-4. Record experimental outcomes in a versioned validation dataset.
+The Playwright fixture fails the job on:
+
+- browser console errors
+- uncaught browser exceptions
+- failed document/script/worker requests
+- displayed `NaN`, `Infinity`, or `-Infinity` values
+
+## TypeScript versus Rust parity coverage
+
+The repository now checks parity for every calculation currently implemented in both engines:
+
+- `parse_sequence`
+- `reverse_complement`
+- `gc_fraction` versus TypeScript GC reporting at its current displayed precision
+- exact and approved-protein-fusion target construction
+- `pmol_to_mass_ng`
+- `mass_ng_to_pmol`
+- `volume_for_mass`
+
+See [src/utils/parity.test.ts](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/src/utils/parity.test.ts) and [crates/fusion-core/src/bin/parity-cli.rs](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/crates/fusion-core/src/bin/parity-cli.rs).
+
+## Authoritative engine map
+
+Rust is authoritative for the shared cross-language core:
+
+- sequence parsing and validation
+- reverse-complement generation
+- GC-fraction calculation
+- selected-range target construction for the Rust-supported exact/protein subset
+- scalar protocol unit conversions
+
+TypeScript is authoritative for the active browser design engine:
+
+- primer candidate generation
+- full design assembly and ranking
+- overlap assessment
+- thermodynamics as currently surfaced in the UI
+- heuristic structure analysis
+- local specificity analysis
+- full protocol-plan assembly
+- browser exports and review summaries
+
+## Remaining scientific gaps
+
+- Tm fixtures are now Primer3-backed, but the TypeScript thermodynamics engine is still validated within documented tolerances rather than exact Primer3 numerical identity across all conditions.
+- Secondary-structure outputs remain heuristic approximations and are not calibrated against wet-lab outcomes.
+- Design quality scores remain heuristic and are not experimentally calibrated probabilities of success.
+- Local specificity remains a project-local screen; genome-scale specificity is still an external handoff.
+- No wet-lab validation dataset is yet included.
+- Rust is not yet authoritative for the full primer-design, thermodynamics, specificity, or protocol-planning runtime.

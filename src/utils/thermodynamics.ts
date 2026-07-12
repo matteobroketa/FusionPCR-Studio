@@ -1,4 +1,4 @@
-import { normalizeSequence, reverseComplement } from './pcr';
+import { findInvalidBases, normalizeSequence, reverseComplement } from './pcr';
 
 export type ThermodynamicConditions = {
   monovalentMillimolar: number;
@@ -197,25 +197,42 @@ function calculateOwczarzySaltCorrection(sequence: string, conditions: Thermodyn
   };
 }
 
+function buildInvalidThermodynamicResult(
+  sequence: string,
+  gcFraction: number,
+  reason: 'empty' | 'too-short' | 'invalid-bases',
+): ThermodynamicResult {
+  const placeholder = reason === 'empty' ? 0 : Number.NaN;
+  return {
+    sequence,
+    length: sequence.length,
+    gcFraction,
+    deltaHKcalPerMol: placeholder,
+    deltaSCalPerMolK: placeholder,
+    rawTmCelsius: placeholder,
+    correctedTmCelsius: placeholder,
+    saltCorrection: placeholder,
+    selfComplementary: false,
+    effectiveFreeMagnesiumMolar: placeholder,
+    divalentToMonovalentRatio: placeholder,
+  };
+}
+
 export function calculateNearestNeighborTm(
   sequenceInput: string,
   conditionsInput: ThermodynamicConditions,
 ): ThermodynamicResult {
   const sequence = normalizeSequence(sequenceInput);
   if (!sequence.length) {
-    return {
-      sequence: '',
-      length: 0,
-      gcFraction: 0,
-      deltaHKcalPerMol: 0,
-      deltaSCalPerMolK: 0,
-      rawTmCelsius: 0,
-      correctedTmCelsius: 0,
-      saltCorrection: 0,
-      selfComplementary: false,
-      effectiveFreeMagnesiumMolar: 0,
-      divalentToMonovalentRatio: 0,
-    };
+    return buildInvalidThermodynamicResult('', 0, 'empty');
+  }
+
+  if (findInvalidBases(sequence, false).length) {
+    return buildInvalidThermodynamicResult(sequence, countGcFraction(sequence), 'invalid-bases');
+  }
+
+  if (sequence.length < 2) {
+    return buildInvalidThermodynamicResult(sequence, countGcFraction(sequence), 'too-short');
   }
 
   const conditions: ThermodynamicConditions = {

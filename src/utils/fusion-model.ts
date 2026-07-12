@@ -11,8 +11,8 @@ export type SourceFormat = 'manual' | 'plain' | 'fasta' | 'genbank' | 'project';
 export type SequenceTopology = 'linear' | 'circular';
 export type AnnealingRule = 'lower-primer-plus-3c' | 'lower-primer-min-60c';
 
-export const PROJECT_SCHEMA_VERSION = '0.1.0-alpha.1';
-export const ENGINE_VERSION = '0.1.0-alpha.1';
+export const PROJECT_SCHEMA_VERSION = '0.1.0-alpha.2';
+export const ENGINE_VERSION = '0.1.0-alpha.2';
 export const MIN_BODY_LENGTH = 12;
 export const MAX_BODY_LENGTH = 40;
 

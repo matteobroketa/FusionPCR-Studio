@@ -133,7 +133,7 @@ describe('export helpers', () => {
 
     const validationReport = buildValidationReport(design);
     expect(validationReport).toContain('Exact fusion verified: yes');
-    expect(validationReport).toContain('Quality score');
+    expect(validationReport).toContain('Approximate quality score');
 
     const gelDiagram = buildExpectedGelDiagram(design);
     expect(gelDiagram).toContain('Lane 1 PCR 1A');

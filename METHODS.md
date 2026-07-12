@@ -2,7 +2,7 @@
 
 ## Implemented release scope
 
-This repository currently implements a local-first `0.1.0-alpha.1` overlap-extension PCR workflow for two-fragment designs in the browser.
+This repository currently implements a local-first `0.1.0-alpha.2` overlap-extension PCR workflow for two-fragment designs in the browser.
 
 The repository now also contains a Rust workspace that begins the planned split between a browser UI and a reusable computational core. The current Rust side covers sequence normalization, target construction, and basic protocol conversions, while the broader calculation engine still remains primarily in TypeScript.
 
@@ -32,6 +32,30 @@ The application:
 - provides frame-aware translation checks for protein-fusion designs
 - can search synonymous codon choices near a protein-fusion junction while preserving the amino-acid output
 - keeps proposed coding-sequence edits separate from approved edits in the project model
+
+## Authoritative engines
+
+The current repository uses two calculation engines with explicit ownership boundaries.
+
+TypeScript is authoritative for:
+
+- primer-body candidate generation and whole-design ranking
+- overlap criteria assessment
+- nearest-neighbour thermodynamics as surfaced in the browser runtime
+- heuristic secondary-structure analysis
+- local specificity scans and unintended-amplicon classification
+- protocol-plan assembly beyond the shared scalar unit-conversion helpers
+- all browser exports and UI-facing review summaries
+
+Rust is authoritative for the shared cross-language core that is currently implemented in both engines:
+
+- DNA normalization and validation semantics used by `parse_sequence`
+- reverse-complement generation
+- GC-fraction calculation
+- selected-range target construction for exact and approved protein-fusion edits
+- scalar protocol unit conversions: `pmol_to_mass_ng`, `mass_ng_to_pmol`, and `volume_for_mass`
+
+Where both engines implement the same calculation, the repository now treats the Rust output as the parity reference and tests the TypeScript mirror against it.
 
 ## Primer construction
 

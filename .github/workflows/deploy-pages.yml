@@ -28,7 +28,7 @@ jobs:
       - name: Build site
         run: npm run build
       - name: Pages smoke test
-        run: node scripts/smoke-pages.mjs
+        run: npm run smoke:pages:dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -37,9 +37,31 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke-public:
+    needs: deploy
+    if: ${{ needs.deploy.outputs.page_url != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Post-deployment browser smoke
+        env:
+          PLAYWRIGHT_SKIP_WEBSERVER: "1"
+          PAGES_BASE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: npm run test:e2e:pages

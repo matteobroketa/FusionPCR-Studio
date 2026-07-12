@@ -810,7 +810,7 @@ function App() {
               Select the retained ranges from two fragments, insert an optional linker, simulate the intermediate products, and export primers plus a starting protocol without uploading sequence data.
             </p>
             <p className="status-note status-note-alert">
-              Experimental-use warning: this 0.1.0-alpha.1 release is a local-first planning aid for two-fragment OE-PCR only. It does not validate wet-lab success, genome-scale specificity, or biological function.
+              Experimental-use warning: this 0.1.0-alpha.2 release is a local-first planning aid for two-fragment OE-PCR only. It does not validate wet-lab success, genome-scale specificity, or biological function.
             </p>
           </div>
 
@@ -870,7 +870,7 @@ function App() {
             <strong>{design.offTargetAmplicons.length}</strong>
           </div>
           <div className="summary-card panel">
-            <span>Quality score</span>
+            <span>Approximate quality score</span>
             <strong>{design.qualityScore.toFixed(3)}</strong>
           </div>
         </section>
@@ -2460,7 +2460,8 @@ function App() {
                   <li>{design.intendedAmplicons.length} intended local amplicon model(s) were separated from unintended specificity penalties.</li>
                   <li>{design.offTargetAmplicons.length} local off-target amplicon candidate(s) were found.</li>
                   <li>{design.primerPairInteractions.filter((pair) => pair.interaction?.risk === 'High').length} high-risk primer pair interaction(s) were detected.</li>
-                  <li>Design quality score: {design.qualityScore.toFixed(3)}</li>
+                  <li>Approximate design quality score: {design.qualityScore.toFixed(3)}</li>
+                  <li>Structure and quality outputs are heuristic approximations, not experimentally calibrated success probabilities.</li>
                 </ul>
               </div>
             ) : null}
@@ -2797,7 +2798,7 @@ function App() {
                   <li>Visible primers: {stagePrimerNames.join(', ') || 'All primers in view'}</li>
                   <li>Sequence previews in canvas: {stageSequencePreviews.length}</li>
                   <li>Exact verification: {design.finalProductVerified ? 'pass' : 'pending'}</li>
-                  <li>Quality score: {design.qualityScore.toFixed(3)}</li>
+                  <li>Approximate quality score: {design.qualityScore.toFixed(3)}</li>
                 </ul>
               </div>
 

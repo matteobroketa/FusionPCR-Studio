@@ -11,15 +11,21 @@ import {
   defaultReactionConditions,
   ENGINE_VERSION,
   PROJECT_SCHEMA_VERSION,
+  type FusionProjectInput,
   type FragmentInput,
 } from './fusion';
 import { translateSequence } from './translation';
 
 type ProductReconstructionFixture = {
+  fixtureFormatVersion: number;
   cases: Array<{
     name: string;
+    coverageTags: string[];
+    mode: FusionProjectInput['mode'];
     polymeraseId: 'q5' | 'phusion_plus';
     insertSequence: string;
+    coding?: FusionProjectInput['coding'];
+    changeApprovals?: FusionProjectInput['changeApprovals'];
     fragmentA: {
       label: string;
       sequence: string;
@@ -35,9 +41,17 @@ type ProductReconstructionFixture = {
       topology: FragmentInput['topology'];
     };
     expected: {
-      selectedA: string;
-      selectedB: string;
-      finalProduct: string;
+      runnable: boolean;
+      selectedA?: string;
+      selectedB?: string;
+      effectiveSelectedA?: string;
+      effectiveSelectedB?: string;
+      finalProduct?: string;
+      finalProductVerified?: boolean;
+      proteinFramePreserved?: boolean;
+      issuesContain?: string[];
+      primers?: number;
+      reactions?: number;
     };
   }>;
 };
@@ -139,13 +153,19 @@ describe('fusion design engine', () => {
   });
 
   it('matches the product-reconstruction reference fixtures', () => {
+    expect(productReconstructionFixtures.fixtureFormatVersion).toBe(1);
+    expect(productReconstructionFixtures.cases.length).toBeGreaterThanOrEqual(12);
+
     for (const fixture of productReconstructionFixtures.cases) {
       const design = buildFusionDesign({
         ...baseProject,
         name: fixture.name,
+        mode: fixture.mode,
         polymeraseId: fixture.polymeraseId,
         insertSequence: fixture.insertSequence,
         notes: '',
+        coding: fixture.coding ?? baseProject.coding,
+        changeApprovals: fixture.changeApprovals ?? baseProject.changeApprovals,
         fragmentA: makeFragment(
           fixture.fragmentA.label,
           fixture.fragmentA.sequence,
@@ -162,11 +182,39 @@ describe('fusion design engine', () => {
         ),
       });
 
-      expect(design.issues, fixture.name).toEqual([]);
-      expect(design.selectedA, fixture.name).toBe(fixture.expected.selectedA);
-      expect(design.selectedB, fixture.name).toBe(fixture.expected.selectedB);
-      expect(design.finalProduct, fixture.name).toBe(fixture.expected.finalProduct);
-      expect(design.finalProductVerified, fixture.name).toBe(true);
+      expect(fixture.coverageTags.length, fixture.name).toBeGreaterThan(0);
+
+      if (fixture.expected.runnable) {
+        expect(design.issues, fixture.name).toEqual([]);
+        expect(design.primers.length, fixture.name).toBeGreaterThan(0);
+        if (fixture.expected.selectedA !== undefined) {
+          expect(design.selectedA, fixture.name).toBe(fixture.expected.selectedA);
+        }
+        if (fixture.expected.selectedB !== undefined) {
+          expect(design.selectedB, fixture.name).toBe(fixture.expected.selectedB);
+        }
+        if (fixture.expected.effectiveSelectedA !== undefined) {
+          expect(design.effectiveSelectedA, fixture.name).toBe(fixture.expected.effectiveSelectedA);
+        }
+        if (fixture.expected.effectiveSelectedB !== undefined) {
+          expect(design.effectiveSelectedB, fixture.name).toBe(fixture.expected.effectiveSelectedB);
+        }
+        if (fixture.expected.finalProduct !== undefined) {
+          expect(design.finalProduct, fixture.name).toBe(fixture.expected.finalProduct);
+        }
+        if (fixture.expected.finalProductVerified !== undefined) {
+          expect(design.finalProductVerified, fixture.name).toBe(fixture.expected.finalProductVerified);
+        }
+        if (fixture.expected.proteinFramePreserved !== undefined) {
+          expect(design.proteinValidation?.framePreserved, fixture.name).toBe(fixture.expected.proteinFramePreserved);
+        }
+      } else {
+        expect(design.primers.length, fixture.name).toBe(fixture.expected.primers ?? 0);
+        expect(design.reactions.length, fixture.name).toBe(fixture.expected.reactions ?? 0);
+        for (const issueFragment of fixture.expected.issuesContain ?? []) {
+          expect(design.issues.some((issue) => issue.includes(issueFragment)), fixture.name).toBe(true);
+        }
+      }
     }
   });
 

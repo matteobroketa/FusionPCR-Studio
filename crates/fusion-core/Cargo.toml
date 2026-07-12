@@ -1,10 +1,11 @@
 [package]
 name = "fusion-core"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2024"
 license = "MIT"
 description = "Core sequence and assembly logic for FusionPCR Studio."
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 thiserror = "2"

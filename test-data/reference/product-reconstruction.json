@@ -1,7 +1,38 @@
 {
+  "fixtureFormatVersion": 1,
   "cases": [
     {
+      "name": "exact-two-fragment-no-insert",
+      "coverageTags": ["exact-fusion"],
+      "mode": "exact",
+      "polymeraseId": "q5",
+      "insertSequence": "",
+      "fragmentA": {
+        "label": "A",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG",
+        "start": 1,
+        "end": 39,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "B",
+        "sequence": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 40,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": true,
+        "selectedA": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG",
+        "selectedB": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "finalProduct": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "finalProductVerified": true
+      }
+    },
+    {
       "name": "exact-two-fragment-linker",
+      "coverageTags": ["exact-fusion", "linker-insertion"],
+      "mode": "exact",
       "polymeraseId": "q5",
       "insertSequence": "GGTGGTGGTGGTTCT",
       "fragmentA": {
@@ -19,13 +50,101 @@
         "topology": "linear"
       },
       "expected": {
+        "runnable": true,
         "selectedA": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG",
         "selectedB": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
-        "finalProduct": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGTGGTGGTGGTTCTGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG"
+        "finalProduct": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGTGGTGGTGGTTCTGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "finalProductVerified": true
+      }
+    },
+    {
+      "name": "insertion-recipient-flanks",
+      "coverageTags": ["insertion"],
+      "mode": "insertion",
+      "polymeraseId": "phusion_plus",
+      "insertSequence": "GACTACAAAGACGATGACGACAAG",
+      "fragmentA": {
+        "label": "Left flank",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 24,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "Right flank",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 25,
+        "end": 48,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": true,
+        "selectedA": "ATGGCCATTGTAATGGGCCGCTGA",
+        "selectedB": "AAGGGTGCCCGATAGGGCAGCGGC",
+        "finalProduct": "ATGGCCATTGTAATGGGCCGCTGAGACTACAAAGACGATGACGACAAGAAGGGTGCCCGATAGGGCAGCGGC",
+        "finalProductVerified": true
+      }
+    },
+    {
+      "name": "deletion-recipient-flanks",
+      "coverageTags": ["deletion"],
+      "mode": "deletion",
+      "polymeraseId": "q5",
+      "insertSequence": "",
+      "fragmentA": {
+        "label": "Left flank",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 24,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "Right flank",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 31,
+        "end": 54,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": true,
+        "selectedA": "ATGGCCATTGTAATGGGCCGCTGA",
+        "selectedB": "GCCCGATAGGGCAGCGGCGGATCC",
+        "finalProduct": "ATGGCCATTGTAATGGGCCGCTGAGCCCGATAGGGCAGCGGCGGATCC",
+        "finalProductVerified": true
+      }
+    },
+    {
+      "name": "substitution-recipient-payload",
+      "coverageTags": ["substitution"],
+      "mode": "substitution",
+      "polymeraseId": "q5",
+      "insertSequence": "GACGAC",
+      "fragmentA": {
+        "label": "Left flank",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 24,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "Right flank",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 31,
+        "end": 54,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": true,
+        "selectedA": "ATGGCCATTGTAATGGGCCGCTGA",
+        "selectedB": "GCCCGATAGGGCAGCGGCGGATCC",
+        "finalProduct": "ATGGCCATTGTAATGGGCCGCTGAGACGACGCCCGATAGGGCAGCGGCGGATCC",
+        "finalProductVerified": true
       }
     },
     {
       "name": "circular-wraparound-insert",
+      "coverageTags": ["circular-selection", "linker-insertion"],
+      "mode": "exact",
       "polymeraseId": "q5",
       "insertSequence": "TTAA",
       "fragmentA": {
@@ -43,9 +162,198 @@
         "topology": "circular"
       },
       "expected": {
+        "runnable": true,
         "selectedA": "GGTTACCGGATGCCGTTAATGCCG",
         "selectedB": "ACCGGTACCGGTACCATGGGGTAC",
-        "finalProduct": "GGTTACCGGATGCCGTTAATGCCGTTAAACCGGTACCGGTACCATGGGGTAC"
+        "finalProduct": "GGTTACCGGATGCCGTTAATGCCGTTAAACCGGTACCGGTACCATGGGGTAC",
+        "finalProductVerified": true
+      }
+    },
+    {
+      "name": "protein-fusion-frame-preserved",
+      "coverageTags": ["coding-frame-preservation", "protein-fusion"],
+      "mode": "protein-fusion",
+      "polymeraseId": "q5",
+      "insertSequence": "GGTGGT",
+      "coding": {
+        "upstreamFrame": 0,
+        "downstreamFrame": 0,
+        "retainUpstreamStop": true,
+        "retainDownstreamStart": true,
+        "linkerRequired": false,
+        "preserveProtein": true,
+        "flexibleCodons": 3
+      },
+      "fragmentA": {
+        "label": "Upstream CDS",
+        "sequence": "ATGGGTGGTGGTGGTGGTGCTGCTGCTGGT",
+        "start": 1,
+        "end": 30,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "Downstream CDS",
+        "sequence": "ATGGCTGCTGCTGGTGGTGGTGGTGCTGCT",
+        "start": 1,
+        "end": 30,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": true,
+        "finalProduct": "ATGGGTGGTGGTGGTGGTGCTGCTGCTGGTGGTGGTATGGCTGCTGCTGGTGGTGGTGGTGCTGCT",
+        "finalProductVerified": true,
+        "proteinFramePreserved": true
+      }
+    },
+    {
+      "name": "protein-fusion-approved-start-stop-removal",
+      "coverageTags": ["coding-frame-preservation", "protein-fusion"],
+      "mode": "protein-fusion",
+      "polymeraseId": "q5",
+      "insertSequence": "GGTGGTGGT",
+      "coding": {
+        "upstreamFrame": 0,
+        "downstreamFrame": 0,
+        "retainUpstreamStop": false,
+        "retainDownstreamStart": false,
+        "linkerRequired": true,
+        "preserveProtein": false,
+        "flexibleCodons": 0
+      },
+      "changeApprovals": {
+        "removeUpstreamStop": true,
+        "removeDownstreamStart": true,
+        "acceptedSynonymousChanges": []
+      },
+      "fragmentA": {
+        "label": "Upstream CDS",
+        "sequence": "ATGGCCGAACTGAAACCCGGGTTTTAA",
+        "start": 1,
+        "end": 27,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "Downstream CDS",
+        "sequence": "ATGGGCTCCGACTGAGGCGGCGGCGGC",
+        "start": 1,
+        "end": 27,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": true,
+        "effectiveSelectedA": "ATGGCCGAACTGAAACCCGGGTTT",
+        "effectiveSelectedB": "GGCTCCGACTGAGGCGGCGGCGGC",
+        "finalProduct": "ATGGCCGAACTGAAACCCGGGTTTGGTGGTGGTGGCTCCGACTGAGGCGGCGGCGGC",
+        "finalProductVerified": true,
+        "proteinFramePreserved": true
+      }
+    },
+    {
+      "name": "invalid-fragment-base-blocked",
+      "coverageTags": ["blocking-failure"],
+      "mode": "exact",
+      "polymeraseId": "q5",
+      "insertSequence": "",
+      "fragmentA": {
+        "label": "Invalid A",
+        "sequence": "ATGB",
+        "start": 1,
+        "end": 4,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "B",
+        "sequence": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 40,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": false,
+        "issuesContain": ["unsupported bases"],
+        "primers": 0,
+        "reactions": 0
+      }
+    },
+    {
+      "name": "invalid-insert-base-blocked",
+      "coverageTags": ["blocking-failure"],
+      "mode": "exact",
+      "polymeraseId": "q5",
+      "insertSequence": "ATGN",
+      "fragmentA": {
+        "label": "A",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG",
+        "start": 1,
+        "end": 39,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "B",
+        "sequence": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 40,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": false,
+        "issuesContain": ["Insert sequence contains unsupported bases"],
+        "primers": 0,
+        "reactions": 0
+      }
+    },
+    {
+      "name": "one-base-fragment-blocked",
+      "coverageTags": ["blocking-failure"],
+      "mode": "exact",
+      "polymeraseId": "q5",
+      "insertSequence": "",
+      "fragmentA": {
+        "label": "A",
+        "sequence": "A",
+        "start": 1,
+        "end": 1,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "B",
+        "sequence": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 40,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": false,
+        "issuesContain": ["minimum primer-body length"],
+        "primers": 0,
+        "reactions": 0
+      }
+    },
+    {
+      "name": "too-short-fragment-blocked",
+      "coverageTags": ["blocking-failure"],
+      "mode": "exact",
+      "polymeraseId": "phusion_plus",
+      "insertSequence": "",
+      "fragmentA": {
+        "label": "A",
+        "sequence": "ATGACTGACCGTAAGT",
+        "start": 1,
+        "end": 16,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "B",
+        "sequence": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 40,
+        "topology": "linear"
+      },
+      "expected": {
+        "runnable": false,
+        "issuesContain": ["minimum primer-body length"],
+        "primers": 0,
+        "reactions": 0
       }
     }
   ]

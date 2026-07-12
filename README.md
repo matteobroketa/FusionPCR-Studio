@@ -2,6 +2,10 @@
 
 Local-first overlap-extension PCR design for two-fragment fusion workflows.
 
+Live application: https://matteobroketa.github.io/FusionPCR-Studio/
+
+![FusionPCR Studio screenshot](./docs/preview/app-screenshot.png)
+
 This implementation focuses on the build plan's minimum viable release:
 
 - import two DNA fragments
@@ -15,7 +19,7 @@ This implementation focuses on the build plan's minimum viable release:
 - filter the workspace by OE-PCR stage, with stage-specific product previews and primer overlays
 - inspect a selectable junction node that separates upstream bases, inserted bases, downstream bases, annealing regions, and tailed contributions
 - pin a design snapshot and compare current versus pinned oligo length, dimer severity, Tm spread, overlap Tm, and off-target counts
-- rank whole-design alternatives with quality scores and optimizer priorities such as balanced, lower-dimer, shorter-oligo, and higher-overlap choices
+- rank whole-design alternatives with approximate quality scores and optimizer priorities such as balanced, lower-dimer, shorter-oligo, and higher-overlap choices
 - choose an explicit junction mode, including protein fusion
 - generate the four OE-PCR primers with explicit tail/body separation
 - calculate Primer3-style nearest-neighbour primer Tm with monovalent, magnesium, dNTP, oligo, and DMSO settings
@@ -34,6 +38,8 @@ This implementation focuses on the build plan's minimum viable release:
 
 The repository now also includes an emerging Rust workspace with `fusion-core` and `fusion-wasm`, plus CI and GitHub Pages workflow scaffolding that move the project closer to the planned architecture.
 
+Privacy note: sequence data stays in the browser during ordinary use. Exporting a Primer-BLAST handoff or submitting it to an external service moves sequence information outside the local-first runtime.
+
 Imported fragment metadata currently includes source format, topology, checksum, ambiguous-base detection, and preserved GenBank feature labels/locations.
 Imported GenBank features can now drive fragment range selection when their locations are simple intervals or supported circular origin-wrap joins.
 Circular source selections can now cross the origin during design when imported fragments are marked as circular.
@@ -43,8 +49,8 @@ The construct canvas currently exposes toggleable fragment, construct, primer, f
 Thermodynamic outputs currently include annealing-body Tm, full-oligo nominal Tm, and overlap Tm for tailed inner primers.
 Specificity outputs currently include local primer-binding sites and predicted unintended amplicons from risky site pairs.
 Specificity outputs now also include an explicit Primer-BLAST handoff export, while keeping sequence submission outside the browser under user control.
-Structure outputs currently include diagrams, estimated delta G, predicted Tm, stem length, 3 prime pairing counts, and intended inner-primer complementarity reporting.
-Optimizer outputs currently include a design quality score, component breakdown, and ranked whole-design alternatives across the current primer search space.
+Structure outputs currently include approximate diagrams, estimated delta G, predicted Tm, stem length, 3 prime pairing counts, and intended inner-primer complementarity reporting.
+Optimizer outputs currently include an approximate design quality score, component breakdown, and ranked whole-design alternatives across the current primer search space.
 Protein-fusion outputs currently include junction-local synonymous codon proposals with visible per-codon changes.
 Protein-fusion sequence changes currently remain pending until approved in the project state and exports.
 Protocol outputs currently include stage-product mixing targets, primer working-stock preparation, per-primer usage totals, and master-mix volume estimates.

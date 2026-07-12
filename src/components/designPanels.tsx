@@ -143,7 +143,7 @@ export function PrimerCard({
       </div>
 
       <div className="status-block">
-        <p className="status-title">Structure summary</p>
+        <p className="status-title">Approximate structure summary</p>
         <ul className="status-list">
           <li>
             Hairpin: {primer.structure.hairpin ? `${primer.structure.hairpin.deltaG} kcal/mol, Tm ${primer.structure.hairpin.predictedTm} C` : 'none'}

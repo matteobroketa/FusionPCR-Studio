@@ -2,3 +2,5 @@ node_modules/
 dist/
 coverage/
 target/
+test-results/
+playwright-report/

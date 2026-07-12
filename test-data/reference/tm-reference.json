@@ -1,21 +1,966 @@
 {
+  "fixtureFormatVersion": 1,
+  "generatedBy": {
+    "script": "scripts/generate-tm-reference.py",
+    "referenceToolName": "primer3-py",
+    "referenceToolVersion": "2.3.0",
+    "referenceFunction": "primer3.bindings.calc_tm"
+  },
   "cases": [
     {
-      "name": "primer3-default-20mer",
-      "sequence": "GATCGATCGATCGATCGATC",
-      "conditions": {
-        "monovalentMillimolar": 50,
-        "magnesiumMillimolar": 1.5,
-        "dntpMillimolar": 0.2,
-        "oligoNanomolar": 500,
-        "dmsoPercent": 0,
-        "dmsoFactor": 0.6
+      "name": "balanced-8mer-default",
+      "sequence": "ATGCATGC",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
       },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.5,
       "expected": {
-        "deltaHKcalPerMol": -160.2,
-        "deltaSCalPerMolK": -439.8,
-        "rawTmCelsius": 68.696342,
-        "correctedTmCelsius": 59.589566
+        "selfComplementary": false,
+        "correctedTmCelsius": 23.687672
+      }
+    },
+    {
+      "name": "at-rich-8mer-default",
+      "sequence": "AATTATTA",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.5,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": -4.519612
+      }
+    },
+    {
+      "name": "gc-rich-8mer-default",
+      "sequence": "GCGCGCGC",
+      "coverageTags": [
+        "composition",
+        "length",
+        "symmetry"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.5,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 50.729655
+      }
+    },
+    {
+      "name": "mixed-10mer-default",
+      "sequence": "GATCGATCGA",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.5,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 33.244936
+      }
+    },
+    {
+      "name": "balanced-12mer-default",
+      "sequence": "ATGCGTACGTAG",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.25,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 43.044004
+      }
+    },
+    {
+      "name": "at-rich-12mer-default",
+      "sequence": "AATTAATTTAAT",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.25,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 20.343994
+      }
+    },
+    {
+      "name": "gc-rich-12mer-default",
+      "sequence": "GCGCGGCCGCGC",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.25,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 70.622466
+      }
+    },
+    {
+      "name": "short-2mer-default",
+      "sequence": "AT",
+      "coverageTags": [
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 3.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": -212.258584
+      }
+    },
+    {
+      "name": "short-4mer-default",
+      "sequence": "ATGC",
+      "coverageTags": [
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.0,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": -41.120252
+      }
+    },
+    {
+      "name": "mixed-16mer-default",
+      "sequence": "ATGACTGACCGTACGT",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 55.743797
+      }
+    },
+    {
+      "name": "mixed-20mer-default",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 59.971965
+      }
+    },
+    {
+      "name": "balanced-24mer-default",
+      "sequence": "ATGGCCATTGTAATGGGCCGCTGA",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 70.924042
+      }
+    },
+    {
+      "name": "at-rich-30mer-default",
+      "sequence": "AATAATAATTATAATTAATAATAATTATAA",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 45.652066
+      }
+    },
+    {
+      "name": "gc-rich-30mer-default",
+      "sequence": "GCGCGCGGCCGCGCGGCCGCGCGGCCGCGC",
+      "coverageTags": [
+        "composition",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 96.541385
+      }
+    },
+    {
+      "name": "default-sequence-low-monovalent-10mM",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "monovalent-salt"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 10.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 59.812231
+      }
+    },
+    {
+      "name": "default-sequence-high-monovalent-200mM",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "monovalent-salt"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 200.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 62.568051
+      }
+    },
+    {
+      "name": "default-sequence-very-low-monovalent-1mM",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "monovalent-salt"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 1.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 3.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 59.169962
+      }
+    },
+    {
+      "name": "default-sequence-zero-magnesium",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "magnesium"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 0.0,
+        "dntp_conc_mM": 0.0,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 53.250228
+      }
+    },
+    {
+      "name": "default-sequence-high-magnesium",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "magnesium"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 4.0,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.5,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 60.026138
+      }
+    },
+    {
+      "name": "default-sequence-high-dntp-chelation",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "magnesium",
+        "dntp"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 1.4,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.5,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 53.250228
+      }
+    },
+    {
+      "name": "default-sequence-excess-dntp",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "magnesium",
+        "dntp"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 2.0,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 3.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 53.250228
+      }
+    },
+    {
+      "name": "default-sequence-dmso-5pct",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "dmso"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 5.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 56.971965
+      }
+    },
+    {
+      "name": "default-sequence-dmso-10pct",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "dmso"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 10.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 53.971965
+      }
+    },
+    {
+      "name": "default-sequence-low-dna-conc",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "concentration"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 50.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 56.832262
+      }
+    },
+    {
+      "name": "default-sequence-high-dna-conc",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "coverageTags": [
+        "concentration"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 2000.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 61.891235
+      }
+    },
+    {
+      "name": "self-complementary-6mer",
+      "sequence": "ATCGAT",
+      "coverageTags": [
+        "symmetry",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.0,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": -5.654731
+      }
+    },
+    {
+      "name": "self-complementary-12mer",
+      "sequence": "AGCTAGCTAGCT",
+      "coverageTags": [
+        "symmetry",
+        "length"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.5,
+      "expected": {
+        "selfComplementary": true,
+        "correctedTmCelsius": 44.873475
+      }
+    },
+    {
+      "name": "terminal-gc-bias",
+      "sequence": "GCGTATATATGC",
+      "coverageTags": [
+        "composition"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 1.5,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 36.809737
+      }
+    },
+    {
+      "name": "mixed-conditions-long-fragment",
+      "sequence": "ATGGCCATTGTAATGGGCCGCTGA",
+      "coverageTags": [
+        "length",
+        "monovalent-salt",
+        "magnesium",
+        "dmso",
+        "concentration"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 75.0,
+        "dv_conc_mM": 2.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 250.0,
+        "dmso_conc_percent": 3.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.0,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 68.26276
+      }
+    },
+    {
+      "name": "mixed-conditions-short-fragment",
+      "sequence": "ATGCGTACGTAG",
+      "coverageTags": [
+        "length",
+        "monovalent-salt",
+        "magnesium",
+        "dntp",
+        "dmso",
+        "concentration"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 25.0,
+        "dv_conc_mM": 3.0,
+        "dntp_conc_mM": 0.5,
+        "dna_conc_nM": 1000.0,
+        "dmso_conc_percent": 2.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 2.5,
+      "expected": {
+        "selfComplementary": false,
+        "correctedTmCelsius": 43.355836
+      }
+    },
+    {
+      "name": "ambiguous-base-rejection",
+      "sequence": "NNNNNN",
+      "coverageTags": [
+        "rejection"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 0.0,
+      "expected": {
+        "selfComplementary": true,
+        "errorType": "ValueError",
+        "errorContains": "Sequence contains non-ACGT base 'N' at position 0: NNNNNN"
+      }
+    },
+    {
+      "name": "unsupported-base-rejection",
+      "sequence": "ATGB",
+      "coverageTags": [
+        "rejection"
+      ],
+      "referenceTool": {
+        "name": "primer3-py",
+        "version": "2.3.0",
+        "function": "primer3.bindings.calc_tm"
+      },
+      "parameters": {
+        "mv_conc_mM": 50.0,
+        "dv_conc_mM": 1.5,
+        "dntp_conc_mM": 0.2,
+        "dna_conc_nM": 500.0,
+        "dmso_conc_percent": 0.0,
+        "dmso_fact_celsius_per_percent": 0.6,
+        "annealing_temp_celsius": -10.0,
+        "max_nn_length": 60,
+        "tm_method": "santalucia",
+        "salt_corrections_method": "owczarzy"
+      },
+      "toleranceCelsius": 0.0,
+      "expected": {
+        "selfComplementary": false,
+        "errorType": "ValueError",
+        "errorContains": "Sequence contains non-ACGT base 'B' at position 3: ATGB"
       }
     }
   ]

@@ -3,7 +3,7 @@ title: FusionPCR Studio
 message: If you use this repository, please cite the software using the metadata below.
 type: software
 license: MIT
-version: 0.1.0-alpha.1
+version: 0.1.0-alpha.2
 authors:
   - family-names: Broketa
     given-names: Matteo
