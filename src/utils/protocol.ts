@@ -71,6 +71,17 @@ export type ProtocolPlan = {
   reactionRecipes: ReactionRecipe[];
 };
 
+export function emptyProtocolPlan(): ProtocolPlan {
+  return {
+    stageMixEntries: [],
+    workingStockStockVolumeUl: 0,
+    workingStockDiluentVolumeUl: 0,
+    primerUsage: [],
+    reactionMixes: [],
+    reactionRecipes: [],
+  };
+}
+
 export function defaultProtocolSettings(): ProtocolSettings {
   return {
     stageAConcentrationNgPerUl: 15,
@@ -304,24 +315,40 @@ export function buildProtocolPlan(
   },
 ): ProtocolPlan {
   const settings = normalizeProtocolSettings(settingsInput);
+  if (
+    lengths.stageAProductLength <= 0 ||
+    lengths.stageBProductLength <= 0 ||
+    lengths.finalProductLength <= 0 ||
+    primerNames.length < 4
+  ) {
+    return emptyProtocolPlan();
+  }
+
   const overfillFactor = 1 + settings.overfillPercent / 100;
+  const fusionOverfilledReactionCount = Number((settings.finalReactionCount * overfillFactor).toFixed(2));
   const target = targetPmolByStrategy(settings);
   const stageMixEntries: StageMixEntry[] = [
     {
       label: 'PCR 1A product',
       productLengthBp: lengths.stageAProductLength,
       concentrationNgPerUl: settings.stageAConcentrationNgPerUl,
-      targetPmol: target.stageA,
-      requiredMassNg: pmolToMassNg(target.stageA, lengths.stageAProductLength),
-      requiredVolumeUl: volumeForMass(pmolToMassNg(target.stageA, lengths.stageAProductLength), settings.stageAConcentrationNgPerUl),
+      targetPmol: target.stageA * fusionOverfilledReactionCount,
+      requiredMassNg: pmolToMassNg(target.stageA * fusionOverfilledReactionCount, lengths.stageAProductLength),
+      requiredVolumeUl: volumeForMass(
+        pmolToMassNg(target.stageA * fusionOverfilledReactionCount, lengths.stageAProductLength),
+        settings.stageAConcentrationNgPerUl,
+      ),
     },
     {
       label: 'PCR 1B product',
       productLengthBp: lengths.stageBProductLength,
       concentrationNgPerUl: settings.stageBConcentrationNgPerUl,
-      targetPmol: target.stageB,
-      requiredMassNg: pmolToMassNg(target.stageB, lengths.stageBProductLength),
-      requiredVolumeUl: volumeForMass(pmolToMassNg(target.stageB, lengths.stageBProductLength), settings.stageBConcentrationNgPerUl),
+      targetPmol: target.stageB * fusionOverfilledReactionCount,
+      requiredMassNg: pmolToMassNg(target.stageB * fusionOverfilledReactionCount, lengths.stageBProductLength),
+      requiredVolumeUl: volumeForMass(
+        pmolToMassNg(target.stageB * fusionOverfilledReactionCount, lengths.stageBProductLength),
+        settings.stageBConcentrationNgPerUl,
+      ),
     },
   ].map((entry) => ({
     ...entry,

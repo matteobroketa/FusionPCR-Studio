@@ -1,0 +1,52 @@
+{
+  "cases": [
+    {
+      "name": "exact-two-fragment-linker",
+      "polymeraseId": "q5",
+      "insertSequence": "GGTGGTGGTGGTTCT",
+      "fragmentA": {
+        "label": "A",
+        "sequence": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG",
+        "start": 1,
+        "end": 39,
+        "topology": "linear"
+      },
+      "fragmentB": {
+        "label": "B",
+        "sequence": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "start": 1,
+        "end": 40,
+        "topology": "linear"
+      },
+      "expected": {
+        "selectedA": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG",
+        "selectedB": "GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG",
+        "finalProduct": "ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAGGGTGGTGGTGGTTCTGGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG"
+      }
+    },
+    {
+      "name": "circular-wraparound-insert",
+      "polymeraseId": "q5",
+      "insertSequence": "TTAA",
+      "fragmentA": {
+        "label": "Circular A",
+        "sequence": "ATGCCGTTAACCGGTTACCGGATGCCGTTA",
+        "start": 13,
+        "end": 6,
+        "topology": "circular"
+      },
+      "fragmentB": {
+        "label": "Circular B",
+        "sequence": "GGTACCATGGAACCGGTACCGGTACCATGG",
+        "start": 12,
+        "end": 5,
+        "topology": "circular"
+      },
+      "expected": {
+        "selectedA": "GGTTACCGGATGCCGTTAATGCCG",
+        "selectedB": "ACCGGTACCGGTACCATGGGGTAC",
+        "finalProduct": "GGTTACCGGATGCCGTTAATGCCGTTAAACCGGTACCGGTACCATGGGGTAC"
+      }
+    }
+  ]
+}

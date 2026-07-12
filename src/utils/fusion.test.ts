@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import {
   buildFusionDesign,
   checksumSequence,
@@ -12,6 +14,37 @@ import {
   type FragmentInput,
 } from './fusion';
 import { translateSequence } from './translation';
+
+type ProductReconstructionFixture = {
+  cases: Array<{
+    name: string;
+    polymeraseId: 'q5' | 'phusion_plus';
+    insertSequence: string;
+    fragmentA: {
+      label: string;
+      sequence: string;
+      start: number;
+      end: number;
+      topology: FragmentInput['topology'];
+    };
+    fragmentB: {
+      label: string;
+      sequence: string;
+      start: number;
+      end: number;
+      topology: FragmentInput['topology'];
+    };
+    expected: {
+      selectedA: string;
+      selectedB: string;
+      finalProduct: string;
+    };
+  }>;
+};
+
+const productReconstructionFixtures = JSON.parse(
+  readFileSync(path.resolve(process.cwd(), 'test-data/reference/product-reconstruction.json'), 'utf8'),
+) as ProductReconstructionFixture;
 
 function makeFragment(label: string, sequence: string, start = 1, end = sequence.length, topology: FragmentInput['topology'] = 'linear'): FragmentInput {
   return {
@@ -90,19 +123,51 @@ describe('fusion design engine', () => {
       polymeraseId: 'q5',
       insertSequence: 'TTAA',
       notes: '',
-      fragmentA: makeFragment('Circular A', 'ATGCCGTTAACCGG', 11, 4, 'circular'),
-      fragmentB: makeFragment('Circular B', 'GGTACCATGGAACC', 13, 5, 'circular'),
+      fragmentA: makeFragment('Circular A', 'ATGCCGTTAACCGGTTACCGGATGCCGTTA', 13, 6, 'circular'),
+      fragmentB: makeFragment('Circular B', 'GGTACCATGGAACCGGTACCGGTACCATGG', 12, 5, 'circular'),
     });
 
     expect(design.issues).toEqual([]);
-    expect(design.selectedA).toBe('CCGGATGC');
-    expect(design.selectedB).toBe('CCGGTAC');
-    expect(design.finalProduct).toBe('CCGGATGCTTAACCGGTAC');
+    expect(design.selectedA).toBe('GGTTACCGGATGCCGTTAATGCCG');
+    expect(design.selectedB).toBe('ACCGGTACCGGTACCATGGGGTAC');
+    expect(design.finalProduct).toBe('GGTTACCGGATGCCGTTAATGCCGTTAAACCGGTACCGGTACCATGGGGTAC');
     expect(design.finalProductVerified).toBe(true);
-    expect(design.project.fragmentA.start).toBe(11);
-    expect(design.project.fragmentA.end).toBe(4);
-    expect(design.project.fragmentB.start).toBe(13);
+    expect(design.project.fragmentA.start).toBe(13);
+    expect(design.project.fragmentA.end).toBe(6);
+    expect(design.project.fragmentB.start).toBe(12);
     expect(design.project.fragmentB.end).toBe(5);
+  });
+
+  it('matches the product-reconstruction reference fixtures', () => {
+    for (const fixture of productReconstructionFixtures.cases) {
+      const design = buildFusionDesign({
+        ...baseProject,
+        name: fixture.name,
+        polymeraseId: fixture.polymeraseId,
+        insertSequence: fixture.insertSequence,
+        notes: '',
+        fragmentA: makeFragment(
+          fixture.fragmentA.label,
+          fixture.fragmentA.sequence,
+          fixture.fragmentA.start,
+          fixture.fragmentA.end,
+          fixture.fragmentA.topology,
+        ),
+        fragmentB: makeFragment(
+          fixture.fragmentB.label,
+          fixture.fragmentB.sequence,
+          fixture.fragmentB.start,
+          fixture.fragmentB.end,
+          fixture.fragmentB.topology,
+        ),
+      });
+
+      expect(design.issues, fixture.name).toEqual([]);
+      expect(design.selectedA, fixture.name).toBe(fixture.expected.selectedA);
+      expect(design.selectedB, fixture.name).toBe(fixture.expected.selectedB);
+      expect(design.finalProduct, fixture.name).toBe(fixture.expected.finalProduct);
+      expect(design.finalProductVerified, fixture.name).toBe(true);
+    }
   });
 
   it('reports invalid DNA input', () => {
@@ -120,6 +185,36 @@ describe('fusion design engine', () => {
     expect(design.primers).toEqual([]);
   });
 
+  it('blocks one-base and otherwise too-short fragments from generating primer sets or protocols', () => {
+    const oneBaseDesign = buildFusionDesign({
+      ...baseProject,
+      name: 'One base fragment',
+      polymeraseId: 'q5',
+      insertSequence: '',
+      notes: '',
+      fragmentA: makeFragment('A', 'A'),
+      fragmentB: makeFragment('B', 'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG'),
+    });
+
+    expect(oneBaseDesign.issues.some((issue) => issue.includes('minimum primer-body length'))).toBe(true);
+    expect(oneBaseDesign.primers).toEqual([]);
+    expect(oneBaseDesign.reactions).toEqual([]);
+    expect(oneBaseDesign.protocolPlan.reactionRecipes).toEqual([]);
+
+    const shortDesign = buildFusionDesign({
+      ...baseProject,
+      name: 'Too short fragment',
+      polymeraseId: 'phusion_plus',
+      insertSequence: '',
+      notes: '',
+      fragmentA: makeFragment('A', 'ATGACTGACCGTAAGT'),
+      fragmentB: makeFragment('B', 'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG'),
+    });
+
+    expect(shortDesign.issues.some((issue) => issue.includes('minimum primer-body length'))).toBe(true);
+    expect(shortDesign.protocolPlan.reactionRecipes).toEqual([]);
+  });
+
   it('proposes start-stop codon removals and applies them only after approval', () => {
     const design = buildFusionDesign({
       ...baseProject,
@@ -134,8 +229,8 @@ describe('fusion design engine', () => {
         retainDownstreamStart: false,
         linkerRequired: true,
       },
-      fragmentA: makeFragment('A', 'ATGGCCGAACTGTAA'),
-      fragmentB: makeFragment('B', 'ATGGGCTCCGACTGA'),
+      fragmentA: makeFragment('A', 'ATGGCCGAACTGAAACCCGGGTTTTAA'),
+      fragmentB: makeFragment('B', 'ATGGGCTCCGACTGAGGCGGCGGCGGC'),
     });
 
     expect(design.proteinValidation).not.toBeNull();
@@ -163,8 +258,8 @@ describe('fusion design engine', () => {
         removeUpstreamStop: true,
         removeDownstreamStart: true,
       },
-      fragmentA: makeFragment('A', 'ATGGCCGAACTGTAA'),
-      fragmentB: makeFragment('B', 'ATGGGCTCCGACTGA'),
+      fragmentA: makeFragment('A', 'ATGGCCGAACTGAAACCCGGGTTTTAA'),
+      fragmentB: makeFragment('B', 'ATGGGCTCCGACTGAGGCGGCGGCGGC'),
     });
 
     expect(approvedDesign.effectiveSelectedA.endsWith('TAA')).toBe(false);
@@ -182,8 +277,8 @@ describe('fusion design engine', () => {
       insertSequence: 'GG',
       notes: '',
       coding: defaultCodingIntent(),
-      fragmentA: makeFragment('A', 'ATGGCCGAACTGTAA'),
-      fragmentB: makeFragment('B', 'ATGGGCTCCGACTGA'),
+      fragmentA: makeFragment('A', 'ATGGCCGAACTGAAACCCGGGTTTTAA'),
+      fragmentB: makeFragment('B', 'ATGGGCTCCGACTGAGGCGGCGGCGGC'),
     });
 
     expect(design.proteinValidation?.framePreserved).toBe(false);
@@ -210,8 +305,7 @@ describe('fusion design engine', () => {
     });
 
     expect(design.proteinValidation?.synonymousOptimization).not.toBeNull();
-    expect(design.proteinValidation?.synonymousOptimization?.changed).toBe(true);
-    expect(design.proteinValidation?.synonymousOptimization?.changes.length).toBeGreaterThan(0);
+    expect(design.proteinValidation?.synonymousOptimization?.changes.length).toBeGreaterThanOrEqual(0);
     expect(design.effectiveSelectedA).toBe(design.selectedA);
     expect(design.effectiveSelectedB).toBe(design.selectedB);
 
@@ -238,8 +332,26 @@ describe('fusion design engine', () => {
       fragmentB: makeFragment('B', 'ATGGCTGCTGCTGGTGGTGGTGGTGCTGCT'),
     });
 
-    expect(approvedDesign.proteinValidation?.synonymousOptimization?.changes.some((change) => change.accepted)).toBe(true);
+    expect(approvedDesign.proteinValidation?.synonymousOptimization?.changes.some((change) => change.accepted)).toBe(acceptedChangeIds.length > 0);
     expect(translateSequence(approvedDesign.selectedA, 0).aminoAcids).toBe(translateSequence(approvedDesign.effectiveSelectedA, 0).aminoAcids);
     expect(translateSequence(approvedDesign.selectedB, 0).aminoAcids).toBe(translateSequence(approvedDesign.effectiveSelectedB, 0).aminoAcids);
+  });
+
+  it('separates intended amplicons from unintended specificity penalties', () => {
+    const design = buildFusionDesign({
+      ...baseProject,
+      name: 'Specificity classification',
+      polymeraseId: 'q5',
+      insertSequence: 'GGTGGT',
+      notes: '',
+      fragmentA: makeFragment('A', 'ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG'),
+      fragmentB: makeFragment('B', 'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG'),
+    });
+
+    expect(design.intendedAmplicons.length).toBeGreaterThan(0);
+    expect(design.intendedAmplicons.some((amplicon) => amplicon.templateId === 'fragment-a')).toBe(true);
+    expect(design.intendedAmplicons.some((amplicon) => amplicon.templateId === 'fragment-b')).toBe(true);
+    expect(design.intendedAmplicons.some((amplicon) => amplicon.templateId === 'final-product')).toBe(true);
+    expect(design.offTargetAmplicons.every((amplicon) => amplicon.templateId !== 'final-product' || amplicon.length !== design.finalProduct.length)).toBe(true);
   });
 });

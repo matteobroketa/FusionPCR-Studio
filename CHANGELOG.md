@@ -11,6 +11,6 @@ All notable changes to this project will be documented in this file.
 - Added repository documentation for thermodynamic models, project JSON format, and polymerase profiles.
 - Added importable example projects plus starter `test-data/` and `validation/` directories.
 
-## 0.1.0
+## 0.1.0-alpha.1
 
-- Initial local-first web release for two-fragment OE-PCR design, simulation, and export.
+- Initial alpha release for the deployable two-fragment OE-PCR MVP.

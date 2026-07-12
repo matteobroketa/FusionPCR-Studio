@@ -1,6 +1,6 @@
 {
   "name": "fusionpcr-studio",
-  "version": "1.0.0",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "description": "Local-first PCR primer inspection and amplicon estimation studio.",
   "scripts": {
@@ -9,10 +9,11 @@
     "build:web": "npm run build",
     "build:rust": "cargo build --workspace",
     "preview": "vite preview",
+    "smoke:pages": "npm run build && node scripts/smoke-pages.mjs",
     "test:rust": "cargo test --workspace",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run test && npm run build && cargo test --workspace"
+    "verify": "npm run test && npm run build && node scripts/smoke-pages.mjs && cargo test --workspace"
   },
   "keywords": [],
   "author": "",

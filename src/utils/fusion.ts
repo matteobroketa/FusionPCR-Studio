@@ -1,243 +1,44 @@
-import { defaultEditorLocks, type EditorLocks } from './editor';
+export * from './fusion-model';
+import { evaluateOverlapCriteria, type OverlapAssessment } from './overlap';
 import { analyzePrimer, calculateGcPercentage, calculateWallaceTm, findInvalidBases, normalizeSequence, reverseComplement } from './pcr';
-import { buildProtocolPlan, defaultProtocolSettings, normalizeProtocolSettings, type ProtocolPlan, type ProtocolSettings } from './protocol';
+import { buildProtocolPlan, defaultProtocolSettings, emptyProtocolPlan, normalizeProtocolSettings, type ProtocolPlan, type ProtocolSettings } from './protocol';
 import { findPrimerSpecificitySites, predictOffTargetAmplicons, type OffTargetAmplicon, type PrimerDirection, type SpecificitySite, type SpecificityTemplate } from './specificity';
 import { analyzeHeterodimer, analyzePrimerStructure, type PrimerStructureAnalysis, type StructureResult } from './structure';
 import { calculateNearestNeighborTm, defaultThermodynamicConditions, type ThermodynamicConditions, type ThermodynamicResult } from './thermodynamics';
 import { codonsForAminoAcid, formatAminoAcidWindow, synonymousCodonsForCodon, translateSequence } from './translation';
-
-export type PolymeraseId = 'q5' | 'phusion_plus';
-export type DesignMode = 'exact' | 'protein-fusion' | 'insertion' | 'deletion' | 'substitution' | 'domain-swap';
-export type SourceFormat = 'manual' | 'plain' | 'fasta' | 'genbank' | 'project';
-export type SequenceTopology = 'linear' | 'circular';
-
-export const PROJECT_SCHEMA_VERSION = '0.2.0';
-export const ENGINE_VERSION = '0.2.0';
-
-export type SequenceFeature = {
-  key: string;
-  location: string;
-  label: string;
-  qualifiers: Record<string, string>;
-  crossesOrigin: boolean;
-};
-
-export type FragmentInput = {
-  label: string;
-  sequence: string;
-  start: number;
-  end: number;
-  topology: SequenceTopology;
-  sourceFormat: SourceFormat;
-  importedName: string;
-  checksum: string;
-  ambiguousBases: string[];
-  features: SequenceFeature[];
-  reverseComplemented: boolean;
-};
-
-export type CodingIntent = {
-  upstreamFrame: 0 | 1 | 2;
-  downstreamFrame: 0 | 1 | 2;
-  retainUpstreamStop: boolean;
-  retainDownstreamStart: boolean;
-  linkerRequired: boolean;
-  preserveProtein: boolean;
-  flexibleCodons: number;
-};
-
-export type ChangeApprovals = {
-  removeUpstreamStop: boolean;
-  removeDownstreamStart: boolean;
-  acceptedSynonymousChanges: string[];
-};
-
-export type GenomicSpecificitySettings = {
-  organism: string;
-  database: string;
-  notes: string;
-};
-
-export type FusionProjectInput = {
-  schemaVersion: string;
-  engineVersion: string;
-  name: string;
-  polymeraseId: PolymeraseId;
-  mode: DesignMode;
-  insertSequence: string;
-  notes: string;
-  coding: CodingIntent;
-  reactionConditions: ThermodynamicConditions;
-  protocolSettings: ProtocolSettings;
-  editorLocks: EditorLocks;
-  changeApprovals: ChangeApprovals;
-  genomicSpecificity: GenomicSpecificitySettings;
-  fragmentA: FragmentInput;
-  fragmentB: FragmentInput;
-  createdAt: string;
-  modifiedAt: string;
-};
-
-export type PolymeraseProfile = {
-  id: PolymeraseId;
-  label: string;
-  targetBodyTm: number;
-  secondsPerKb: number;
-  minExtensionSeconds: number;
-  gradientSpan: number;
-  annealingTemperature: (lowerPrimerBodyTm: number) => number;
-};
-
-export type PrimerStructure = PrimerStructureAnalysis;
-
-export type PrimerPairInteraction = {
-  primerAName: string;
-  primerBName: string;
-  interaction: StructureResult | null;
-  intended: boolean;
-  note: string;
-};
-
-export type PrimerDesign = {
-  name: string;
-  direction: PrimerDirection;
-  expectedTemplateId: string;
-  role: string;
-  sequence: string;
-  tail: string;
-  body: string;
-  bodyTemplateSequence: string;
-  fullLength: number;
-  bodyLength: number;
-  bodyTm: number;
-  fullOligoTm: number;
-  overlapTm: number | null;
-  bodyGcPercentage: number;
-  structure: PrimerStructure;
-  bodyThermodynamics: ThermodynamicResult;
-  fullOligoThermodynamics: ThermodynamicResult;
-  reaction: 'PCR 1A' | 'PCR 1B' | 'Fusion PCR';
-  specificitySites: SpecificitySite[];
-};
-
-export type ReactionPlan = {
-  name: 'PCR 1A' | 'PCR 1B' | 'Fusion PCR';
-  primerNames: [string, string];
-  productLength: number;
-  annealingTemperature: number;
-  extensionSeconds: number;
-  gradientRecommendation?: string;
-};
-
-export type FusionDesign = {
-  project: FusionProjectInput;
-  profile: PolymeraseProfile;
-  selectedA: string;
-  selectedB: string;
-  effectiveSelectedA: string;
-  effectiveSelectedB: string;
-  insertSequence: string;
-  overlapSequence: string;
-  targetSequence: string;
-  stageAProduct: string;
-  stageBProduct: string;
-  finalProduct: string;
-  finalProductVerified: boolean;
-  primers: PrimerDesign[];
-  reactions: ReactionPlan[];
-  proteinValidation: ProteinValidation | null;
-  specificityTemplates: SpecificityTemplate[];
-  offTargetAmplicons: OffTargetAmplicon[];
-  primerPairInteractions: PrimerPairInteraction[];
-  protocolPlan: ProtocolPlan;
-  qualityScore: number;
-  qualityBreakdown: DesignQualityBreakdown;
-  alternativeDesigns: AlternativeDesign[];
-  sequenceChangeProposals: SequenceChangeProposal[];
-  issues: string[];
-  warnings: string[];
-};
-
-export type DesignQualityBreakdown = {
-  tmBalance: number;
-  bodyFit: number;
-  overlap: number;
-  structure: number;
-  specificity: number;
-  synthesis: number;
-  total: number;
-};
-
-export type AlternativeDesign = {
-  id: string;
-  label: string;
-  priority: 'balanced' | 'low-dimer' | 'short-oligo' | 'high-overlap';
-  qualityScore: number;
-  qualityBreakdown: DesignQualityBreakdown;
-  overlapTm: number;
-  tmSpread: number;
-  totalOligoLength: number;
-  worstNonIntendedDimerDeltaG: number | null;
-  highRiskOffTargets: number;
-  warnings: string[];
-  primers: PrimerDesign[];
-  reactions: ReactionPlan[];
-};
-
-export type ProteinValidation = {
-  enabled: boolean;
-  upstreamTranslation: string;
-  insertTranslation: string;
-  downstreamTranslation: string;
-  finalTranslation: string;
-  proteinLength: number;
-  framePreserved: boolean;
-  frameMessage: string;
-  upstreamHasTerminalStop: boolean;
-  downstreamHasStartCodon: boolean;
-  fusedHasPrematureStop: boolean;
-  junctionAminoAcids: string;
-  linkerAminoAcids: string;
-  synonymousOptimization: SynonymousOptimization | null;
-  warnings: string[];
-};
-
-export type SequenceChangeProposal = {
-  id: string;
-  kind: 'remove-upstream-stop' | 'remove-downstream-start' | 'synonymous-codon';
-  fragment: 'fragment-a' | 'fragment-b';
-  start: number;
-  end: number;
-  from: string;
-  to: string;
-  approved: boolean;
-  label: string;
-  description: string;
-  aminoAcid?: string;
-};
-
-export type SynonymousOptimizationChange = {
-  id: string;
-  fragment: 'fragment-a' | 'fragment-b';
-  codonIndex: number;
-  aminoAcid: string;
-  start: number;
-  from: string;
-  to: string;
-  accepted: boolean;
-};
-
-export type SynonymousOptimization = {
-  enabled: boolean;
-  applied: boolean;
-  changed: boolean;
-  windowCodons: number;
-  optimizedSelectedA: string;
-  optimizedSelectedB: string;
-  scoreDelta: number;
-  changes: SynonymousOptimizationChange[];
-  summary: string;
-};
+import {
+  ENGINE_VERSION,
+  MAX_BODY_LENGTH,
+  MIN_BODY_LENGTH,
+  PROJECT_SCHEMA_VERSION,
+  polymeraseProfiles,
+  normalizeChangeApprovals,
+  normalizeEditorLocks,
+  normalizeProtocolConfig,
+  normalizeReactionConditions,
+  resolveAnnealingTemperature,
+  type AlternativeDesign,
+  type ChangeApprovals,
+  type CodingIntent,
+  type DesignMode,
+  type DesignQualityBreakdown,
+  type FragmentInput,
+  type FusionDesign,
+  type FusionProjectInput,
+  type GenomicSpecificitySettings,
+  type PolymeraseProfile,
+  type PrimerDesign,
+  type PrimerPairInteraction,
+  type ProteinValidation,
+  type ReactionPlan,
+  type SequenceChangeProposal,
+  type SequenceFeature,
+  type SequenceTopology,
+  type SynonymousOptimization,
+  type SynonymousOptimizationChange,
+} from './fusion-model';
+import { removeFirstInFrameStartCodon, replaceLastInFrameCodon, validateProteinFusion } from './fusion-protein';
+import { clampRange, isFiniteThermodynamicResult, longestHomopolymerRun, type NormalizedRange, selectRange } from './fusion-sequence';
 
 type CandidateBody = {
   templateSequence: string;
@@ -261,6 +62,7 @@ type DesignVariant = {
   id: string;
   overlapSequence: string;
   overlapTm: number;
+  overlapAssessment: OverlapAssessment;
   stageAProduct: string;
   stageBProduct: string;
   finalProduct: string;
@@ -268,6 +70,7 @@ type DesignVariant = {
   primers: PrimerDesign[];
   reactions: ReactionPlan[];
   specificityTemplates: SpecificityTemplate[];
+  intendedAmplicons: OffTargetAmplicon[];
   offTargetAmplicons: OffTargetAmplicon[];
   primerPairInteractions: PrimerPairInteraction[];
   protocolPlan: ProtocolPlan;
@@ -290,149 +93,32 @@ type SynonymousWindow = {
   suffix: string;
 };
 
-const MIN_BODY_LENGTH = 12;
-const MAX_BODY_LENGTH = 28;
-const STOP_CODONS = new Set(['TAA', 'TAG', 'TGA']);
-
-export const polymeraseProfiles: Record<PolymeraseId, PolymeraseProfile> = {
-  q5: {
-    id: 'q5',
-    label: 'Q5 High-Fidelity',
-    targetBodyTm: 64,
-    secondsPerKb: 15,
-    minExtensionSeconds: 10,
-    gradientSpan: 3,
-    annealingTemperature: (lowerPrimerBodyTm) => Math.round(lowerPrimerBodyTm + 3),
-  },
-  phusion_plus: {
-    id: 'phusion_plus',
-    label: 'Phusion Plus',
-    targetBodyTm: 62,
-    secondsPerKb: 20,
-    minExtensionSeconds: 15,
-    gradientSpan: 4,
-    annealingTemperature: (lowerPrimerBodyTm) => Math.round(Math.max(60, lowerPrimerBodyTm)),
-  },
-};
-
-export const defaultCodingIntent = (): CodingIntent => ({
-  upstreamFrame: 0,
-  downstreamFrame: 0,
-  retainUpstreamStop: false,
-  retainDownstreamStart: false,
-  linkerRequired: false,
-  preserveProtein: false,
-  flexibleCodons: 0,
-});
-
-export const defaultChangeApprovals = (): ChangeApprovals => ({
-  removeUpstreamStop: false,
-  removeDownstreamStart: false,
-  acceptedSynonymousChanges: [],
-});
-
-export const defaultGenomicSpecificitySettings = (): GenomicSpecificitySettings => ({
-  organism: '',
-  database: 'refseq_representative_genomes',
-  notes: '',
-});
-
-export const defaultReactionConditions = defaultThermodynamicConditions;
-export const defaultProtocolConfig = defaultProtocolSettings;
-export const defaultEditorLockConfig = defaultEditorLocks;
-
-type NormalizedRange = {
-  start: number;
-  end: number;
-  clamped: boolean;
-  wrapsOrigin: boolean;
-};
-
-function clampRange(length: number, topology: SequenceTopology, start: number, end: number): NormalizedRange {
-  if (length <= 0) {
-    return { start: 1, end: 0, clamped: true, wrapsOrigin: false };
-  }
-
-  const safeStart = Number.isFinite(start) ? Math.floor(start) : 1;
-  const safeEnd = Number.isFinite(end) ? Math.floor(end) : length;
-  const normalizedStart = Math.max(1, Math.min(length, safeStart));
-  const normalizedEnd = Math.max(1, Math.min(length, safeEnd));
-  const wrapsOrigin = topology === 'circular' && normalizedStart > normalizedEnd;
-
-  if (topology === 'circular') {
-    return {
-      start: normalizedStart,
-      end: normalizedEnd,
-      clamped: normalizedStart !== safeStart || normalizedEnd !== safeEnd,
-      wrapsOrigin,
-    };
-  }
-
-  return {
-    start: Math.min(normalizedStart, normalizedEnd),
-    end: Math.max(normalizedStart, normalizedEnd),
-    clamped: normalizedStart !== safeStart || normalizedEnd !== safeEnd || safeStart > safeEnd,
-    wrapsOrigin: false,
-  };
-}
-
-function selectRange(sequenceInput: string, range: NormalizedRange): string {
-  const sequence = normalizeSequence(sequenceInput);
-  if (!sequence.length || range.end <= 0) {
-    return '';
-  }
-
-  if (!range.wrapsOrigin) {
-    return sequence.slice(Math.max(0, range.start - 1), range.end);
-  }
-
-  return `${sequence.slice(range.start - 1)}${sequence.slice(0, range.end)}`;
-}
-
-function longestHomopolymerRun(sequenceInput: string): number {
-  const sequence = normalizeSequence(sequenceInput);
-  let best = 0;
-  let current = 0;
-  let previous = '';
-
-  for (const base of sequence) {
-    if (base === previous) {
-      current += 1;
-    } else {
-      current = 1;
-      previous = base;
-    }
-
-    if (current > best) {
-      best = current;
-    }
-  }
-
-  return best;
-}
-
 function chooseBodyCandidate(
   templateSequenceInput: string,
   location: 'start' | 'end',
   primerDirection: 'forward' | 'reverse',
-  targetTm: number,
+  profile: Pick<PolymeraseProfile, 'targetBodyTm' | 'minBodyLength' | 'maxBodyLength'>,
   reactionConditions: ThermodynamicConditions,
-): CandidateBody {
-  return enumerateBodyCandidates(templateSequenceInput, location, primerDirection, targetTm, reactionConditions, 1)[0];
+): CandidateBody | undefined {
+  return enumerateBodyCandidates(templateSequenceInput, location, primerDirection, profile, reactionConditions, 1)[0];
 }
 
 function enumerateBodyCandidates(
   templateSequenceInput: string,
   location: 'start' | 'end',
   primerDirection: 'forward' | 'reverse',
-  targetTm: number,
+  profile: Pick<PolymeraseProfile, 'targetBodyTm' | 'minBodyLength' | 'maxBodyLength'>,
   reactionConditions: ThermodynamicConditions,
   limit = 4,
 ): CandidateBody[] {
   const templateSequence = normalizeSequence(templateSequenceInput);
-  const maxLength = Math.min(MAX_BODY_LENGTH, templateSequence.length);
-  const minLength = templateSequence.length < MIN_BODY_LENGTH ? templateSequence.length : MIN_BODY_LENGTH;
+  const maxLength = Math.min(profile.maxBodyLength, MAX_BODY_LENGTH, templateSequence.length);
+  const minLength = Math.max(profile.minBodyLength, MIN_BODY_LENGTH);
   const candidates: CandidateBody[] = [];
+
+  if (templateSequence.length < minLength || maxLength < minLength) {
+    return [];
+  }
 
   for (let bodyLength = minLength; bodyLength <= maxLength; bodyLength += 1) {
     const bodyTemplateSequence =
@@ -445,6 +131,9 @@ function enumerateBodyCandidates(
         : reverseComplement(bodyTemplateSequence);
     const bodyMetrics = analyzePrimer(primerSequence);
     const thermodynamics = calculateNearestNeighborTm(primerSequence, reactionConditions);
+    if (!isFiniteThermodynamicResult(thermodynamics)) {
+      continue;
+    }
     const gcPenalty =
       bodyMetrics.gcPercentage < 40
         ? 40 - bodyMetrics.gcPercentage
@@ -454,9 +143,13 @@ function enumerateBodyCandidates(
     const clampPenalty = /[GC]$/.test(primerSequence) ? 0 : 1.5;
     const homopolymerPenalty = Math.max(0, longestHomopolymerRun(primerSequence) - 4) * 1.25;
     const preferredLengthPenalty =
-      bodyLength < 18 ? (18 - bodyLength) * 0.45 : bodyLength > 24 ? (bodyLength - 24) * 0.2 : 0;
+      bodyLength < profile.minBodyLength
+        ? (profile.minBodyLength - bodyLength) * 0.6
+        : bodyLength > Math.min(profile.maxBodyLength, 24)
+          ? (bodyLength - Math.min(profile.maxBodyLength, 24)) * 0.2
+          : 0;
     const score =
-      Math.abs(thermodynamics.correctedTmCelsius - targetTm) +
+      Math.abs(thermodynamics.correctedTmCelsius - profile.targetBodyTm) +
       gcPenalty * 0.35 +
       clampPenalty +
       homopolymerPenalty +
@@ -523,21 +216,20 @@ function scoreSynonymousJunction(
   profile: PolymeraseProfile,
   reactionConditions: ThermodynamicConditions,
 ): number {
-  const innerReverseBody = chooseBodyCandidate(selectedA, 'end', 'reverse', profile.targetBodyTm, reactionConditions);
-  const innerForwardBody = chooseBodyCandidate(selectedB, 'start', 'forward', profile.targetBodyTm, reactionConditions);
+  const innerReverseBody = chooseBodyCandidate(selectedA, 'end', 'reverse', profile, reactionConditions);
+  const innerForwardBody = chooseBodyCandidate(selectedB, 'start', 'forward', profile, reactionConditions);
+  if (!innerReverseBody || !innerForwardBody) {
+    return Number.POSITIVE_INFINITY;
+  }
   const overlapSequence = `${innerReverseBody.templateSequence}${insertSequence}${innerForwardBody.templateSequence}`;
   const overlapTm = calculateNearestNeighborTm(overlapSequence, reactionConditions).correctedTmCelsius;
-  const overlapGc = calculateGcPercentage(overlapSequence);
-  const overlapGcPenalty = overlapGc < 40 ? 40 - overlapGc : overlapGc > 60 ? overlapGc - 60 : 0;
-  const overlapHomopolymerPenalty = Math.max(0, longestHomopolymerRun(overlapSequence) - 4) * 1.5;
+  const overlapAssessment = evaluateOverlapCriteria(overlapSequence, overlapTm);
 
   return (
     innerReverseBody.score +
     innerForwardBody.score +
     Math.abs(innerReverseBody.bodyTm - innerForwardBody.bodyTm) * 0.6 +
-    Math.abs(overlapTm - profile.targetBodyTm) * 0.25 +
-    overlapGcPenalty * 0.2 +
-    overlapHomopolymerPenalty
+    (1 - overlapAssessment.score) * 8
   );
 }
 
@@ -754,6 +446,9 @@ function createPrimerDesign(
 ): PrimerDesign {
   const sequence = `${tail}${body.primerSequence}`;
   const fullOligoThermodynamics = calculateNearestNeighborTm(sequence, reactionConditions);
+  if (!isFiniteThermodynamicResult(body.thermodynamics) || !isFiniteThermodynamicResult(fullOligoThermodynamics)) {
+    throw new Error(`Non-finite thermodynamic result encountered for ${name}.`);
+  }
   const structure = analyzePrimerStructure(sequence, reactionConditions);
   return {
     name,
@@ -795,7 +490,7 @@ function buildReactionPlan(
 ): ReactionPlan {
   const lowerTm = Math.min(primerA.bodyTm, primerB.bodyTm);
   const higherTm = Math.max(primerA.bodyTm, primerB.bodyTm);
-  const annealingTemperature = profile.annealingTemperature(lowerTm);
+  const annealingTemperature = resolveAnnealingTemperature(profile, lowerTm);
   const extensionSeconds = Math.max(profile.minExtensionSeconds, Math.ceil((productLength / 1000) * profile.secondsPerKb));
   const tmSpread = Math.abs(higherTm - lowerTm);
 
@@ -841,11 +536,16 @@ function weightedGeometricMean(components: Array<{ value: number; weight: number
   return Math.exp(logMean);
 }
 
-function buildOffTargetAmplicons(
+function classifyAmplicons(
   specificityTemplates: SpecificityTemplate[],
   primers: PrimerDesign[],
-): OffTargetAmplicon[] {
-  return [
+  expectedLengths: {
+    selectedALength: number;
+    selectedBLength: number;
+    finalProductLength: number;
+  },
+): { intendedAmplicons: OffTargetAmplicon[]; unintendedAmplicons: OffTargetAmplicon[] } {
+  const allAmplicons = [
     ...specificityTemplates.flatMap((template) =>
       predictOffTargetAmplicons(
         template,
@@ -874,6 +574,36 @@ function buildOffTargetAmplicons(
       ),
     ),
   ];
+
+  const intendedAmplicons = allAmplicons.filter((amplicon) => {
+    if (amplicon.forwardPrimerName === 'A_outer_F' && amplicon.reversePrimerName === 'A_inner_R') {
+      return amplicon.templateId === 'fragment-a' && amplicon.length === expectedLengths.selectedALength;
+    }
+    if (amplicon.forwardPrimerName === 'B_inner_F' && amplicon.reversePrimerName === 'B_outer_R') {
+      return amplicon.templateId === 'fragment-b' && amplicon.length === expectedLengths.selectedBLength;
+    }
+    if (amplicon.forwardPrimerName === 'A_outer_F' && amplicon.reversePrimerName === 'B_outer_R') {
+      return amplicon.templateId === 'final-product' && amplicon.length === expectedLengths.finalProductLength;
+    }
+    return false;
+  });
+
+  const intendedKeys = new Set(
+    intendedAmplicons.map(
+      (amplicon) =>
+        `${amplicon.templateId}:${amplicon.forwardPrimerName}:${amplicon.reversePrimerName}:${amplicon.start}:${amplicon.end}:${amplicon.length}`,
+    ),
+  );
+
+  return {
+    intendedAmplicons,
+    unintendedAmplicons: allAmplicons.filter(
+      (amplicon) =>
+        !intendedKeys.has(
+          `${amplicon.templateId}:${amplicon.forwardPrimerName}:${amplicon.reversePrimerName}:${amplicon.start}:${amplicon.end}:${amplicon.length}`,
+        ),
+    ),
+  };
 }
 
 function scoreDesignVariant(
@@ -881,7 +611,7 @@ function scoreDesignVariant(
   primers: PrimerDesign[],
   offTargetAmplicons: OffTargetAmplicon[],
   primerPairInteractions: PrimerPairInteraction[],
-  overlapTm: number,
+  overlapAssessment: OverlapAssessment,
 ): {
   qualityScore: number;
   qualityBreakdown: DesignQualityBreakdown;
@@ -914,7 +644,7 @@ function scoreDesignVariant(
 
   const tmBalance = clampQuality(1 - innerTmSpread / 8);
   const bodyFit = clampQuality(1 - averageBodyScore / 12);
-  const overlap = clampQuality(1 - Math.abs(overlapTm - profile.targetBodyTm) / 12);
+  const overlap = clampQuality(overlapAssessment.score);
   const structure = clampQuality(1 / (1 + highRiskInteractions * 1.2 + watchRiskInteractions * 0.35));
   const specificity = clampQuality(1 / (1 + highRiskOffTargets * 1.5 + watchOffTargets * 0.3));
   const synthesis = clampQuality(1 - Math.max(0, maxPrimerLength - 45) / 30 - Math.max(0, totalOligoLength - 140) / 180);
@@ -953,7 +683,12 @@ function buildDesignVariant(
   bodies: Omit<CandidateCombination, 'roughScore'>,
 ): DesignVariant {
   const overlapSequence = `${bodies.innerReverse.templateSequence}${insertSequence}${bodies.innerForward.templateSequence}`;
-  const overlapTm = calculateNearestNeighborTm(overlapSequence, normalizedProject.reactionConditions).correctedTmCelsius;
+  const overlapThermodynamics = calculateNearestNeighborTm(overlapSequence, normalizedProject.reactionConditions);
+  const overlapTm = overlapThermodynamics.correctedTmCelsius;
+  if (!isFiniteThermodynamicResult(overlapThermodynamics)) {
+    throw new Error('Non-finite overlap thermodynamics encountered while constructing a design variant.');
+  }
+  const overlapAssessment = evaluateOverlapCriteria(overlapSequence, overlapTm);
   const stageAProduct = `${effectiveSelectedA}${insertSequence}${bodies.innerForward.templateSequence}`;
   const stageBProduct = `${bodies.innerReverse.templateSequence}${insertSequence}${effectiveSelectedB}`;
   const finalProduct = mergeProducts(stageAProduct, stageBProduct, overlapSequence);
@@ -1028,7 +763,11 @@ function buildDesignVariant(
       dmsoPercent: normalizedProject.reactionConditions.dmsoPercent,
     },
   );
-  const offTargetAmplicons = buildOffTargetAmplicons(specificityTemplates, primersWithSpecificity);
+  const { intendedAmplicons, unintendedAmplicons: offTargetAmplicons } = classifyAmplicons(specificityTemplates, primersWithSpecificity, {
+    selectedALength: effectiveSelectedA.length,
+    selectedBLength: effectiveSelectedB.length,
+    finalProductLength: finalProduct.length,
+  });
   const variantWarnings: string[] = [];
   for (const primer of primersWithSpecificity) {
     if (primer.structure.risk !== 'Low') {
@@ -1047,6 +786,18 @@ function buildDesignVariant(
   if (innerTmSpread >= 4) {
     variantWarnings.push(`Inner primer body Tm spread is ${innerTmSpread.toFixed(1)} C; consider adjusting the selected ranges.`);
   }
+  if (!overlapAssessment.criteria.tm) {
+    variantWarnings.push(`Overlap Tm ${overlapTm.toFixed(1)} C is outside the documented ${58}-${72} C operating window.`);
+  }
+  if (!overlapAssessment.criteria.gc) {
+    variantWarnings.push(`Overlap GC ${overlapAssessment.gcPercent.toFixed(1)}% is outside the documented 35-65% range.`);
+  }
+  if (!overlapAssessment.criteria.length) {
+    variantWarnings.push(`Overlap length ${overlapSequence.length} nt is below the documented 24 nt minimum.`);
+  }
+  if (!overlapAssessment.criteria.homopolymer) {
+    variantWarnings.push(`Overlap contains a homopolymer run of ${overlapAssessment.homopolymerRun} bases, above the documented maximum of 4.`);
+  }
   const highRiskOffTargets = offTargetAmplicons.filter(
     (amplicon) =>
       amplicon.risk === 'high' &&
@@ -1059,7 +810,7 @@ function buildDesignVariant(
   if (riskyCrossDimers.length) {
     variantWarnings.push(`${riskyCrossDimers.length} high-risk cross-dimer interaction(s) were detected among the current primers.`);
   }
-  const scored = scoreDesignVariant(profile, primersWithSpecificity, offTargetAmplicons, primerPairInteractions, overlapTm);
+  const scored = scoreDesignVariant(profile, primersWithSpecificity, offTargetAmplicons, primerPairInteractions, overlapAssessment);
 
   return {
     id: [
@@ -1077,253 +828,17 @@ function buildDesignVariant(
     primers: primersWithSpecificity,
     reactions,
     specificityTemplates,
+    intendedAmplicons,
     offTargetAmplicons,
     primerPairInteractions,
     protocolPlan,
+    overlapAssessment,
     qualityScore: scored.qualityScore,
     qualityBreakdown: scored.qualityBreakdown,
     warnings: variantWarnings,
     totalOligoLength: scored.totalOligoLength,
     worstNonIntendedDimerDeltaG: scored.worstNonIntendedDimerDeltaG,
     highRiskOffTargets: scored.highRiskOffTargets,
-  };
-}
-
-export function checksumSequence(sequenceInput: string): string {
-  const sequence = normalizeSequence(sequenceInput);
-  let hash = 2166136261;
-
-  for (let index = 0; index < sequence.length; index += 1) {
-    hash ^= sequence.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, '0')}`;
-}
-
-export function createEmptyFragment(label: string): FragmentInput {
-  return {
-    label,
-    sequence: '',
-    start: 1,
-    end: 1,
-    topology: 'linear',
-    sourceFormat: 'manual',
-    importedName: label,
-    checksum: checksumSequence(''),
-    ambiguousBases: [],
-    features: [],
-    reverseComplemented: false,
-  };
-}
-
-export function normalizeFragmentInput(value: Partial<FragmentInput> | undefined, fallbackLabel: string): FragmentInput {
-  const label = typeof value?.label === 'string' ? value.label : fallbackLabel;
-  const sequence = typeof value?.sequence === 'string' ? value.sequence : '';
-  const length = normalizeSequence(sequence).length;
-
-  return {
-    label,
-    sequence,
-    start: typeof value?.start === 'number' ? value.start : 1,
-    end: typeof value?.end === 'number' ? value.end : Math.max(length, 1),
-    topology: value?.topology === 'circular' ? 'circular' : 'linear',
-    sourceFormat:
-      value?.sourceFormat === 'plain' ||
-      value?.sourceFormat === 'fasta' ||
-      value?.sourceFormat === 'genbank' ||
-      value?.sourceFormat === 'project'
-        ? value.sourceFormat
-        : 'manual',
-    importedName: typeof value?.importedName === 'string' ? value.importedName : label,
-    checksum: typeof value?.checksum === 'string' ? value.checksum : checksumSequence(sequence),
-    ambiguousBases: Array.isArray(value?.ambiguousBases) ? value.ambiguousBases.filter((item): item is string => typeof item === 'string') : [],
-    features: Array.isArray(value?.features)
-      ? value.features.filter(
-          (item): item is SequenceFeature =>
-            Boolean(item) &&
-            typeof item === 'object' &&
-            typeof item.key === 'string' &&
-            typeof item.location === 'string' &&
-            typeof item.label === 'string' &&
-            typeof item.qualifiers === 'object' &&
-            typeof item.crossesOrigin === 'boolean',
-        )
-      : [],
-    reverseComplemented: Boolean(value?.reverseComplemented),
-  };
-}
-
-export function normalizeReactionConditions(value: Partial<ThermodynamicConditions> | undefined): ThermodynamicConditions {
-  const defaults = defaultReactionConditions();
-  return {
-    monovalentMillimolar: Math.max(value?.monovalentMillimolar ?? defaults.monovalentMillimolar, 0),
-    magnesiumMillimolar: Math.max(value?.magnesiumMillimolar ?? defaults.magnesiumMillimolar, 0),
-    dntpMillimolar: Math.max(value?.dntpMillimolar ?? defaults.dntpMillimolar, 0),
-    oligoNanomolar: Math.max(value?.oligoNanomolar ?? defaults.oligoNanomolar, 1e-6),
-    dmsoPercent: Math.max(value?.dmsoPercent ?? defaults.dmsoPercent, 0),
-    dmsoFactor: Math.max(value?.dmsoFactor ?? defaults.dmsoFactor, 0),
-  };
-}
-
-export function normalizeProtocolConfig(value: Partial<ProtocolSettings> | undefined): ProtocolSettings {
-  return normalizeProtocolSettings(value);
-}
-
-export function normalizeEditorLocks(value: Partial<EditorLocks> | undefined): EditorLocks {
-  const defaults = defaultEditorLockConfig();
-  return {
-    fragmentA: Boolean(value?.fragmentA ?? defaults.fragmentA),
-    fragmentB: Boolean(value?.fragmentB ?? defaults.fragmentB),
-    fragmentABoundaries: Boolean(value?.fragmentABoundaries ?? defaults.fragmentABoundaries),
-    fragmentBBoundaries: Boolean(value?.fragmentBBoundaries ?? defaults.fragmentBBoundaries),
-    insertSequence: Boolean(value?.insertSequence ?? defaults.insertSequence),
-    polymeraseSettings: Boolean(value?.polymeraseSettings ?? defaults.polymeraseSettings),
-  };
-}
-
-export function normalizeChangeApprovals(value: Partial<ChangeApprovals> | undefined): ChangeApprovals {
-  const defaults = defaultChangeApprovals();
-  return {
-    removeUpstreamStop: Boolean(value?.removeUpstreamStop ?? defaults.removeUpstreamStop),
-    removeDownstreamStart: Boolean(value?.removeDownstreamStart ?? defaults.removeDownstreamStart),
-    acceptedSynonymousChanges: Array.isArray(value?.acceptedSynonymousChanges)
-      ? value.acceptedSynonymousChanges.filter((item): item is string => typeof item === 'string')
-      : defaults.acceptedSynonymousChanges,
-  };
-}
-
-export function normalizeGenomicSpecificitySettings(
-  value: Partial<GenomicSpecificitySettings> | undefined,
-): GenomicSpecificitySettings {
-  const defaults = defaultGenomicSpecificitySettings();
-  return {
-    organism: typeof value?.organism === 'string' ? value.organism : defaults.organism,
-    database: typeof value?.database === 'string' ? value.database : defaults.database,
-    notes: typeof value?.notes === 'string' ? value.notes : defaults.notes,
-  };
-}
-
-function replaceLastInFrameCodon(sequenceInput: string, frame: 0 | 1 | 2): { sequence: string; removed: boolean; start: number; codon: string } {
-  const sequence = normalizeSequence(sequenceInput);
-  const codingLength = sequence.length - frame;
-
-  if (codingLength < 3) {
-    return { sequence, removed: false, start: 0, codon: '' };
-  }
-
-  const remainder = codingLength % 3;
-  const lastCodonStart = sequence.length - remainder - 3;
-  const lastCodon = sequence.slice(lastCodonStart, lastCodonStart + 3);
-
-  if (!STOP_CODONS.has(lastCodon)) {
-    return { sequence, removed: false, start: 0, codon: '' };
-  }
-
-  return {
-    sequence: `${sequence.slice(0, lastCodonStart)}${sequence.slice(lastCodonStart + 3)}`,
-    removed: true,
-    start: lastCodonStart + 1,
-    codon: lastCodon,
-  };
-}
-
-function removeFirstInFrameStartCodon(sequenceInput: string, frame: 0 | 1 | 2): { sequence: string; removed: boolean; start: number; codon: string } {
-  const sequence = normalizeSequence(sequenceInput);
-  const firstCodonStart = frame;
-  const firstCodon = sequence.slice(firstCodonStart, firstCodonStart + 3);
-
-  if (firstCodon !== 'ATG') {
-    return { sequence, removed: false, start: 0, codon: '' };
-  }
-
-  return {
-    sequence: `${sequence.slice(0, firstCodonStart)}${sequence.slice(firstCodonStart + 3)}`,
-    removed: true,
-    start: firstCodonStart + 1,
-    codon: firstCodon,
-  };
-}
-
-function validateProteinFusion(
-  mode: DesignMode,
-  selectedAInput: string,
-  selectedBInput: string,
-  effectiveAInput: string,
-  effectiveBInput: string,
-  insertSequenceInput: string,
-  coding: CodingIntent,
-  synonymousOptimization: SynonymousOptimization | null,
-): ProteinValidation | null {
-  if (mode !== 'protein-fusion') {
-    return null;
-  }
-
-  const selectedA = normalizeSequence(selectedAInput);
-  const selectedB = normalizeSequence(selectedBInput);
-  const effectiveA = normalizeSequence(effectiveAInput);
-  const effectiveB = normalizeSequence(effectiveBInput);
-  const insertSequence = normalizeSequence(insertSequenceInput);
-
-  const upstreamTranslation = translateSequence(effectiveA, coding.upstreamFrame);
-  const insertTranslation = translateSequence(insertSequence, 0);
-  const downstreamTranslation = translateSequence(effectiveB, coding.downstreamFrame);
-  const finalCodingSequence = `${effectiveA.slice(coding.upstreamFrame)}${insertSequence}${effectiveB.slice(coding.downstreamFrame)}`;
-  const finalTranslation = translateSequence(finalCodingSequence, 0);
-  const codingBasesBeforeJunction = Math.max(0, effectiveA.length - coding.upstreamFrame);
-  const expectedFrame = coding.downstreamFrame;
-  const observedFrame = (codingBasesBeforeJunction + insertSequence.length) % 3;
-  const framePreserved = observedFrame === expectedFrame;
-  const upstreamFullTranslation = translateSequence(selectedA, coding.upstreamFrame);
-  const downstreamFullTranslation = translateSequence(selectedB, coding.downstreamFrame);
-  const upstreamHasTerminalStop = upstreamFullTranslation.codons.at(-1) !== undefined && STOP_CODONS.has(upstreamFullTranslation.codons.at(-1)!);
-  const downstreamHasStartCodon = downstreamFullTranslation.codons[0] === 'ATG';
-  const proteinWarnings: string[] = [];
-
-  if (!framePreserved) {
-    const delta = (expectedFrame - observedFrame + 3) % 3;
-    proteinWarnings.push(
-      `Frameshift: the current junction leaves remainder ${observedFrame}; adjust the inserted sequence by ${delta === 0 ? 3 : delta} base(s) to reach downstream frame ${expectedFrame}.`,
-    );
-  }
-
-  if (upstreamHasTerminalStop && coding.retainUpstreamStop) {
-    proteinWarnings.push('Premature termination: the upstream fragment retains its stop codon.');
-  }
-
-  if (downstreamHasStartCodon && coding.retainDownstreamStart) {
-    proteinWarnings.push('Unexpected N-terminal methionine: the downstream ATG is retained.');
-  }
-
-  if (coding.linkerRequired && !insertSequence.length) {
-    proteinWarnings.push('Linker required: protein fusion mode is configured to require an inserted linker sequence.');
-  }
-
-  const firstPrematureStop = finalTranslation.stopPositions.find((position) => position < finalTranslation.aminoAcids.length - 1);
-  if (firstPrematureStop !== undefined) {
-    proteinWarnings.push(`Premature stop codon detected at amino-acid position ${firstPrematureStop + 1} in the fused product.`);
-  }
-
-  const junctionAaIndex = Math.max(0, Math.floor(codingBasesBeforeJunction / 3) - 1);
-
-  return {
-    enabled: true,
-    upstreamTranslation: upstreamTranslation.aminoAcids,
-    insertTranslation: insertTranslation.aminoAcids,
-    downstreamTranslation: downstreamTranslation.aminoAcids,
-    finalTranslation: finalTranslation.aminoAcids,
-    proteinLength: finalTranslation.aminoAcids.replace(/\*/g, '').length,
-    framePreserved,
-    frameMessage: framePreserved
-      ? `Reading frame preserved: (${codingBasesBeforeJunction} + ${insertSequence.length}) mod 3 = ${expectedFrame}.`
-      : `Reading frame mismatch: (${codingBasesBeforeJunction} + ${insertSequence.length}) mod 3 = ${observedFrame}, expected ${expectedFrame}.`,
-    upstreamHasTerminalStop,
-    downstreamHasStartCodon,
-    fusedHasPrematureStop: firstPrematureStop !== undefined,
-    junctionAminoAcids: formatAminoAcidWindow(finalTranslation.aminoAcids, junctionAaIndex),
-    linkerAminoAcids: insertTranslation.aminoAcids,
-    synonymousOptimization,
-    warnings: proteinWarnings,
   };
 }
 
@@ -1374,11 +889,11 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
   if (rangeB.clamped) {
     warnings.push('Fragment B range was normalized to stay within the sequence bounds.');
   }
-  if (selectedA.length < MIN_BODY_LENGTH) {
-    warnings.push(`Fragment A contributes only ${selectedA.length} bases to the design, so primer bodies are shorter than preferred.`);
+  if (selectedA.length < profile.minBodyLength) {
+    issues.push(`Fragment A contributes only ${selectedA.length} bases, below the ${profile.minBodyLength} nt minimum primer-body length for ${profile.label}.`);
   }
-  if (selectedB.length < MIN_BODY_LENGTH) {
-    warnings.push(`Fragment B contributes only ${selectedB.length} bases to the design, so primer bodies are shorter than preferred.`);
+  if (selectedB.length < profile.minBodyLength) {
+    issues.push(`Fragment B contributes only ${selectedB.length} bases, below the ${profile.minBodyLength} nt minimum primer-body length for ${profile.label}.`);
   }
 
   if (projectInput.mode === 'protein-fusion') {
@@ -1521,16 +1036,10 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
       reactions: [],
       proteinValidation: null,
       specificityTemplates: [],
+      intendedAmplicons: [],
       offTargetAmplicons: [],
       primerPairInteractions: [],
-      protocolPlan: buildProtocolPlan(protocolSettings, {
-        stageAProductLength: 0,
-        stageBProductLength: 0,
-        finalProductLength: 0,
-      }, [], normalizedProject.polymeraseId, {
-        dntpMillimolar: normalizedProject.reactionConditions.dntpMillimolar,
-        dmsoPercent: normalizedProject.reactionConditions.dmsoPercent,
-      }),
+      protocolPlan: emptyProtocolPlan(),
       qualityScore: 0,
       qualityBreakdown: {
         tmBalance: 0,
@@ -1548,10 +1057,53 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
     };
   }
   const bodyLimit = 4;
-  const outerForwardCandidates = enumerateBodyCandidates(effectiveSelectedA, 'start', 'forward', profile.targetBodyTm, normalizedProject.reactionConditions, bodyLimit);
-  const innerReverseCandidates = enumerateBodyCandidates(effectiveSelectedA, 'end', 'reverse', profile.targetBodyTm, normalizedProject.reactionConditions, bodyLimit);
-  const innerForwardCandidates = enumerateBodyCandidates(effectiveSelectedB, 'start', 'forward', profile.targetBodyTm, normalizedProject.reactionConditions, bodyLimit);
-  const outerReverseCandidates = enumerateBodyCandidates(effectiveSelectedB, 'end', 'reverse', profile.targetBodyTm, normalizedProject.reactionConditions, bodyLimit);
+  const outerForwardCandidates = enumerateBodyCandidates(effectiveSelectedA, 'start', 'forward', profile, normalizedProject.reactionConditions, bodyLimit);
+  const innerReverseCandidates = enumerateBodyCandidates(effectiveSelectedA, 'end', 'reverse', profile, normalizedProject.reactionConditions, bodyLimit);
+  const innerForwardCandidates = enumerateBodyCandidates(effectiveSelectedB, 'start', 'forward', profile, normalizedProject.reactionConditions, bodyLimit);
+  const outerReverseCandidates = enumerateBodyCandidates(effectiveSelectedB, 'end', 'reverse', profile, normalizedProject.reactionConditions, bodyLimit);
+
+  if (!outerForwardCandidates.length || !innerReverseCandidates.length || !innerForwardCandidates.length || !outerReverseCandidates.length) {
+    return {
+      project: normalizedProject,
+      profile,
+      selectedA,
+      selectedB,
+      effectiveSelectedA,
+      effectiveSelectedB,
+      insertSequence,
+      overlapSequence: '',
+      targetSequence: `${effectiveSelectedA}${insertSequence}${effectiveSelectedB}`,
+      stageAProduct: '',
+      stageBProduct: '',
+      finalProduct: '',
+      finalProductVerified: false,
+      primers: [],
+      reactions: [],
+      proteinValidation: null,
+      specificityTemplates: [],
+      intendedAmplicons: [],
+      offTargetAmplicons: [],
+      primerPairInteractions: [],
+      protocolPlan: emptyProtocolPlan(),
+      qualityScore: 0,
+      qualityBreakdown: {
+        tmBalance: 0,
+        bodyFit: 0,
+        overlap: 0,
+        structure: 0,
+        specificity: 0,
+        synthesis: 0,
+        total: 0,
+      },
+      alternativeDesigns: [],
+      sequenceChangeProposals,
+      issues: [
+        ...issues,
+        `No physically valid primer bodies could be generated within the ${profile.minBodyLength}-${profile.maxBodyLength} nt range for ${profile.label}.`,
+      ],
+      warnings,
+    };
+  }
 
   const roughCombinations: CandidateCombination[] = [];
   for (const outerForward of outerForwardCandidates) {
@@ -1560,13 +1112,17 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
         for (const outerReverse of outerReverseCandidates) {
           const overlapSequence = `${innerReverse.templateSequence}${insertSequence}${innerForward.templateSequence}`;
           const overlapTm = calculateNearestNeighborTm(overlapSequence, normalizedProject.reactionConditions).correctedTmCelsius;
+          const overlapAssessment = evaluateOverlapCriteria(overlapSequence, overlapTm);
+          if (!Number.isFinite(overlapTm)) {
+            continue;
+          }
           const roughScore =
             outerForward.score +
             innerReverse.score +
             innerForward.score +
             outerReverse.score +
             Math.abs(innerReverse.bodyTm - innerForward.bodyTm) * 0.7 +
-            Math.abs(overlapTm - profile.targetBodyTm) * 0.35;
+            (1 - overlapAssessment.score) * 8;
           roughCombinations.push({
             outerForward,
             innerReverse,
@@ -1592,30 +1148,63 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
         ) === index,
     )
     .slice(0, 8)
-    .map((combination) =>
-      buildDesignVariant(normalizedProject, profile, effectiveSelectedA, effectiveSelectedB, insertSequence, {
-        outerForward: combination.outerForward,
-        innerReverse: combination.innerReverse,
-        innerForward: combination.innerForward,
-        outerReverse: combination.outerReverse,
-      }),
-    );
+    .flatMap((combination) => {
+      try {
+        return [
+          buildDesignVariant(normalizedProject, profile, effectiveSelectedA, effectiveSelectedB, insertSequence, {
+            outerForward: combination.outerForward,
+            innerReverse: combination.innerReverse,
+            innerForward: combination.innerForward,
+            outerReverse: combination.outerReverse,
+          }),
+        ];
+      } catch {
+        return [];
+      }
+    });
 
-  const bestVariant =
-    [...evaluatedVariants].sort((left, right) => right.qualityScore - left.qualityScore || left.warnings.length - right.warnings.length)[0] ??
-    buildDesignVariant(
-      normalizedProject,
+  if (!evaluatedVariants.length) {
+    return {
+      project: normalizedProject,
       profile,
+      selectedA,
+      selectedB,
       effectiveSelectedA,
       effectiveSelectedB,
       insertSequence,
-      {
-        outerForward: outerForwardCandidates[0],
-        innerReverse: innerReverseCandidates[0],
-        innerForward: innerForwardCandidates[0],
-        outerReverse: outerReverseCandidates[0],
+      overlapSequence: '',
+      targetSequence: `${effectiveSelectedA}${insertSequence}${effectiveSelectedB}`,
+      stageAProduct: '',
+      stageBProduct: '',
+      finalProduct: '',
+      finalProductVerified: false,
+      primers: [],
+      reactions: [],
+      proteinValidation: null,
+      specificityTemplates: [],
+      intendedAmplicons: [],
+      offTargetAmplicons: [],
+      primerPairInteractions: [],
+      protocolPlan: emptyProtocolPlan(),
+      qualityScore: 0,
+      qualityBreakdown: {
+        tmBalance: 0,
+        bodyFit: 0,
+        overlap: 0,
+        structure: 0,
+        specificity: 0,
+        synthesis: 0,
+        total: 0,
       },
-    );
+      alternativeDesigns: [],
+      sequenceChangeProposals,
+      issues: [...issues, 'No physically valid complete primer design satisfied the current thermodynamic and overlap checks.'],
+      warnings,
+    };
+  }
+
+  const bestVariant =
+    [...evaluatedVariants].sort((left, right) => right.qualityScore - left.qualityScore || left.warnings.length - right.warnings.length)[0];
 
   const targetSequence = `${effectiveSelectedA}${insertSequence}${effectiveSelectedB}`;
   const proteinValidation = validateProteinFusion(
@@ -1710,6 +1299,7 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
     reactions: bestVariant.reactions,
     proteinValidation,
     specificityTemplates: bestVariant.specificityTemplates,
+    intendedAmplicons: bestVariant.intendedAmplicons,
     offTargetAmplicons: bestVariant.offTargetAmplicons,
     primerPairInteractions: bestVariant.primerPairInteractions,
     protocolPlan: bestVariant.protocolPlan,

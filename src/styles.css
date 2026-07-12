@@ -1,7 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap');
-
 :root {
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  font-family: 'Trebuchet MS', 'Segoe UI', 'Helvetica Neue', sans-serif;
   color: #0d2740;
   background:
     radial-gradient(circle at top left, rgba(255, 215, 170, 0.95), transparent 30%),
@@ -89,7 +87,7 @@ button {
 .panel h2,
 .panel h3 {
   margin: 0;
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   line-height: 1.02;
 }
 
@@ -285,7 +283,7 @@ button {
 .sequence-input {
   min-height: 170px;
   resize: vertical;
-  font-family: 'IBM Plex Mono', Consolas, monospace;
+  font-family: Consolas, 'Courier New', monospace;
   font-size: 0.95rem;
   line-height: 1.55;
 }
@@ -572,7 +570,7 @@ button {
 }
 
 .junction-segment code {
-  font-family: 'IBM Plex Mono', Consolas, monospace;
+  font-family: Consolas, 'Courier New', monospace;
   word-break: break-all;
 }
 
@@ -673,7 +671,7 @@ button {
 
 .primer-sequence,
 .sequence-preview {
-  font-family: 'IBM Plex Mono', Consolas, monospace;
+  font-family: Consolas, 'Courier New', monospace;
 }
 
 .inline-sequence-preview {

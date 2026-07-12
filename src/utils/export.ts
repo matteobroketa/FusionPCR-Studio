@@ -546,6 +546,14 @@ export function buildProtocolText(design: FusionDesign): string {
     `PCR 1B product: ${design.stageBProduct.length} bp`,
     `Final product: ${design.finalProduct.length} bp`,
     '',
+    'Intended amplicon models',
+    ...(design.intendedAmplicons.length
+      ? design.intendedAmplicons.map(
+          (amplicon) =>
+            `- ${amplicon.templateName}: ${amplicon.forwardPrimerName}/${amplicon.reversePrimerName} -> ${amplicon.length} bp (classified as intended, excluded from specificity penalties)`,
+        )
+      : ['- None']),
+    '',
     'Local specificity',
     ...(design.offTargetAmplicons.length
       ? design.offTargetAmplicons.slice(0, 12).map(

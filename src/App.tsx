@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useTransition, type ChangeEvent } from 'react';
+import { PrimerCard, ReactionCard, SequencePreview, SequenceRail } from './components/designPanels';
 import { emptyProject, exampleProject, exampleProjectOptions, exampleProjects, type ExampleProjectId } from './data/example';
+import { useFusionDesign } from './hooks/useFusionDesign';
 import { describeFeatureSelection, parseFeatureSelection } from './utils/features';
 import {
   buildAnnotatedGenbank,
@@ -20,7 +22,6 @@ import {
 import {
   checksumSequence,
   createEmptyFragment,
-  buildFusionDesign,
   defaultChangeApprovals,
   defaultCodingIntent,
   defaultEditorLockConfig,
@@ -43,8 +44,6 @@ import {
   type FragmentInput,
   type FusionProjectInput,
   type GenomicSpecificitySettings,
-  type PrimerDesign,
-  type ReactionPlan,
 } from './utils/fusion';
 import {
   deleteSelectedRange,
@@ -70,6 +69,7 @@ import {
   type WorkflowStage,
 } from './utils/review';
 import type { ThermodynamicConditions } from './utils/thermodynamics';
+import { downloadText, loadInitialProject, normalizeImportedProject } from './utils/project';
 
 const STORAGE_KEY = 'fusionpcr-studio-project';
 
@@ -93,447 +93,8 @@ type ComparisonSnapshot = {
 
 type MutationPayloadSource = 'manual' | 'donor-selection';
 
-function isFragmentInput(value: unknown): value is FragmentInput {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.label === 'string' &&
-    typeof candidate.sequence === 'string' &&
-    typeof candidate.start === 'number' &&
-    typeof candidate.end === 'number'
-  );
-}
-
-function isFusionProjectInput(value: unknown): value is FusionProjectInput {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.name === 'string' &&
-    typeof candidate.polymeraseId === 'string' &&
-    typeof candidate.insertSequence === 'string' &&
-    typeof candidate.notes === 'string' &&
-    isFragmentInput(candidate.fragmentA) &&
-    isFragmentInput(candidate.fragmentB)
-  );
-}
-
-function isCodingIntent(value: unknown): value is CodingIntent {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.upstreamFrame === 'number' &&
-    typeof candidate.downstreamFrame === 'number' &&
-    typeof candidate.retainUpstreamStop === 'boolean' &&
-    typeof candidate.retainDownstreamStart === 'boolean' &&
-    typeof candidate.linkerRequired === 'boolean' &&
-    typeof candidate.preserveProtein === 'boolean' &&
-    typeof candidate.flexibleCodons === 'number'
-  );
-}
-
-function isThermodynamicConditions(value: unknown): value is ThermodynamicConditions {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.monovalentMillimolar === 'number' &&
-    typeof candidate.magnesiumMillimolar === 'number' &&
-    typeof candidate.dntpMillimolar === 'number' &&
-    typeof candidate.oligoNanomolar === 'number' &&
-    typeof candidate.dmsoPercent === 'number' &&
-    typeof candidate.dmsoFactor === 'number'
-  );
-}
-
-function isProtocolSettings(value: unknown): value is ProtocolSettings {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.stageAConcentrationNgPerUl === 'number' &&
-    typeof candidate.stageBConcentrationNgPerUl === 'number' &&
-    typeof candidate.totalTemplatePmol === 'number' &&
-    typeof candidate.mixStrategy === 'string' &&
-    typeof candidate.stageMixRatioA === 'number' &&
-    typeof candidate.stageMixRatioB === 'number' &&
-    typeof candidate.primerStockMicromolar === 'number' &&
-    typeof candidate.primerWorkingMicromolar === 'number' &&
-    typeof candidate.workingStockPrepMicroliters === 'number' &&
-    typeof candidate.primerPerReactionMicroliters === 'number' &&
-    typeof candidate.stage1TemplatePerReactionMicroliters === 'number' &&
-    typeof candidate.reactionVolumeMicroliters === 'number' &&
-    typeof candidate.stage1ReactionCountPerProduct === 'number' &&
-    typeof candidate.finalReactionCount === 'number' &&
-    typeof candidate.overfillPercent === 'number' &&
-    typeof candidate.stage1Cycles === 'number' &&
-    typeof candidate.finalCycles === 'number'
-  );
-}
-
-function isEditorLocks(value: unknown): value is EditorLocks {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.fragmentA === 'boolean' &&
-    typeof candidate.fragmentB === 'boolean' &&
-    typeof candidate.fragmentABoundaries === 'boolean' &&
-    typeof candidate.fragmentBBoundaries === 'boolean' &&
-    typeof candidate.insertSequence === 'boolean' &&
-    typeof candidate.polymeraseSettings === 'boolean'
-  );
-}
-
-function isChangeApprovals(value: unknown): value is ChangeApprovals {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.removeUpstreamStop === 'boolean' &&
-    typeof candidate.removeDownstreamStart === 'boolean' &&
-    Array.isArray(candidate.acceptedSynonymousChanges) &&
-    candidate.acceptedSynonymousChanges.every((item) => typeof item === 'string')
-  );
-}
-
-function isGenomicSpecificitySettings(value: unknown): value is GenomicSpecificitySettings {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.organism === 'string' &&
-    typeof candidate.database === 'string' &&
-    typeof candidate.notes === 'string'
-  );
-}
-
-function clampFrame(value: unknown): 0 | 1 | 2 {
-  const numeric = typeof value === 'number' ? Math.floor(value) : 0;
-  if (numeric <= 0) {
-    return 0;
-  }
-  if (numeric === 1) {
-    return 1;
-  }
-  return 2;
-}
-
-function normalizeImportedProject(value: unknown): FusionProjectInput | null {
-  if (!isFusionProjectInput(value)) {
-    return null;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  const now = new Date().toISOString();
-  const codingDefaults = defaultCodingIntent();
-  const reactionDefaults = defaultReactionConditions();
-  const protocolDefaults = defaultProtocolConfig();
-  const editorDefaults = defaultEditorLockConfig();
-  const changeApprovalDefaults = defaultChangeApprovals();
-  const genomicSpecificityDefaults = defaultGenomicSpecificitySettings();
-  const coding = isCodingIntent(candidate.coding)
-    ? {
-        upstreamFrame: clampFrame(candidate.coding.upstreamFrame),
-        downstreamFrame: clampFrame(candidate.coding.downstreamFrame),
-        retainUpstreamStop: candidate.coding.retainUpstreamStop,
-        retainDownstreamStart: candidate.coding.retainDownstreamStart,
-        linkerRequired: candidate.coding.linkerRequired,
-        preserveProtein: candidate.coding.preserveProtein,
-        flexibleCodons: Math.max(0, Math.floor(candidate.coding.flexibleCodons)),
-      }
-    : codingDefaults;
-  const reactionConditions = isThermodynamicConditions(candidate.reactionConditions)
-    ? normalizeReactionConditions(candidate.reactionConditions)
-    : reactionDefaults;
-  const protocolSettings = isProtocolSettings(candidate.protocolSettings)
-    ? normalizeProtocolConfig(candidate.protocolSettings)
-    : protocolDefaults;
-  const editorLocks = isEditorLocks(candidate.editorLocks)
-    ? normalizeEditorLocks(candidate.editorLocks)
-    : editorDefaults;
-  const changeApprovals = isChangeApprovals(candidate.changeApprovals)
-    ? normalizeChangeApprovals(candidate.changeApprovals)
-    : changeApprovalDefaults;
-  const genomicSpecificity = isGenomicSpecificitySettings(candidate.genomicSpecificity)
-    ? normalizeGenomicSpecificitySettings(candidate.genomicSpecificity)
-    : genomicSpecificityDefaults;
-
-  return {
-    schemaVersion: typeof candidate.schemaVersion === 'string' ? candidate.schemaVersion : PROJECT_SCHEMA_VERSION,
-    engineVersion: typeof candidate.engineVersion === 'string' ? candidate.engineVersion : ENGINE_VERSION,
-    name: candidate.name as string,
-    polymeraseId: candidate.polymeraseId as FusionProjectInput['polymeraseId'],
-    mode: (typeof candidate.mode === 'string' ? candidate.mode : 'exact') as DesignMode,
-    insertSequence: candidate.insertSequence as string,
-    notes: candidate.notes as string,
-    coding,
-    reactionConditions,
-    protocolSettings,
-    editorLocks,
-    changeApprovals,
-    genomicSpecificity,
-    fragmentA: normalizeFragmentInput(candidate.fragmentA as Partial<FragmentInput>, 'Fragment A'),
-    fragmentB: normalizeFragmentInput(candidate.fragmentB as Partial<FragmentInput>, 'Fragment B'),
-    createdAt: typeof candidate.createdAt === 'string' ? candidate.createdAt : now,
-    modifiedAt: typeof candidate.modifiedAt === 'string' ? candidate.modifiedAt : now,
-  };
-}
-
-function loadInitialProject(): FusionProjectInput {
-  if (typeof window === 'undefined') {
-    return exampleProject;
-  }
-
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
-    return exampleProject;
-  }
-
-  try {
-    const parsed = JSON.parse(stored) as unknown;
-    return normalizeImportedProject(parsed) ?? exampleProject;
-  } catch {
-    return exampleProject;
-  }
-}
-
-function downloadText(filename: string, content: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
-function SequenceRail({
-  label,
-  sequenceLength,
-  start,
-  end,
-  topology,
-  accentClass,
-}: {
-  label: string;
-  sequenceLength: number;
-  start: number;
-  end: number;
-  topology: 'linear' | 'circular';
-  accentClass: string;
-}) {
-  const safeLength = Math.max(sequenceLength, 1);
-  const wrapsOrigin = topology === 'circular' && sequenceLength > 0 && start > end;
-  const selectionSegments = wrapsOrigin
-    ? [
-        {
-          width: ((safeLength - start + 1) / safeLength) * 100,
-          left: ((start - 1) / safeLength) * 100,
-        },
-        {
-          width: (end / safeLength) * 100,
-          left: 0,
-        },
-      ]
-    : [
-        {
-          width: sequenceLength ? ((end - start + 1) / safeLength) * 100 : 0,
-          left: sequenceLength ? ((start - 1) / safeLength) * 100 : 0,
-        },
-      ];
-
-  return (
-    <div className="rail-card">
-      <div className="rail-meta">
-        <span>{label}</span>
-        <strong>{sequenceLength} bp</strong>
-      </div>
-      <div className="rail-track">
-        {selectionSegments.map((segment) => (
-          <div
-            key={`${label}-${segment.left}-${segment.width}`}
-            className={`rail-selection ${accentClass}`}
-            style={{ width: `${segment.width}%`, left: `${segment.left}%` }}
-          />
-        ))}
-      </div>
-      <div className="rail-caption">
-        Selected bases {start}-{end}
-        {wrapsOrigin ? ' (wraparound)' : ''}
-      </div>
-    </div>
-  );
-}
-
-function SequencePreview({
-  title,
-  sequence,
-}: {
-  title: string;
-  sequence: string;
-}) {
-  return (
-    <div className="preview-block">
-      <span className="preview-label">{title}</span>
-      <code className="sequence-preview">{sequence || 'No sequence available for the current state.'}</code>
-    </div>
-  );
-}
-
-function PrimerCard({
-  primer,
-}: {
-  primer: PrimerDesign;
-}) {
-  return (
-    <article className="primer-card">
-      <div className="primer-card-header">
-        <div>
-          <h3>{primer.name}</h3>
-          <p>{primer.role}</p>
-        </div>
-        <span className={`pill ${primer.structure.risk === 'High' ? 'pill-alert' : primer.structure.risk === 'Watch' ? 'pill-watch' : 'pill-success'}`}>
-          {primer.structure.risk}
-        </span>
-      </div>
-
-      <code className="primer-sequence">
-        {primer.tail ? <span className="primer-tail">{primer.tail}</span> : null}
-        <span className="primer-body">{primer.body}</span>
-      </code>
-
-      <div className="metric-grid compact-grid">
-        <div className="metric">
-          <span>Reaction</span>
-          <strong>{primer.reaction}</strong>
-        </div>
-        <div className="metric">
-          <span>Body Tm</span>
-          <strong>{primer.bodyTm.toFixed(1)} C</strong>
-        </div>
-        <div className="metric">
-          <span>Full oligo Tm</span>
-          <strong>{primer.fullOligoTm.toFixed(1)} C</strong>
-        </div>
-        <div className="metric">
-          <span>Overlap Tm</span>
-          <strong>{primer.overlapTm !== null ? `${primer.overlapTm.toFixed(1)} C` : 'n/a'}</strong>
-        </div>
-        <div className="metric">
-          <span>Body GC</span>
-          <strong>{primer.bodyGcPercentage.toFixed(1)}%</strong>
-        </div>
-        <div className="metric">
-          <span>Body length</span>
-          <strong>{primer.bodyLength} nt</strong>
-        </div>
-        <div className="metric">
-          <span>Delta H</span>
-          <strong>{primer.bodyThermodynamics.deltaHKcalPerMol.toFixed(1)} kcal/mol</strong>
-        </div>
-        <div className="metric">
-          <span>Delta S</span>
-          <strong>{primer.bodyThermodynamics.deltaSCalPerMolK.toFixed(1)} cal/mol/K</strong>
-        </div>
-        <div className="metric">
-          <span>Hairpin</span>
-          <strong>{primer.structure.hairpin?.longestContiguousStem ?? 0} stem</strong>
-        </div>
-        <div className="metric">
-          <span>3 prime dimer</span>
-          <strong>{primer.structure.threePrimeHomodimer?.threePrimePairedBasesA ?? 0} paired</strong>
-        </div>
-        <div className="metric">
-          <span>Specificity hits</span>
-          <strong>{primer.specificitySites.filter((site) => site.risk !== 'low').length}</strong>
-        </div>
-      </div>
-
-      <div className="status-block">
-        <p className="status-title">Structure summary</p>
-        <ul className="status-list">
-          <li>
-            Hairpin: {primer.structure.hairpin ? `${primer.structure.hairpin.deltaG} kcal/mol, Tm ${primer.structure.hairpin.predictedTm} C` : 'none'}
-          </li>
-          <li>
-            Homodimer: {primer.structure.homodimer ? `${primer.structure.homodimer.deltaG} kcal/mol, stem ${primer.structure.homodimer.longestContiguousStem}` : 'none'}
-          </li>
-          <li>
-            3 prime homodimer: {primer.structure.threePrimeHomodimer ? `${primer.structure.threePrimeHomodimer.deltaG} kcal/mol, 3 prime ${primer.structure.threePrimeHomodimer.threePrimePairedBasesA}` : 'none'}
-          </li>
-        </ul>
-      </div>
-
-      <div className="status-block">
-        <p className="status-title">Local specificity</p>
-        <ul className="status-list">
-          {primer.specificitySites.slice(0, 4).map((site) => (
-            <li key={`${primer.name}-${site.templateId}-${site.start}`}>
-              {site.templateName} {site.start}-{site.end}, {site.risk} risk, {site.mismatchCount} mismatch(es), 3 prime match {site.threePrimeMatchedBases} nt
-            </li>
-          ))}
-        </ul>
-      </div>
-    </article>
-  );
-}
-
-function ReactionCard({
-  reaction,
-}: {
-  reaction: ReactionPlan;
-}) {
-  return (
-    <article className="reaction-card">
-      <div className="panel-header">
-        <div>
-          <p className="eyebrow">{reaction.name}</p>
-          <h3>{reaction.primerNames.join(' + ')}</h3>
-        </div>
-      </div>
-      <div className="metric-grid compact-grid">
-        <div className="metric">
-          <span>Product</span>
-          <strong>{reaction.productLength} bp</strong>
-        </div>
-        <div className="metric">
-          <span>Anneal</span>
-          <strong>{reaction.annealingTemperature} C</strong>
-        </div>
-        <div className="metric">
-          <span>Extend</span>
-          <strong>{reaction.extensionSeconds} s</strong>
-        </div>
-        <div className="metric">
-          <span>Gradient</span>
-          <strong>{reaction.gradientRecommendation ?? 'Not needed'}</strong>
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function App() {
-  const [project, setProject] = useState<FusionProjectInput>(loadInitialProject);
+  const [project, setProject] = useState<FusionProjectInput>(() => loadInitialProject(STORAGE_KEY, exampleProject));
   const [pastProjects, setPastProjects] = useState<FusionProjectInput[]>([]);
   const [futureProjects, setFutureProjects] = useState<FusionProjectInput[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -569,7 +130,7 @@ function App() {
   const [selectedExampleId, setSelectedExampleId] = useState<ExampleProjectId>('protein-fusion');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const sequenceFileInputRef = useRef<HTMLInputElement | null>(null);
-  const design = buildFusionDesign(project);
+  const { design, isDesignPending } = useFusionDesign(project);
   const fragmentAMetrics = summarizeSequenceMetrics(project.fragmentA.sequence);
   const fragmentBMetrics = summarizeSequenceMetrics(project.fragmentB.sequence);
   const activeFragment = project[activeFragmentKey];
@@ -1248,6 +809,9 @@ function App() {
             <p className="hero-text">
               Select the retained ranges from two fragments, insert an optional linker, simulate the intermediate products, and export primers plus a starting protocol without uploading sequence data.
             </p>
+            <p className="status-note status-note-alert">
+              Experimental-use warning: this 0.1.0-alpha.1 release is a local-first planning aid for two-fragment OE-PCR only. It does not validate wet-lab success, genome-scale specificity, or biological function.
+            </p>
           </div>
 
           <div className="hero-actions">
@@ -1276,7 +840,7 @@ function App() {
             <button type="button" className="button button-secondary" onClick={redoProject} disabled={!futureProjects.length}>
               Redo
             </button>
-            <span className="pending-label">{isPending ? 'Refreshing project...' : 'Local-first mode active'}</span>
+            <span className="pending-label">{isPending || isDesignPending ? 'Refreshing project...' : 'Local-first mode active'}</span>
           </div>
           <p className="field-helper">{exampleProjectOptions.find((option) => option.id === selectedExampleId)?.description}</p>
         </header>
@@ -1302,7 +866,7 @@ function App() {
             <strong>{design.finalProductVerified ? 'Pass' : 'Pending'}</strong>
           </div>
           <div className="summary-card panel">
-            <span>Off-target products</span>
+            <span>Unintended products</span>
             <strong>{design.offTargetAmplicons.length}</strong>
           </div>
           <div className="summary-card panel">
@@ -2731,6 +2295,7 @@ function App() {
                 <p className="status-title">Risk highlighting</p>
                 <ul className="status-list">
                   <li>{design.offTargetAmplicons.length} local off-target amplicon candidate(s), {comparisonMetrics.highRiskOffTargets} high-risk.</li>
+                  <li>{design.intendedAmplicons.length} intended local amplicon model(s) were classified separately from the penalty score.</li>
                   <li>{design.warnings.length} workflow warning(s) are attached to the current design.</li>
                   <li>Worst pairwise dimer delta G: {comparisonMetrics.worstDimerDeltaG !== null ? `${comparisonMetrics.worstDimerDeltaG.toFixed(1)} kcal/mol` : 'n/a'}.</li>
                 </ul>
@@ -2892,6 +2457,7 @@ function App() {
               <p className="status-title">Warning focus</p>
               <ul className="status-list">
                   <li>{design.warnings.length} warning(s) currently attached to the design.</li>
+                  <li>{design.intendedAmplicons.length} intended local amplicon model(s) were separated from unintended specificity penalties.</li>
                   <li>{design.offTargetAmplicons.length} local off-target amplicon candidate(s) were found.</li>
                   <li>{design.primerPairInteractions.filter((pair) => pair.interaction?.risk === 'High').length} high-risk primer pair interaction(s) were detected.</li>
                   <li>Design quality score: {design.qualityScore.toFixed(3)}</li>
@@ -2936,6 +2502,17 @@ function App() {
 
             <div className="status-block">
               <p className="status-title">Local specificity</p>
+              <ul className="status-list">
+                {design.intendedAmplicons.length ? (
+                  design.intendedAmplicons.map((amplicon) => (
+                    <li key={`intended-${amplicon.templateId}-${amplicon.forwardPrimerName}-${amplicon.reversePrimerName}-${amplicon.start}`}>
+                      Intended: {amplicon.templateName} {amplicon.forwardPrimerName}/{amplicon.reversePrimerName} predicts {amplicon.length} bp
+                    </li>
+                  ))
+                ) : (
+                  <li>No intended amplicon models were classified for the current design.</li>
+                )}
+              </ul>
               <ul className="status-list">
                 {design.offTargetAmplicons.length ? (
                   design.offTargetAmplicons.slice(0, 8).map((amplicon) => (

@@ -2,7 +2,7 @@
 
 ## Implemented release scope
 
-This repository currently implements a local-first `0.1.0` style overlap-extension PCR workflow for two-fragment designs in the browser.
+This repository currently implements a local-first `0.1.0-alpha.1` overlap-extension PCR workflow for two-fragment designs in the browser.
 
 The repository now also contains a Rust workspace that begins the planned split between a browser UI and a reusable computational core. The current Rust side covers sequence normalization, target construction, and basic protocol conversions, while the broader calculation engine still remains primarily in TypeScript.
 
@@ -124,21 +124,47 @@ It then exports a Primer-BLAST handoff package containing:
 
 ## Body selection
 
-The current implementation scans candidate annealing bodies from 12 to 28 nucleotides and ranks them by:
+The current implementation scans candidate annealing bodies within the selected polymerase profile bounds:
 
-- Wallace Tm distance from the polymerase target
+- `Q5 High-Fidelity`: 20 to 40 nt
+- `Phusion Plus`: 18 to 35 nt
+- global hard floor: 12 nt
+- global hard ceiling: 40 nt
+
+Every candidate is rejected when:
+
+- the selected fragment range is shorter than the profile minimum
+- nearest-neighbour thermodynamic outputs are non-finite
+- the candidate cannot satisfy the required template-anchored orientation
+
+Remaining candidates are ranked by:
+
+- nearest-neighbour body Tm distance from the polymerase target
 - GC percentage distance from the preferred 40 to 60 percent range
 - lack of a terminal G/C clamp
-- long homopolymer runs
-- deviation from the preferred 18 to 24 nucleotide range
+- homopolymer burden above 4 identical bases
+- deviation from the profile-preferred length window
 
-This is a heuristic selector, not a full thermodynamic search.
+This is still a bounded heuristic selector rather than an exhaustive global search.
+
+## Overlap criteria
+
+The release no longer scores overlaps by proximity to a single target Tm. Instead, every proposed overlap is assessed against separately documented OE-PCR operating criteria:
+
+- overlap Tm between 58 C and 72 C
+- overlap length at least 24 nt
+- overlap GC between 35% and 65%
+- homopolymer run no longer than 4 bases
+- finite thermodynamic output for the full overlap duplex
+
+The overlap contribution to design ranking is derived from the fraction of these criteria that pass.
+Warnings cite the exact failed criterion rather than reporting only a scalar overlap-Tm score.
 
 The current optimizer layer then:
 
 - keeps the top few body candidates for each required primer
 - evaluates a bounded set of whole-design combinations
-- scores each complete design by Tm balance, body-fit quality, overlap quality, structure risk, specificity risk, and synthesis burden
+- scores each complete design by Tm balance, body-fit quality, overlap-criteria compliance, structure risk, specificity risk, and synthesis burden
 - returns ranked alternatives for balanced, lower-dimer, shorter-oligo, and higher-overlap priorities
 
 ## Thermodynamics and structure
@@ -215,7 +241,7 @@ If `preserveProtein` is enabled with `flexibleCodons > 0`, the app also:
 
 - examines the last and first in-frame codons near the junction
 - enumerates synonymous codon choices with a bounded beam search
-- scores candidates by inner-primer body quality, overlap Tm proximity, GC balance, and homopolymer burden
+- scores candidates by inner-primer body quality, overlap-criteria compliance, GC balance, and homopolymer burden
 - applies only candidates that improve the junction-design score while preserving the translated protein
 - reports each codon-level nucleotide change in the UI and protocol export
 

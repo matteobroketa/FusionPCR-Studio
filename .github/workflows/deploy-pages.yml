@@ -27,6 +27,8 @@ jobs:
         run: npm ci
       - name: Build site
         run: npm run build
+      - name: Pages smoke test
+        run: node scripts/smoke-pages.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,4 +1,24 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { calculateNearestNeighborTm, defaultThermodynamicConditions, divalentToMonovalentEquivalent, isSelfComplementary } from './thermodynamics';
+
+type TmReferenceFixture = {
+  cases: Array<{
+    name: string;
+    sequence: string;
+    conditions: ReturnType<typeof defaultThermodynamicConditions>;
+    expected: {
+      deltaHKcalPerMol: number;
+      deltaSCalPerMolK: number;
+      rawTmCelsius: number;
+      correctedTmCelsius: number;
+    };
+  }>;
+};
+
+const tmReferenceFixtures = JSON.parse(
+  readFileSync(path.resolve(process.cwd(), 'test-data/reference/tm-reference.json'), 'utf8'),
+) as TmReferenceFixture;
 
 describe('thermodynamics', () => {
   it('matches stable reference values for Primer3-style nearest-neighbour Tm', () => {
@@ -9,6 +29,17 @@ describe('thermodynamics', () => {
     expect(result.deltaSCalPerMolK).toBeCloseTo(-439.8, 6);
     expect(result.rawTmCelsius).toBeCloseTo(68.696342, 5);
     expect(result.correctedTmCelsius).toBeCloseTo(59.589566, 5);
+  });
+
+  it('matches the recorded Tm reference fixtures', () => {
+    for (const fixture of tmReferenceFixtures.cases) {
+      const result = calculateNearestNeighborTm(fixture.sequence, fixture.conditions);
+
+      expect(result.deltaHKcalPerMol, fixture.name).toBeCloseTo(fixture.expected.deltaHKcalPerMol, 6);
+      expect(result.deltaSCalPerMolK, fixture.name).toBeCloseTo(fixture.expected.deltaSCalPerMolK, 6);
+      expect(result.rawTmCelsius, fixture.name).toBeCloseTo(fixture.expected.rawTmCelsius, 5);
+      expect(result.correctedTmCelsius, fixture.name).toBeCloseTo(fixture.expected.correctedTmCelsius, 5);
+    }
   });
 
   it('applies DMSO as a separate correction', () => {

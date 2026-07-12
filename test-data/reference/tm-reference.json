@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {
+      "name": "primer3-default-20mer",
+      "sequence": "GATCGATCGATCGATCGATC",
+      "conditions": {
+        "monovalentMillimolar": 50,
+        "magnesiumMillimolar": 1.5,
+        "dntpMillimolar": 0.2,
+        "oligoNanomolar": 500,
+        "dmsoPercent": 0,
+        "dmsoFactor": 0.6
+      },
+      "expected": {
+        "deltaHKcalPerMol": -160.2,
+        "deltaSCalPerMolK": -439.8,
+        "rawTmCelsius": 68.696342,
+        "correctedTmCelsius": 59.589566
+      }
+    }
+  ]
+}
