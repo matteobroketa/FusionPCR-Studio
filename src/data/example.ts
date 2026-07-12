@@ -11,6 +11,7 @@ import {
   ENGINE_VERSION,
   PROJECT_SCHEMA_VERSION,
 } from '../utils/fusion';
+import { stampProjectMetadata } from '../utils/project';
 
 const now = new Date().toISOString();
 const fragmentASequence = 'ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG';
@@ -45,6 +46,8 @@ function buildBaseProject(): Omit<FusionProjectInput, 'name' | 'polymeraseId' | 
   return {
     schemaVersion: PROJECT_SCHEMA_VERSION,
     engineVersion: ENGINE_VERSION,
+    revision: 1,
+    projectHash: '',
     coding: defaultCodingIntent(),
     reactionConditions: defaultReactionConditions(),
     protocolSettings: defaultProtocolConfig(),
@@ -56,62 +59,70 @@ function buildBaseProject(): Omit<FusionProjectInput, 'name' | 'polymeraseId' | 
   };
 }
 
+const exactFusionExample = stampProjectMetadata({
+  ...buildBaseProject(),
+  name: 'Exact fusion example',
+  polymeraseId: 'q5',
+  mode: 'exact',
+  insertSequence: '',
+  notes: 'Directly fuse two fragment selections without inserting extra bases.',
+  fragmentA: buildFragment('Fragment A', fragmentASequence),
+  fragmentB: buildFragment('Fragment B', fragmentBSequence),
+});
+
+const proteinFusionExample = stampProjectMetadata({
+  ...buildBaseProject(),
+  name: 'Protein fusion demo',
+  polymeraseId: 'q5',
+  mode: 'protein-fusion',
+  insertSequence: 'GGTGGTGGTGGTTCT',
+  notes: 'Fuse two coding fragments with a short glycine-serine linker.',
+  coding: {
+    ...defaultCodingIntent(),
+    linkerRequired: true,
+    preserveProtein: true,
+    flexibleCodons: 2,
+  },
+  genomicSpecificity: {
+    ...defaultGenomicSpecificitySettings(),
+    organism: 'Homo sapiens',
+    notes: 'Use the Primer-BLAST handoff export if an external genomic specificity screen is required.',
+  },
+  fragmentA: buildFragment('Upstream CDS', fragmentASequence),
+  fragmentB: buildFragment('Downstream CDS', fragmentBSequence),
+});
+
+const insertionExample = stampProjectMetadata({
+  ...buildBaseProject(),
+  name: 'Insertion example',
+  polymeraseId: 'phusion_plus',
+  mode: 'insertion',
+  insertSequence: 'GACTACAAAGACGATGACGACAAG',
+  notes: 'Insert a short coding tag between retained left and right flanks from one source sequence.',
+  reactionConditions: {
+    ...defaultReactionConditions(),
+    dmsoPercent: 3,
+  },
+  fragmentA: buildFragment('Left flank', fragmentASequence, 1, 24, 'Recipient template'),
+  fragmentB: buildFragment('Right flank', fragmentASequence, 25, 39, 'Recipient template'),
+});
+
+const mutationExample = stampProjectMetadata({
+  ...buildBaseProject(),
+  name: 'Substitution example',
+  polymeraseId: 'q5',
+  mode: 'substitution',
+  insertSequence: 'GACGAC',
+  notes: 'Represent a short substitution as left flank plus replacement payload plus right flank.',
+  fragmentA: buildFragment('Left flank', mutationTemplateSequence, 1, 21, 'Mutated template'),
+  fragmentB: buildFragment('Right flank', mutationTemplateSequence, 28, mutationTemplateSequence.length, 'Mutated template'),
+});
+
 export const exampleProjects: Record<ExampleProjectId, FusionProjectInput> = {
-  'exact-fusion': {
-    ...buildBaseProject(),
-    name: 'Exact fusion example',
-    polymeraseId: 'q5',
-    mode: 'exact',
-    insertSequence: '',
-    notes: 'Directly fuse two fragment selections without inserting extra bases.',
-    fragmentA: buildFragment('Fragment A', fragmentASequence),
-    fragmentB: buildFragment('Fragment B', fragmentBSequence),
-  },
-  'protein-fusion': {
-    ...buildBaseProject(),
-    name: 'Protein fusion demo',
-    polymeraseId: 'q5',
-    mode: 'protein-fusion',
-    insertSequence: 'GGTGGTGGTGGTTCT',
-    notes: 'Fuse two coding fragments with a short glycine-serine linker.',
-    coding: {
-      ...defaultCodingIntent(),
-      linkerRequired: true,
-      preserveProtein: true,
-      flexibleCodons: 2,
-    },
-    genomicSpecificity: {
-      ...defaultGenomicSpecificitySettings(),
-      organism: 'Homo sapiens',
-      notes: 'Use the Primer-BLAST handoff export if an external genomic specificity screen is required.',
-    },
-    fragmentA: buildFragment('Upstream CDS', fragmentASequence),
-    fragmentB: buildFragment('Downstream CDS', fragmentBSequence),
-  },
-  insertion: {
-    ...buildBaseProject(),
-    name: 'Insertion example',
-    polymeraseId: 'phusion_plus',
-    mode: 'insertion',
-    insertSequence: 'GACTACAAAGACGATGACGACAAG',
-    notes: 'Insert a short coding tag between retained left and right flanks from one source sequence.',
-    reactionConditions: {
-      ...defaultReactionConditions(),
-      dmsoPercent: 3,
-    },
-    fragmentA: buildFragment('Left flank', fragmentASequence, 1, 24, 'Recipient template'),
-    fragmentB: buildFragment('Right flank', fragmentASequence, 25, 39, 'Recipient template'),
-  },
-  mutation: {
-    ...buildBaseProject(),
-    name: 'Substitution example',
-    polymeraseId: 'q5',
-    mode: 'substitution',
-    insertSequence: 'GACGAC',
-    notes: 'Represent a short substitution as left flank plus replacement payload plus right flank.',
-    fragmentA: buildFragment('Left flank', mutationTemplateSequence, 1, 21, 'Mutated template'),
-    fragmentB: buildFragment('Right flank', mutationTemplateSequence, 28, mutationTemplateSequence.length, 'Mutated template'),
-  },
+  'exact-fusion': exactFusionExample,
+  'protein-fusion': proteinFusionExample,
+  insertion: insertionExample,
+  mutation: mutationExample,
 };
 
 export const exampleProjectOptions: ExampleProjectOption[] = [
@@ -139,9 +150,11 @@ export const exampleProjectOptions: ExampleProjectOption[] = [
 
 export const exampleProject = exampleProjects['protein-fusion'];
 
-export const emptyProject: FusionProjectInput = {
+export const emptyProject: FusionProjectInput = stampProjectMetadata({
   schemaVersion: PROJECT_SCHEMA_VERSION,
   engineVersion: ENGINE_VERSION,
+  revision: 1,
+  projectHash: '',
   name: 'Untitled project',
   polymeraseId: 'q5',
   mode: 'exact',
@@ -157,4 +170,4 @@ export const emptyProject: FusionProjectInput = {
   fragmentB: createEmptyFragment('Fragment B'),
   createdAt: now,
   modifiedAt: now,
-};
+});

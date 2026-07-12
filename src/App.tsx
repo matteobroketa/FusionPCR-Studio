@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useTransition, type ChangeEvent } from 'react';
+import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { PrimerCard, ReactionCard, SequencePreview, SequenceRail } from './components/designPanels';
 import { emptyProject, exampleProject, exampleProjectOptions, exampleProjects, type ExampleProjectId } from './data/example';
 import { useFusionDesign } from './hooks/useFusionDesign';
+import { useProjectPersistence } from './hooks/useProjectPersistence';
 import { describeFeatureSelection, parseFeatureSelection } from './utils/features';
 import {
   buildAnnotatedGenbank,
@@ -69,9 +71,12 @@ import {
   type WorkflowStage,
 } from './utils/review';
 import type { ThermodynamicConditions } from './utils/thermodynamics';
-import { downloadText, loadInitialProject, normalizeImportedProject } from './utils/project';
+import { downloadText, loadInitialProject, normalizeImportedProject, stampProjectMetadata } from './utils/project';
 
 const STORAGE_KEY = 'fusionpcr-studio-project';
+const EXPERIMENTAL_NOTICE_STORAGE_KEY = 'fusionpcr-studio-experimental-notice-dismissed';
+const PUBLIC_EXAMPLE_IDS: ExampleProjectId[] = ['protein-fusion', 'exact-fusion'];
+const PUBLIC_DESIGN_MODES: DesignMode[] = ['exact', 'protein-fusion'];
 
 type InspectorFocus = 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction';
 type WorkbenchStep = 'sequences' | 'construct' | 'primers' | 'protocol' | 'export';
@@ -97,13 +102,44 @@ type ComparisonSnapshot = {
 type MutationPayloadSource = 'manual' | 'donor-selection';
 
 type StepStatusLevel = 'complete' | 'warning' | 'error' | 'pending';
+type ConfirmationState = {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+} | null;
 
 function loadInitialAppProject() {
   return loadInitialProject(STORAGE_KEY, emptyProject);
 }
 
+function loadExperimentalNoticeVisibility() {
+  if (typeof window === 'undefined') {
+    return true;
+  }
+
+  return window.localStorage.getItem(EXPERIMENTAL_NOTICE_STORAGE_KEY) !== 'dismissed';
+}
+
 function hasProjectSequenceContent(project: FusionProjectInput) {
   return Boolean(project.fragmentA.sequence.trim() || project.fragmentB.sequence.trim());
+}
+
+function isProjectNonEmpty(project: FusionProjectInput) {
+  return Boolean(
+    project.fragmentA.sequence.trim() ||
+      project.fragmentB.sequence.trim() ||
+      project.insertSequence.trim() ||
+      project.notes.trim(),
+  );
+}
+
+function isPublicExampleId(exampleId: ExampleProjectId) {
+  return PUBLIC_EXAMPLE_IDS.includes(exampleId);
+}
+
+function isPublicDesignMode(mode: DesignMode) {
+  return PUBLIC_DESIGN_MODES.includes(mode);
 }
 
 function formatStepStatus(level: StepStatusLevel, text: string) {
@@ -139,10 +175,13 @@ function App() {
   const [primerResultTab, setPrimerResultTab] = useState<PrimerResultTab>('overview');
   const [protocolResultTab, setProtocolResultTab] = useState<ProtocolResultTab>('overview');
   const [selectedPrimerName, setSelectedPrimerName] = useState<string | null>(null);
-  const [showExperimentalNotice, setShowExperimentalNotice] = useState(true);
+  const [showExperimentalNotice, setShowExperimentalNotice] = useState(() => loadExperimentalNoticeVisibility());
   const [showWorkbench, setShowWorkbench] = useState(() => hasProjectSequenceContent(loadInitialAppProject()));
   const [showSidebar, setShowSidebar] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [confirmationState, setConfirmationState] = useState<ConfirmationState>(null);
+  const [recoverableProjectSnapshot, setRecoverableProjectSnapshot] = useState<FusionProjectInput | null>(null);
   const [comparisonSnapshot, setComparisonSnapshot] = useState<ComparisonSnapshot | null>(null);
   const [canvasTracks, setCanvasTracks] = useState<CanvasTracks>({
     sourceFragments: true,
@@ -164,7 +203,8 @@ function App() {
   const [selectedExampleId, setSelectedExampleId] = useState<ExampleProjectId>('protein-fusion');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const sequenceFileInputRef = useRef<HTMLInputElement | null>(null);
-  const { design, isDesignPending, workerError } = useFusionDesign(project);
+  const { design, calculationState, isDesignPending, isDesignCurrent, workerError, retry } = useFusionDesign(project);
+  const { persistenceState, persistenceError, retryPersistence } = useProjectPersistence(STORAGE_KEY, project);
   const fragmentAMetrics = summarizeSequenceMetrics(project.fragmentA.sequence);
   const fragmentBMetrics = summarizeSequenceMetrics(project.fragmentB.sequence);
   const activeFragment = project[activeFragmentKey];
@@ -174,7 +214,14 @@ function App() {
   const isPolymeraseLocked = project.editorLocks.polymeraseSettings;
   const activeFragmentLocked = activeFragmentKey === 'fragmentA' ? isFragmentALocked : isFragmentBLocked;
   const counterpartFragmentLocked = activeFragmentKey === 'fragmentA' ? isFragmentBLocked : isFragmentALocked;
-  const hasExportableDesign = design.primers.length > 0;
+  const hasCurrentValidDesign =
+    isDesignCurrent &&
+    calculationState === 'complete' &&
+    !workerError &&
+    !design.issues.length &&
+    design.primers.length > 0 &&
+    design.reactions.length > 0;
+  const hasExportableDesign = hasCurrentValidDesign;
   const stagePrimerNames = getStagePrimerNames(design, selectedStage);
   const stageSequencePreviews = getStageSequencePreviews(design, selectedStage);
   const junctionSummary = buildJunctionSummary(design);
@@ -221,7 +268,16 @@ function App() {
       : design.reactions.find((reaction) => reaction.name === getWorkflowStageLabel(selectedStage));
   const hasSequenceContent = hasProjectSequenceContent(project);
   const activeReaction = selectedReaction ?? design.reactions[0] ?? null;
-  const saveStateLabel = isPending || isDesignPending ? 'Calculating' : pastProjects.length ? 'Unsaved changes' : 'Saved locally';
+  const saveStateLabel =
+    persistenceState === 'saving'
+      ? 'Saving locally'
+      : persistenceState === 'saved'
+        ? 'Saved locally'
+        : persistenceState === 'failed'
+          ? 'Local save failed'
+          : 'Autosave pending';
+  const publicExampleOptions = exampleProjectOptions.filter((option) => isPublicExampleId(option.id));
+  const selectedPublicExampleDescription = publicExampleOptions.find((option) => option.id === selectedExampleId)?.description ?? 'Built-in example';
   const sequenceStepStatus: { level: StepStatusLevel; text: string } =
     project.fragmentA.sequence.trim() && project.fragmentB.sequence.trim()
       ? { level: 'complete', text: 'Two sequences loaded' }
@@ -245,6 +301,10 @@ function App() {
       : { level: 'complete', text: `${design.reactions.length} reactions planned` };
   const exportStepStatus: { level: StepStatusLevel; text: string } = hasExportableDesign
     ? { level: 'complete', text: 'Export ready' }
+    : calculationState === 'pending' || calculationState === 'stale'
+      ? { level: 'warning', text: 'Waiting for a current calculation' }
+      : workerError
+        ? { level: 'error', text: 'Calculation failed' }
     : { level: 'pending', text: 'Awaiting runnable design' };
   const compareRows = [
     {
@@ -289,11 +349,12 @@ function App() {
       if (JSON.stringify(next) === JSON.stringify(current)) {
         return current;
       }
+      const stampedProject = stampProjectMetadata(next, current);
       if (options?.recordHistory !== false) {
         setPastProjects((previous) => [...previous.slice(-49), current]);
         setFutureProjects([]);
       }
-      return next;
+      return stampedProject;
     });
   };
 
@@ -318,14 +379,23 @@ function App() {
   };
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-  }, [project]);
-
-  useEffect(() => {
     if (hasSequenceContent) {
       setShowWorkbench(true);
     }
   }, [hasSequenceContent]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (showExperimentalNotice) {
+      window.localStorage.removeItem(EXPERIMENTAL_NOTICE_STORAGE_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(EXPERIMENTAL_NOTICE_STORAGE_KEY, 'dismissed');
+  }, [showExperimentalNotice]);
 
   useEffect(() => {
     if (!visiblePrimers.length) {
@@ -476,32 +546,84 @@ function App() {
     }));
   };
 
+  const preserveRecoverableSnapshot = (current: FusionProjectInput) => {
+    if (!isProjectNonEmpty(current)) {
+      return;
+    }
+
+    setRecoverableProjectSnapshot(current);
+  };
+
+  const requestProjectReplacement = (action: ConfirmationState extends infer T ? T : never) => {
+    if (!isProjectNonEmpty(project)) {
+      action?.onConfirm();
+      return;
+    }
+
+    setConfirmationState(action);
+  };
+
   const loadExample = (exampleId: ExampleProjectId = selectedExampleId) => {
-    startTransition(() => {
-      commitProject(exampleProjects[exampleId] ?? exampleProject);
-      setPastProjects([]);
-      setFutureProjects([]);
-      setImportError('');
-      setFeatureSelectionMessage('');
-      setShowWorkbench(true);
-      setActiveStep('construct');
-      setInspectorFocus('junction');
-      setPrimerResultTab('overview');
-      setProtocolResultTab('overview');
+    const runLoad = () => {
+      startTransition(() => {
+        preserveRecoverableSnapshot(project);
+        commitProject(exampleProjects[exampleId] ?? exampleProject);
+        setPastProjects([]);
+        setFutureProjects([]);
+        setImportError('');
+        setFeatureSelectionMessage('');
+        setShowWorkbench(true);
+        setShowMenu(false);
+        setActiveStep('construct');
+        setInspectorFocus('junction');
+        setPrimerResultTab('overview');
+        setProtocolResultTab('overview');
+      });
+    };
+
+    requestProjectReplacement({
+      title: 'Replace current project?',
+      message: 'Loading a built-in example will replace the current project in the editor. The current project will remain available as a recoverable snapshot.',
+      confirmLabel: 'Load built-in example',
+      onConfirm: runLoad,
     });
   };
 
   const resetProject = () => {
+    requestProjectReplacement({
+      title: 'Clear current project?',
+      message: 'This removes the current project from the active editor. The previous project will remain available as a recoverable snapshot until another replacement occurs.',
+      confirmLabel: 'Clear project',
+      onConfirm: () => {
+        startTransition(() => {
+          preserveRecoverableSnapshot(project);
+          commitProject(emptyProject);
+          setPastProjects([]);
+          setFutureProjects([]);
+          setImportError('');
+          setFeatureSelectionMessage('');
+          setShowWorkbench(false);
+          setShowMenu(false);
+          setActiveStep('sequences');
+          setInspectorFocus('junction');
+          setSelectedPrimerName(null);
+        });
+      },
+    });
+  };
+
+  const restorePreviousProject = () => {
+    if (!recoverableProjectSnapshot) {
+      return;
+    }
+
     startTransition(() => {
-      commitProject(emptyProject);
-      setPastProjects([]);
-      setFutureProjects([]);
-      setImportError('');
-      setFeatureSelectionMessage('');
-      setShowWorkbench(false);
-      setActiveStep('sequences');
+      commitProject(recoverableProjectSnapshot);
+      setRecoverableProjectSnapshot(null);
+      setShowWorkbench(true);
+      setShowMenu(false);
+      setActiveStep('construct');
       setInspectorFocus('junction');
-      setSelectedPrimerName(null);
     });
   };
 
@@ -865,12 +987,27 @@ function App() {
         throw new Error('The selected file is not a FusionPCR Studio project JSON document.');
       }
 
-      startTransition(() => {
-        commitProject(normalized);
-        setImportError('');
-        setShowWorkbench(true);
-        setActiveStep('construct');
-      });
+      const applyImportedProject = () => {
+        startTransition(() => {
+          preserveRecoverableSnapshot(project);
+          commitProject(normalized);
+          setImportError('');
+          setShowWorkbench(true);
+          setShowMenu(false);
+          setActiveStep('construct');
+        });
+      };
+
+      if (isProjectNonEmpty(project)) {
+        setConfirmationState({
+          title: 'Replace current project?',
+          message: 'Importing a project JSON will replace the current project in the editor. The current project will remain available as a recoverable snapshot.',
+          confirmLabel: 'Import project',
+          onConfirm: applyImportedProject,
+        });
+      } else {
+        applyImportedProject();
+      }
     } catch (error) {
       setImportError(error instanceof Error ? error.message : 'Project import failed.');
     } finally {
@@ -910,62 +1047,79 @@ function App() {
             </div>
           </div>
 
-          <label className="topbar-project">
-            <span className="sr-only">Project name</span>
-            <input
-              aria-label="Project name"
-              className="text-input"
-              value={project.name}
-              onChange={(event) => updateProject('name', event.target.value)}
-            />
-          </label>
-
-          <div className="topbar-status">
-            <span className={`pill ${design.issues.length ? 'pill-alert' : design.warnings.length ? 'pill-watch' : 'pill-success'}`}>{saveStateLabel}</span>
-            <span className="pill pill-muted">{design.profile.label}</span>
-          </div>
-
           <div className="topbar-actions">
-            <button type="button" className="button button-secondary" onClick={undoProject} disabled={!pastProjects.length}>
-              Undo
-            </button>
-            <button type="button" className="button button-secondary" onClick={redoProject} disabled={!futureProjects.length}>
-              Redo
-            </button>
-            <label className="topbar-example">
-              <span className="sr-only">Example library</span>
-              <select aria-label="Example library" className="text-input" value={selectedExampleId} onChange={(event) => setSelectedExampleId(event.target.value as ExampleProjectId)}>
-                {exampleProjectOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className="button button-secondary" onClick={() => loadExample()}>
-              Load selected example
-            </button>
-            <button type="button" className="button button-secondary" onClick={handleImportClick}>
-              Import project
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={() => {
-                setShowWorkbench(true);
-                setActiveStep('export');
-              }}
-            >
-              Export
-            </button>
+            {!showWorkbench ? (
+              <button type="button" className="button button-secondary" onClick={handleImportClick}>
+                Open project
+              </button>
+            ) : null}
+            {showWorkbench ? (
+              <>
+                <label className="topbar-project">
+                  <span className="sr-only">Project name</span>
+                  <input
+                    aria-label="Project name"
+                    className="text-input"
+                    value={project.name}
+                    onChange={(event) => updateProject('name', event.target.value)}
+                  />
+                </label>
+                <div className="topbar-status">
+                  <span className={`pill ${persistenceState === 'failed' ? 'pill-alert' : persistenceState === 'saved' ? 'pill-success' : 'pill-watch'}`}>{saveStateLabel}</span>
+                  <span className={`pill ${workerError ? 'pill-alert' : calculationState === 'complete' && isDesignCurrent ? 'pill-success' : 'pill-watch'}`}>
+                    {workerError ? 'Calculation failed' : calculationState === 'complete' && isDesignCurrent ? 'Calculation complete' : 'Calculating'}
+                  </span>
+                </div>
+                <button type="button" className="button button-secondary" onClick={undoProject} disabled={!pastProjects.length}>
+                  Undo
+                </button>
+                <button type="button" className="button button-secondary" onClick={redoProject} disabled={!futureProjects.length}>
+                  Redo
+                </button>
+              </>
+            ) : null}
+            <div className="topbar-menu">
+              <button type="button" className="button button-secondary" aria-expanded={showMenu} onClick={() => setShowMenu((current) => !current)}>
+                Menu
+              </button>
+              {showMenu ? (
+                <div className="menu-panel panel" role="menu" aria-label="Project actions">
+                  <button type="button" className="button button-secondary" role="menuitem" onClick={handleImportClick}>
+                    Import project JSON
+                  </button>
+                  <button type="button" className="button button-secondary" role="menuitem" onClick={() => loadExample('exact-fusion')}>
+                    Load exact fusion example
+                  </button>
+                  <button type="button" className="button button-secondary" role="menuitem" onClick={() => loadExample('protein-fusion')}>
+                    Load protein fusion example
+                  </button>
+                  {recoverableProjectSnapshot ? (
+                    <button type="button" className="button button-secondary" role="menuitem" onClick={restorePreviousProject}>
+                      Restore previous project
+                    </button>
+                  ) : null}
+                  {showWorkbench ? (
+                    <button type="button" className="button button-secondary" role="menuitem" onClick={resetProject}>
+                      Clear project
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
 
         {showExperimentalNotice ? (
           <div className="notice-banner panel" role="status">
             <span>
-              Experimental-use warning: this 0.1.0-alpha.2 release is a local-first planning aid for two-fragment OE-PCR only. It does not validate wet-lab success, genome-scale specificity, or biological function.
+              Experimental alpha — independently review primers and protocols.
             </span>
+            <details className="notice-details">
+              <summary>Details</summary>
+              <p className="field-helper">
+                Primer ranking, structure review, specificity review, and protocol suggestions remain computational aids. Independently review every primer, reconstructed product, and protocol before experimental use.
+              </p>
+            </details>
             <button type="button" className="button button-secondary" onClick={() => setShowExperimentalNotice(false)}>
               Dismiss
             </button>
@@ -980,7 +1134,7 @@ function App() {
             <div className="empty-state-copy">
               <p className="eyebrow">FusionPCR Studio</p>
               <h1>Design primers and protocols for two-fragment overlap-extension PCR.</h1>
-              <p className="hero-text">Load two sequences or start from a validated example to enter the workbench.</p>
+              <p className="hero-text">Load two sequences or start from a built-in example to enter the workbench.</p>
             </div>
             <div className="empty-state-actions">
               <button
@@ -993,8 +1147,14 @@ function App() {
               >
                 Import sequences
               </button>
-              <button type="button" className="button button-secondary" onClick={() => loadExample()}>
-                Load example
+              <button type="button" className="button button-secondary" onClick={() => loadExample('exact-fusion')}>
+                Load exact fusion example
+              </button>
+              <button type="button" className="button button-secondary" onClick={() => loadExample('protein-fusion')}>
+                Load protein fusion example
+              </button>
+              <button type="button" className="button button-secondary" onClick={handleImportClick}>
+                Open project
               </button>
             </div>
           </section>
@@ -1019,10 +1179,9 @@ function App() {
                 <div className="workflow-step-list" role="tablist" aria-label="Design steps">
                   {([
                     ['sequences', 'Sequences', sequenceStepStatus],
-                    ['construct', 'Construct', constructStepStatus],
+                    ['construct', 'Junction', constructStepStatus],
                     ['primers', 'Primers', primerStepStatus],
-                    ['protocol', 'Protocol', protocolStepStatus],
-                    ['export', 'Export', exportStepStatus],
+                    ['protocol', 'Protocol & Export', protocolStepStatus],
                   ] as Array<[WorkbenchStep, string, { level: StepStatusLevel; text: string }]>).map(([step, label, status]) => (
                     <button
                       key={step}
@@ -1034,7 +1193,7 @@ function App() {
                         setShowSidebar(false);
                       }}
                     >
-                      <span className="workflow-step-index">{label === 'Sequences' ? 1 : label === 'Construct' ? 2 : label === 'Primers' ? 3 : label === 'Protocol' ? 4 : 5}</span>
+                      <span className="workflow-step-index">{label === 'Sequences' ? 1 : label === 'Junction' ? 2 : label === 'Primers' ? 3 : 4}</span>
                       <span className="workflow-step-copy">
                         <strong>{label}</strong>
                         <span className={`step-status step-status-${status.level}`}>{formatStepStatus(status.level, status.text)}</span>
@@ -1056,10 +1215,6 @@ function App() {
                     <span>Exact verification</span>
                     <strong>{design.finalProductVerified ? 'Pass' : 'Pending'}</strong>
                   </div>
-                  <div className="metric compact-metric">
-                    <span>Approximate quality</span>
-                    <strong>{design.qualityScore.toFixed(3)}</strong>
-                  </div>
                 </div>
 
                 <div className="sidebar-actions">
@@ -1078,7 +1233,7 @@ function App() {
                           <p className="eyebrow">Project setup</p>
                           <h2>Sequences and construct definition</h2>
                         </div>
-                        <span className="pill pill-muted">{exampleProjectOptions.find((option) => option.id === selectedExampleId)?.description}</span>
+                        <span className="pill pill-muted">{selectedPublicExampleDescription}</span>
                       </div>
 
                       <div className="field-grid">
@@ -1108,10 +1263,11 @@ function App() {
                           >
                             <option value="exact">Exact fusion</option>
                             <option value="protein-fusion">Protein fusion</option>
-                            <option value="insertion">Insertion</option>
-                            <option value="deletion">Deletion</option>
-                            <option value="substitution">Substitution</option>
-                            <option value="domain-swap">Domain swap</option>
+                            {!isPublicDesignMode(project.mode) ? (
+                              <option value={project.mode} disabled>
+                                Experimental mode ({project.mode})
+                              </option>
+                            ) : null}
                           </select>
                         </label>
                       </div>
@@ -1259,7 +1415,7 @@ function App() {
                       ) : null}
                     </section>
 
-                    {mutationMode ? (
+                    {mutationMode && !isPublicDesignMode(project.mode) ? (
                       <section className="panel workspace-section mutation-panel">
                         <div className="panel-header">
                           <div>
@@ -1689,7 +1845,7 @@ function App() {
                         </div>
                         <div className="panel-actions">
                           <span className="pill pill-muted">{getWorkflowStageLabel(selectedStage)}</span>
-                          <span className={`pill ${design.finalProductVerified ? 'pill-success' : 'pill-watch'}`}>{design.finalProductVerified ? 'Exact product verified' : 'Awaiting valid design'}</span>
+                          <span className={`pill ${design.finalProductVerified ? 'pill-success' : 'pill-watch'}`}>{design.finalProductVerified ? 'Sequence reconstruction verified.' : 'Calculation pending'}</span>
                         </div>
                       </div>
 
@@ -1834,7 +1990,6 @@ function App() {
                           <div className="metric-grid">
                             <div className="metric"><span>Primer count</span><strong>{design.primers.length}</strong></div>
                             <div className="metric"><span>Overlap sequence</span><strong>{design.overlapSequence.length} nt</strong></div>
-                            <div className="metric"><span>Approximate quality</span><strong>{design.qualityScore.toFixed(3)}</strong></div>
                             <div className="metric"><span>Unintended products</span><strong>{design.offTargetAmplicons.length}</strong></div>
                           </div>
                           <div className="primer-grid">
@@ -1990,8 +2145,8 @@ function App() {
                     <section className="panel workspace-section">
                       <div className="panel-header">
                         <div>
-                          <p className="eyebrow">Protocol</p>
-                          <h2>Reaction planning</h2>
+                          <p className="eyebrow">Protocol & Export</p>
+                          <h2>Reaction planning and deliverables</h2>
                         </div>
                         <span className="pill pill-muted">{project.protocolSettings.mixStrategy}</span>
                       </div>
@@ -2128,6 +2283,45 @@ function App() {
                           ))}
                         </div>
                       ) : null}
+
+                      <section className="panel workspace-section">
+                        <div className="panel-header">
+                          <div>
+                            <p className="eyebrow">Export</p>
+                            <h2>Public MVP artifacts</h2>
+                          </div>
+                          <span className={`pill ${hasExportableDesign ? 'pill-success' : 'pill-watch'}`}>{hasExportableDesign ? 'Export ready' : 'Awaiting runnable design'}</span>
+                        </div>
+
+                        <div className="export-grid">
+                          <button type="button" className="button button-primary" onClick={() => downloadText('fusionpcr-primers.csv', buildPrimerCsv(design), 'text/csv')} disabled={!hasExportableDesign}>Download oligo CSV</button>
+                          <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-primers.fasta', buildPrimerFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export primer FASTA</button>
+                          <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-final-construct.fasta', buildFinalConstructFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export final construct FASTA</button>
+                          <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-protocol.txt', buildProtocolText(design), 'text/plain')} disabled={!hasExportableDesign}>Export printable protocol</button>
+                          <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-project.json', buildProjectJson(project), 'application/json')} disabled={!hasExportableDesign}>Export project JSON</button>
+                        </div>
+
+                        <div className="workspace-two-column">
+                          <div className="status-block">
+                            <p className="status-title">Project model</p>
+                            <ul className="status-list">
+                              <li>Schema version: {design.project.schemaVersion}</li>
+                              <li>Engine version: {design.project.engineVersion}</li>
+                              <li>Revision: {project.revision}</li>
+                              <li>Project hash: {project.projectHash}</li>
+                            </ul>
+                          </div>
+                          <div className="status-block">
+                            <p className="status-title">Export readiness</p>
+                            <ul className="status-list">
+                              <li>{design.primers.length} primer(s) available</li>
+                              <li>{design.reactions.length} reaction plan entry(ies)</li>
+                              <li>Final product length: {design.finalProduct.length} bp</li>
+                              <li>Exact verification: {design.finalProductVerified ? 'pass' : 'pending'}</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </section>
                     </section>
                   </div>
                 ) : null}
@@ -2144,20 +2338,11 @@ function App() {
                       </div>
 
                       <div className="export-grid">
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-project.json', buildProjectJson(design.project), 'application/json')}>Export project JSON</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-primers.csv', buildPrimerCsv(design), 'text/csv')} disabled={!hasExportableDesign}>Export oligo-ordering CSV</button>
+                        <button type="button" className="button button-primary" onClick={() => downloadText('fusionpcr-primers.csv', buildPrimerCsv(design), 'text/csv')} disabled={!hasExportableDesign}>Download oligo CSV</button>
                         <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-primers.fasta', buildPrimerFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export primer FASTA</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-final-construct.fasta', buildFinalConstructFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export final FASTA</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-stage-products.fasta', buildStageProductFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export stage-product FASTA</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-construct.gb', buildAnnotatedGenbank(design), 'text/plain')} disabled={!hasExportableDesign}>Export annotated GenBank</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-protocol.txt', buildProtocolText(design), 'text/plain')} disabled={!hasExportableDesign}>Export protocol</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-pipetting-table.csv', buildPipettingTableCsv(design), 'text/csv')} disabled={!hasExportableDesign}>Export pipetting table</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-thermocycler-program.txt', buildThermocyclerProgram(design), 'text/plain')} disabled={!hasExportableDesign}>Export thermocycler program</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-junction-report.txt', buildJunctionReport(design), 'text/plain')} disabled={!hasExportableDesign}>Export junction report</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-validation-report.txt', buildValidationReport(design), 'text/plain')} disabled={!hasExportableDesign}>Export validation report</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-expected-gel.txt', buildExpectedGelDiagram(design), 'text/plain')} disabled={!hasExportableDesign}>Export expected gel</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-calculation-manifest.json', buildCalculationManifest(design), 'application/json')} disabled={!hasExportableDesign}>Export calculation manifest</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-primer-blast-handoff.txt', buildPrimerBlastPackage(design), 'text/plain')} disabled={!hasExportableDesign}>Export Primer-BLAST handoff</button>
+                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-final-construct.fasta', buildFinalConstructFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export final construct FASTA</button>
+                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-protocol.txt', buildProtocolText(design), 'text/plain')} disabled={!hasExportableDesign}>Export printable protocol</button>
+                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-project.json', buildProjectJson(project), 'application/json')} disabled={!hasExportableDesign}>Export project JSON</button>
                       </div>
 
                       <div className="workspace-two-column">
@@ -2201,7 +2386,7 @@ function App() {
                               : 'Junction 1'}
                     </h2>
                   </div>
-                  <span className={`pill ${design.issues.length ? 'pill-alert' : 'pill-success'}`}>{design.issues.length ? `${design.issues.length} issue(s)` : 'Design runnable'}</span>
+                  <span className={`pill ${design.issues.length ? 'pill-alert' : 'pill-success'}`}>{design.issues.length ? `${design.issues.length} issue(s)` : 'Calculation complete'}</span>
                 </div>
 
                 {inspectorFocus === 'junction' ? (
@@ -2280,7 +2465,26 @@ function App() {
                   </div>
                 ) : null}
 
-                {workerError ? <p className="status-note status-note-alert">{workerError}</p> : null}
+                {workerError ? (
+                  <div className="status-block">
+                    <p className="status-note status-note-alert">{workerError}</p>
+                    <div className="action-row">
+                      <button type="button" className="button button-secondary" onClick={retry}>
+                        Retry calculation
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {persistenceError ? (
+                  <div className="status-block">
+                    <p className="status-note status-note-alert">{persistenceError}</p>
+                    <div className="action-row">
+                      <button type="button" className="button button-secondary" onClick={retryPersistence}>
+                        Retry save
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 {importError ? <p className="status-note status-note-alert">{importError}</p> : null}
                 {design.issues.length ? (
                   <div className="status-block">
@@ -2339,6 +2543,18 @@ function App() {
             </section>
           </>
         )}
+        <ConfirmationDialog
+          open={confirmationState !== null}
+          title={confirmationState?.title ?? ''}
+          message={confirmationState?.message ?? ''}
+          confirmLabel={confirmationState?.confirmLabel ?? 'Confirm'}
+          onConfirm={() => {
+            const action = confirmationState;
+            setConfirmationState(null);
+            action?.onConfirm();
+          }}
+          onCancel={() => setConfirmationState(null)}
+        />
       </main>
     </div>
   );

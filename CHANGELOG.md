@@ -4,12 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-- Added a Rust workspace with `fusion-core` and `fusion-wasm`.
-- Added tested Rust-side sequence parsing, target construction, and protocol conversion helpers.
-- Added stage-aware construct review, mutation planning, explicit coding-change approvals, protocol recipes, and Primer-BLAST handoff support in the web app.
-- Expanded the export package with construct FASTA, stage-product FASTA, GenBank, pipetting, thermocycler, gel, junction, validation, and calculation-manifest outputs.
-- Added repository documentation for thermodynamic models, project JSON format, and polymerase profiles.
-- Added importable example projects plus starter `test-data/` and `validation/` directories.
+## 0.1.0-alpha.3
+
+- Added project revision and project-hash stamping, worker echo metadata, stale-result prevention, worker replacement, debounced calculation, and explicit retryable worker failures.
+- Added truthful debounced local persistence states, replacement confirmation flows, recoverable previous-project snapshots, and persisted dismissal of the experimental-use notice.
+- Reduced the public MVP surface to the supported built-in examples and five public exports, and promoted the protocol/export workflow around the current design gate.
 
 ## 0.1.0-alpha.2
 

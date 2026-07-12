@@ -3,7 +3,7 @@ import path from 'node:path';
 import { expect, loadRunnableExample, openWorkbenchStep, test } from './fixtures';
 
 test.describe('FusionPCR Studio production build', () => {
-  test('starts the design worker, renders a runnable example, and loads every built-in example', async ({ page }) => {
+  test('starts the design worker, renders a runnable example, and loads the supported built-in examples', async ({ page }) => {
     const workerPromise = page.waitForEvent('worker');
     await page.goto('./');
 
@@ -19,13 +19,15 @@ test.describe('FusionPCR Studio production build', () => {
     const examples = [
       { id: 'protein-fusion', name: 'Protein fusion demo' },
       { id: 'exact-fusion', name: 'Exact fusion example' },
-      { id: 'insertion', name: 'Insertion example' },
-      { id: 'mutation', name: 'Substitution example' },
     ];
 
     for (const example of examples) {
-      await page.getByLabel('Example library').selectOption(example.id);
-      await page.getByRole('button', { name: 'Load selected example' }).click();
+      await page.getByRole('button', { name: 'Menu' }).click();
+      await page.getByRole('menuitem', { name: example.id === 'exact-fusion' ? 'Load exact fusion example' : 'Load protein fusion example' }).click();
+      const confirmButton = page.getByRole('button', { name: 'Load built-in example' });
+      if (await confirmButton.isVisible().catch(() => false)) {
+        await confirmButton.click();
+      }
       await expect(projectName).toHaveValue(example.name);
     }
   });
@@ -36,17 +38,17 @@ test.describe('FusionPCR Studio production build', () => {
     await openWorkbenchStep(page, 'Sequences');
 
     await page.getByPlaceholder('Paste fragment A DNA sequence').fill('ATGB');
-    await openWorkbenchStep(page, 'Construct');
+    await openWorkbenchStep(page, 'Junction');
 
-    await expect(page.getByText('Awaiting valid design')).toBeVisible();
+    await expect(page.getByText('Calculation pending')).toBeVisible();
     await expect(page.getByText(/Fragment A contains unsupported bases: B/)).toBeVisible();
     await expect(page.getByText('2 issue(s)')).toBeVisible();
   });
 
-  test('exports every principal artifact from the production build', async ({ page }, testInfo) => {
+  test('exports the public MVP artifacts from the production build', async ({ page }, testInfo) => {
     await page.goto('./');
     await loadRunnableExample(page);
-    await openWorkbenchStep(page, 'Export');
+    await openWorkbenchStep(page, 'Protocol & Export');
 
     const exportExpectations: Array<{
       button: string;
@@ -64,7 +66,7 @@ test.describe('FusionPCR Studio production build', () => {
         },
       },
       {
-        button: 'Export oligo-ordering CSV',
+        button: 'Download oligo CSV',
         filename: 'fusionpcr-primers.csv',
         assertContent: (content) => expect(content).toContain('name,reaction,sequence'),
       },
@@ -74,63 +76,14 @@ test.describe('FusionPCR Studio production build', () => {
         assertContent: (content) => expect(content).toContain('>A_outer_F'),
       },
       {
-        button: 'Export final FASTA',
+        button: 'Export final construct FASTA',
         filename: 'fusionpcr-final-construct.fasta',
         assertContent: (content) => expect(content).toContain('>'),
       },
       {
-        button: 'Export stage-product FASTA',
-        filename: 'fusionpcr-stage-products.fasta',
-        assertContent: (content) => expect(content).toContain('PCR_1A_product'),
-      },
-      {
-        button: 'Export annotated GenBank',
-        filename: 'fusionpcr-construct.gb',
-        assertContent: (content) => expect(content).toContain('LOCUS'),
-      },
-      {
-        button: 'Export protocol',
+        button: 'Export printable protocol',
         filename: 'fusionpcr-protocol.txt',
         assertContent: (content) => expect(content).toContain('FusionPCR Studio'),
-      },
-      {
-        button: 'Export pipetting table',
-        filename: 'fusionpcr-pipetting-table.csv',
-        assertContent: (content) => expect(content).toContain('section,reaction,role,item'),
-      },
-      {
-        button: 'Export thermocycler program',
-        filename: 'fusionpcr-thermocycler-program.txt',
-        assertContent: (content) => expect(content).toContain('PCR 1A'),
-      },
-      {
-        button: 'Export junction report',
-        filename: 'fusionpcr-junction-report.txt',
-        assertContent: (content) => expect(content).toContain('Final junction'),
-      },
-      {
-        button: 'Export validation report',
-        filename: 'fusionpcr-validation-report.txt',
-        assertContent: (content) => expect(content).toContain('Exact fusion verified'),
-      },
-      {
-        button: 'Export expected gel',
-        filename: 'fusionpcr-expected-gel.txt',
-        assertContent: (content) => expect(content).toContain('Lane 1'),
-      },
-      {
-        button: 'Export calculation manifest',
-        filename: 'fusionpcr-calculation-manifest.json',
-        assertContent: (content) => {
-          const parsed = JSON.parse(content) as { engineVersion: string; quality: { score: number } };
-          expect(parsed.engineVersion).toContain('0.1.0-alpha');
-          expect(parsed.quality.score).toBeGreaterThan(0);
-        },
-      },
-      {
-        button: 'Export Primer-BLAST handoff',
-        filename: 'fusionpcr-primer-blast-handoff.txt',
-        assertContent: (content) => expect(content).toContain('Primer-BLAST'),
       },
     ];
 

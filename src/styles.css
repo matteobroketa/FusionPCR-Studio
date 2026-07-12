@@ -136,6 +136,7 @@ code,
 .topbar-actions {
   justify-content: flex-end;
   flex-wrap: wrap;
+  position: relative;
 }
 
 .topbar-status {
@@ -143,14 +144,34 @@ code,
   flex-wrap: wrap;
 }
 
+.topbar-menu {
+  position: relative;
+}
+
+.menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-2));
+  min-width: 220px;
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+  z-index: 20;
+}
+
 .notice-banner {
   padding: var(--space-3) var(--space-4);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: var(--space-3);
+  align-items: center;
   color: var(--warning);
   background: #fff9f0;
+}
+
+.notice-details summary {
+  cursor: pointer;
+  color: var(--text-secondary);
 }
 
 .empty-state {
@@ -218,6 +239,23 @@ code,
   border-color: var(--primary);
   background: var(--primary);
   color: #fff;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(11 20 18 / 0.48);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  z-index: 40;
+}
+
+.dialog {
+  width: min(520px, 100%);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
 }
 
 .button-primary:hover:not(:disabled) {

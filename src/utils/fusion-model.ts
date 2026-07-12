@@ -11,8 +11,8 @@ export type SourceFormat = 'manual' | 'plain' | 'fasta' | 'genbank' | 'project';
 export type SequenceTopology = 'linear' | 'circular';
 export type AnnealingRule = 'lower-primer-plus-3c' | 'lower-primer-min-60c';
 
-export const PROJECT_SCHEMA_VERSION = '0.1.0-alpha.2';
-export const ENGINE_VERSION = '0.1.0-alpha.2';
+export const PROJECT_SCHEMA_VERSION = '0.1.0-alpha.3';
+export const ENGINE_VERSION = '0.1.0-alpha.3';
 export const MIN_BODY_LENGTH = 12;
 export const MAX_BODY_LENGTH = 40;
 
@@ -63,6 +63,8 @@ export type GenomicSpecificitySettings = {
 export type FusionProjectInput = {
   schemaVersion: string;
   engineVersion: string;
+  revision: number;
+  projectHash: string;
   name: string;
   polymeraseId: PolymeraseId;
   mode: DesignMode;

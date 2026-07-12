@@ -5,33 +5,33 @@ Status values are intentionally conservative:
 - `Done`: implemented and covered by code-level or workflow-level validation in this repository
 - `Partial`: implemented only in part, implemented heuristically, or missing the requested validation depth
 - `Not started`: no material implementation
-- `Deferred`: intentionally left out of the current `0.1.0-alpha.2` two-fragment validation release
+- `Deferred`: intentionally left out of the current `0.1.0-alpha.3` two-fragment MVP hardening release
 
-## Alpha.2 Validation Snapshot
+## Alpha.3 Hardening Snapshot
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| Production-build browser coverage | Done | [tests/e2e/app.spec.ts](tests/e2e/app.spec.ts), [tests/e2e/deployed-smoke.spec.ts](tests/e2e/deployed-smoke.spec.ts), [tests/e2e/fixtures.ts](tests/e2e/fixtures.ts), [playwright.config.ts](playwright.config.ts) |
+| Production-build browser coverage | Partial | [tests/e2e/app.spec.ts](tests/e2e/app.spec.ts), [tests/e2e/deployed-smoke.spec.ts](tests/e2e/deployed-smoke.spec.ts), [tests/e2e/fixtures.ts](tests/e2e/fixtures.ts), [playwright.config.ts](playwright.config.ts) |
 | Browser failure gating | Done | [tests/e2e/fixtures.ts](tests/e2e/fixtures.ts), [.github/workflows/ci.yml](.github/workflows/ci.yml), [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) |
 | Tm scientific fixtures | Done | [test-data/reference/tm-reference.json](test-data/reference/tm-reference.json), [scripts/generate-tm-reference.py](scripts/generate-tm-reference.py), [src/utils/thermodynamics.test.ts](src/utils/thermodynamics.test.ts) |
 | OE-PCR reconstruction fixtures | Done | [test-data/reference/product-reconstruction.json](test-data/reference/product-reconstruction.json), [src/utils/fusion.test.ts](src/utils/fusion.test.ts) |
 | TypeScript versus Rust parity | Done | [src/utils/parity.test.ts](src/utils/parity.test.ts), [crates/fusion-core/src/bin/parity-cli.rs](crates/fusion-core/src/bin/parity-cli.rs), [METHODS.md](METHODS.md) |
-| Remaining scientific gaps documented | Done | [VALIDATION.md](VALIDATION.md), [LIMITATIONS.md](LIMITATIONS.md), [src/App.tsx](src/App.tsx), [src/utils/export.ts](src/utils/export.ts) |
+| Remaining scientific gaps documented | Partial | [VALIDATION.md](VALIDATION.md), [LIMITATIONS.md](LIMITATIONS.md), [src/App.tsx](src/App.tsx), [src/utils/export.ts](src/utils/export.ts) |
 
 Current validated fixture counts:
 
 - Tm reference fixtures: `32`
 - OE-PCR reconstruction fixtures: `12`
-- Built-in examples exercised in Playwright: `4`
-- Principal exports exercised in Playwright: `14`
+- Public built-in examples exercised in Playwright: `2`
+- Public exports exercised in Playwright: `5`
 
 Current browser-test coverage:
 
 - worker startup from the production Vite build
-- loading all four built-in examples
+- loading the two supported built-in examples
 - primer generation visibility and exact final-product verification
 - invalid-input error rendering
-- all 14 principal exports
+- all 5 public MVP exports
 - post-deployment smoke testing against the public GitHub Pages URL
 
 Current scientific gaps that keep broader buildplan areas below `Done`:
@@ -41,6 +41,7 @@ Current scientific gaps that keep broader buildplan areas below `Done`:
 - Design quality scores remain heuristic approximations rather than experimentally calibrated success probabilities.
 - Specificity remains a project-local screen plus external Primer-BLAST handoff, not a validated genome-scale search service.
 - No wet-lab outcome dataset is yet included.
+- The visual-regression suite still requires manual baseline review before it can be treated as a passing alpha.3 gate.
 
 ## Acceptance Criteria Audit
 
@@ -56,7 +57,7 @@ Current scientific gaps that keep broader buildplan areas below `Done`:
 | 8 | Memoize or move `buildFusionDesign` into a Web Worker | Done | [src/hooks/useFusionDesign.ts#L19-L72](src/hooks/useFusionDesign.ts#L19-L72), [src/workers/design.worker.ts#L1-L19](src/workers/design.worker.ts#L1-L19), [src/App.tsx#L133](src/App.tsx#L133) | [src/App.test.tsx#L30-L139](src/App.test.tsx#L30-L139), `npm run build` | Ordinary project edits no longer call `buildFusionDesign` directly from `App.tsx`. |
 | 9 | Split `App.tsx` and `fusion.ts` into maintainable modules without changing functionality | Done | [src/components/designPanels.tsx#L1-L190](src/components/designPanels.tsx#L1-L190), [src/utils/project.ts#L171-L257](src/utils/project.ts#L171-L257), [src/utils/fusion-model.ts#L1-L381](src/utils/fusion-model.ts#L1-L381), [src/utils/fusion-sequence.ts#L1-L79](src/utils/fusion-sequence.ts#L1-L79), [src/utils/fusion-protein.ts#L1-L129](src/utils/fusion-protein.ts#L1-L129) | [src/App.test.tsx#L30-L139](src/App.test.tsx#L30-L139), [src/utils/fusion.test.ts#L1-L354](src/utils/fusion.test.ts#L1-L354) | `App.tsx` now delegates UI panels, project normalization, and design execution; `fusion.ts` now delegates data model, sequence helpers, and protein-specific logic. |
 | 10 | Remove external font requests | Done | [src/styles.css#L2-L2](src/styles.css#L2-L2), [src/styles.css#L90-L90](src/styles.css#L90-L90), [src/styles.css#L286-L286](src/styles.css#L286-L286) | [scripts/smoke-pages.mjs#L14-L15](scripts/smoke-pages.mjs#L14-L15) | The build now uses local font stacks only. |
-| 11 | Unify application, engine, crate, and citation versions as `0.1.0-alpha.2` | Done | [package.json#L3](package.json#L3), [Cargo.toml#L9](Cargo.toml#L9), [crates/fusion-core/Cargo.toml#L3](crates/fusion-core/Cargo.toml#L3), [crates/fusion-wasm/Cargo.toml#L3](crates/fusion-wasm/Cargo.toml#L3), [CITATION.cff#L6](CITATION.cff#L6), [src/utils/fusion-model.ts#L14-L15](src/utils/fusion-model.ts#L14-L15) | `npm run build`, `cargo test --workspace` | Lockfiles and release-facing metadata were updated to the same alpha.2 identifier. |
+| 11 | Unify application, engine, crate, and citation versions as `0.1.0-alpha.3` | Done | [package.json#L3](package.json#L3), [Cargo.toml#L9](Cargo.toml#L9), [crates/fusion-core/Cargo.toml#L3](crates/fusion-core/Cargo.toml#L3), [crates/fusion-wasm/Cargo.toml#L3](crates/fusion-wasm/Cargo.toml#L3), [CITATION.cff#L6](CITATION.cff#L6), [src/utils/fusion-model.ts#L14-L15](src/utils/fusion-model.ts#L14-L15) | `npm run build`, `cargo test --workspace` | Lockfiles and release-facing metadata are now aligned to the alpha.3 identifier. |
 | 12 | Add a visible experimental-use warning | Done | [src/App.tsx#L813-L813](src/App.tsx#L813-L813) | [src/App.test.tsx#L30-L139](src/App.test.tsx#L30-L139), manual UI verification via `npm run build` | The warning is rendered in the primary hero section. |
 | 13 | Add reference fixtures for Tm and product reconstruction | Done | [test-data/reference/tm-reference.json](test-data/reference/tm-reference.json), [test-data/reference/product-reconstruction.json](test-data/reference/product-reconstruction.json), [scripts/generate-tm-reference.py](scripts/generate-tm-reference.py) | [src/utils/thermodynamics.test.ts](src/utils/thermodynamics.test.ts), [src/utils/fusion.test.ts](src/utils/fusion.test.ts) | The repository now carries `32` curated Tm fixtures and `12` curated OE-PCR reconstruction fixtures with explicit blocking cases. |
 | 14 | Produce `BUILDPLAN_STATUS.md` with honest requirement status and evidence links | Done | [BUILDPLAN_STATUS.md](BUILDPLAN_STATUS.md) | This file | Statuses below are intentionally conservative. |

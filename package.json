@@ -1,6 +1,6 @@
 {
   "name": "fusionpcr-studio",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "private": true,
   "description": "Local-first PCR primer inspection and amplicon estimation studio.",
   "scripts": {
@@ -13,7 +13,9 @@
     "smoke:pages:dist": "node scripts/smoke-pages.mjs",
     "test:rust": "cargo test --workspace",
     "test": "vitest run",
-    "test:e2e": "npm run build && playwright test",
+    "test:e2e": "npm run test:e2e:functional",
+    "test:e2e:functional": "npm run build && playwright test tests/e2e/app.spec.ts tests/e2e/deployed-smoke.spec.ts",
+    "test:e2e:visual": "npm run build && playwright test tests/e2e/visual.spec.ts",
     "test:e2e:pages": "playwright test tests/e2e/deployed-smoke.spec.ts",
     "test:watch": "vitest",
     "verify": "npm run test && npm run test:e2e && npm run smoke:pages:dist && cargo test --workspace"

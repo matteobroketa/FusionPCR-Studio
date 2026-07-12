@@ -19,10 +19,9 @@ async function gotoApp(page: Page) {
   await expect(page.getByText('FusionPCR Studio').first()).toBeVisible();
 }
 
-async function loadExample(page: Page, exampleId: 'protein-fusion' | 'exact-fusion' | 'insertion' | 'mutation') {
-  await page.getByLabel('Example library').selectOption(exampleId);
-  await page.getByRole('button', { name: 'Load selected example' }).click();
-  await expect(page.getByText('Exact product verified')).toBeVisible();
+async function loadExample(page: Page, exampleId: 'protein-fusion' | 'exact-fusion') {
+  await page.getByRole('button', { name: exampleId === 'exact-fusion' ? 'Load exact fusion example' : 'Load protein fusion example' }).click();
+  await expect(page.getByText('Sequence reconstruction verified.')).toBeVisible();
 }
 
 for (const viewport of viewports) {
@@ -63,7 +62,7 @@ for (const viewport of viewports) {
       await loadExample(page, 'protein-fusion');
       await openWorkbenchStep(page, 'Sequences');
       await page.getByPlaceholder('Paste fragment A DNA sequence').fill('ATGB');
-      await openWorkbenchStep(page, 'Construct');
+      await openWorkbenchStep(page, 'Junction');
       const inspectorToggle = page.getByRole('button', { name: 'Show inspector' });
       if (await inspectorToggle.isVisible().catch(() => false)) {
         await inspectorToggle.click();
@@ -76,7 +75,7 @@ for (const viewport of viewports) {
     test('protocol review', async ({ page }) => {
       await gotoApp(page);
       await loadExample(page, 'protein-fusion');
-      await openWorkbenchStep(page, 'Protocol');
+      await openWorkbenchStep(page, 'Protocol & Export');
       await page.getByRole('button', { name: 'Reaction setup' }).click();
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`protocol-review-${viewport.width}x${viewport.height}.png`, screenshotOptions);

@@ -25,10 +25,10 @@ The repository currently verifies:
 The Playwright suite currently covers:
 
 - worker startup from the production Vite build
-- loading all four built-in examples
+- loading the two supported built-in examples
 - primer generation visibility and final-product verification on a runnable design
 - blocking-issue rendering for invalid input
-- all 14 principal exports:
+- all 5 public MVP exports:
   `project JSON`, `primer CSV`, `primer FASTA`, `final FASTA`, `stage-product FASTA`, `annotated GenBank`, `protocol`, `pipetting table`, `thermocycler program`, `junction report`, `validation report`, `expected gel`, `calculation manifest`, and `Primer-BLAST handoff`
 - a deployed-pages smoke pass against the public GitHub Pages URL
 

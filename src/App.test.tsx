@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
@@ -20,9 +20,26 @@ async function enterSequenceWorkbench(user: ReturnType<typeof userEvent.setup>) 
   await user.click(screen.getByRole('button', { name: 'Import sequences' }));
 }
 
-async function loadExampleProject(user: ReturnType<typeof userEvent.setup>, exampleId = 'protein-fusion') {
-  await user.selectOptions(screen.getByLabelText('Example library'), exampleId);
-  await user.click(screen.getByRole('button', { name: 'Load selected example' }));
+async function loadExampleProject(user: ReturnType<typeof userEvent.setup>, exampleId: 'protein-fusion' | 'exact-fusion' = 'protein-fusion') {
+  const expectedNames: Record<string, string> = {
+    'protein-fusion': 'Protein fusion demo',
+    'exact-fusion': 'Exact fusion example',
+  };
+  const buttonName = exampleId === 'exact-fusion' ? 'Load exact fusion example' : 'Load protein fusion example';
+  const exampleButton = screen.queryByRole('button', { name: buttonName });
+  if (exampleButton) {
+    await user.click(exampleButton);
+  } else {
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
+    await user.click(screen.getByRole('menuitem', { name: buttonName }));
+  }
+  const confirmButton = screen.queryByRole('button', { name: 'Load built-in example' });
+  if (confirmButton) {
+    await user.click(confirmButton);
+  }
+  await waitFor(() => {
+    expect(screen.getByLabelText('Project name')).toHaveValue(expectedNames[exampleId]);
+  });
 }
 
 describe('App browser flows', () => {
@@ -36,16 +53,19 @@ describe('App browser flows', () => {
     vi.unstubAllGlobals();
   });
 
-  it('loads different built-in example projects from the example library', async () => {
+  it('loads the supported built-in examples from the public MVP surface', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await loadExampleProject(user, 'insertion');
+    await loadExampleProject(user, 'exact-fusion');
     await user.click(screen.getByRole('button', { name: 'Sequences step' }));
 
-    expect(screen.getByLabelText('Design mode')).toHaveValue('insertion');
-    expect(screen.getByRole('heading', { name: 'Recipient-to-flank workflow' })).toBeInTheDocument();
-    expect(screen.getByText('Left and right flanks plus an inserted payload sequence.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Design mode')).toHaveValue('exact');
+    expect(screen.getByPlaceholderText('Optional inserted sequence between the selected fragment ranges')).toBeInTheDocument();
+
+    await loadExampleProject(user, 'protein-fusion');
+    await user.click(screen.getByRole('button', { name: 'Sequences step' }));
+    expect(screen.getByLabelText('Design mode')).toHaveValue('protein-fusion');
   });
 
   it('parses sequence import text and applies the first two records to the project', async () => {
@@ -71,26 +91,28 @@ describe('App browser flows', () => {
     expect(screen.getByDisplayValue('Example_B')).toBeInTheDocument();
   });
 
-  it('applies the mutation planner workflow to the current project', async () => {
+  it('confirms replacement and restores the previous project snapshot', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await loadExampleProject(user, 'insertion');
-    await user.click(screen.getByRole('button', { name: 'Sequences step' }));
+    await loadExampleProject(user, 'exact-fusion');
 
-    fireEvent.change(screen.getByLabelText('Mutation payload'), { target: { value: 'ATGC' } });
-    fireEvent.change(screen.getByLabelText('Insertion coordinate'), { target: { value: '5' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply mutation workflow' }));
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Load protein fusion example' }));
 
-    await user.click(screen.getByRole('button', { name: 'Sequences step' }));
-    expect((screen.getByLabelText('Project notes') as HTMLTextAreaElement).value).toContain('Insert 4 bp at coordinate 5');
-    expect(screen.getByPlaceholderText('Optional inserted sequence between the selected fragment ranges')).toHaveValue('ATGC');
+    expect(screen.getByRole('heading', { name: 'Replace current project?' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Load built-in example' }));
+    await waitFor(() => expect(screen.getByLabelText('Project name')).toHaveValue('Protein fusion demo'));
+
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Restore previous project' }));
+    await waitFor(() => expect(screen.getByLabelText('Project name')).toHaveValue('Exact fusion example'));
   });
 
   it('pins a compare snapshot and keeps current and baseline values side by side after edits', async () => {
     const user = userEvent.setup();
     render(<App />);
     await loadExampleProject(user);
-    await user.click(screen.getByRole('button', { name: 'Construct step' }));
+    await user.click(screen.getByRole('button', { name: 'Junction step' }));
     await user.click(screen.getByText('Advanced settings'));
 
     await user.click(screen.getByRole('button', { name: 'Pin current design' }));
@@ -101,35 +123,57 @@ describe('App browser flows', () => {
       target: { value: 'GGTGGT' },
     });
 
-    await user.click(screen.getByRole('button', { name: 'Construct step' }));
+    await user.click(screen.getByRole('button', { name: 'Junction step' }));
     await user.click(screen.getByText('Advanced settings'));
     const totalOligoRow = screen
       .getAllByRole('row')
       .find((row) => within(row).queryByText('Total oligo nt'));
 
     expect(totalOligoRow).toBeDefined();
-    const cells = within(totalOligoRow as HTMLElement).getAllByRole('cell');
-    expect(cells[1].textContent).not.toBe(cells[2].textContent);
+    await waitFor(() => {
+      const cells = within(totalOligoRow as HTMLElement).getAllByRole('cell');
+      expect(cells[1].textContent).not.toBe(cells[2].textContent);
+    });
   });
 
-  it('exports a validation report through the browser download path', async () => {
+  it('enables export actions for a current clean design', async () => {
     const user = userEvent.setup();
-    const { createObjectURL, revokeObjectURL, clickSpy } = installDownloadSpies();
+    render(<App />);
+    await loadExampleProject(user, 'exact-fusion');
+    await user.click(screen.getByRole('button', { name: 'Protocol & Export step' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Download oligo CSV' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Export project JSON' })).toBeEnabled();
+    });
+  });
+
+  it('prevents exporting a stale primer set immediately after a sequence edit', async () => {
+    const user = userEvent.setup();
+    const { clickSpy } = installDownloadSpies();
     render(<App />);
     await loadExampleProject(user);
-    await user.click(screen.getByRole('button', { name: 'Export step' }));
 
-    await user.click(screen.getByRole('button', { name: 'Export validation report' }));
+    await user.click(screen.getByRole('button', { name: 'Sequences step' }));
+    fireEvent.change(screen.getByPlaceholderText('Optional inserted sequence between the selected fragment ranges'), {
+      target: { value: 'GGTGGT' },
+    });
 
-    expect(createObjectURL).toHaveBeenCalledTimes(1);
-    expect(clickSpy).toHaveBeenCalledTimes(1);
-    expect(revokeObjectURL).toHaveBeenCalledWith('blob:test');
+    await user.click(screen.getByRole('button', { name: 'Protocol & Export step' }));
+
+    const exportButton = screen.getByRole('button', { name: 'Download oligo CSV' });
+    expect(exportButton).toBeDisabled();
+    await user.click(exportButton);
+    expect(clickSpy).not.toHaveBeenCalled();
   });
 
   it('reloads the saved project state from localStorage on remount', async () => {
+    const user = userEvent.setup();
     const firstRender = render(<App />);
+    await loadExampleProject(user, 'exact-fusion');
 
     fireEvent.change(screen.getByLabelText('Project name'), { target: { value: 'Persisted browser project' } });
+    await waitFor(() => expect(window.localStorage.getItem('fusionpcr-studio-project')).toContain('Persisted browser project'));
 
     firstRender.unmount();
     render(<App />);

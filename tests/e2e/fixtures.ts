@@ -48,16 +48,16 @@ export const test = base.extend<{ browserAudit: BrowserAudit }>({
 export { expect };
 
 export async function waitForDesignReady(page: Page) {
-  await expect(page.getByText('Exact product verified')).toBeVisible();
-  await expect(page.getByText('Experimental-use warning:', { exact: false })).toBeVisible();
+  await expect(page.getByText('Sequence reconstruction verified.')).toBeVisible();
+  await expect(page.getByText('Experimental alpha — independently review primers and protocols.')).toBeVisible();
 }
 
 export async function loadRunnableExample(page: Page) {
-  await page.getByRole('button', { name: 'Load selected example' }).click();
+  await page.getByRole('button', { name: 'Load protein fusion example' }).click();
   await waitForDesignReady(page);
 }
 
-export async function openWorkbenchStep(page: Page, label: 'Sequences' | 'Construct' | 'Primers' | 'Protocol' | 'Export') {
+export async function openWorkbenchStep(page: Page, label: 'Sequences' | 'Junction' | 'Primers' | 'Protocol & Export') {
   const stepButton = page.getByRole('button', { name: `${label} step` });
   if (!(await stepButton.isVisible().catch(() => false))) {
     const toggle = page.getByRole('button', { name: 'Show steps' });

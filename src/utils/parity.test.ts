@@ -111,6 +111,8 @@ function runRustParity(requests: ParityRequest[]): ParityResponse[] {
 const baseProject = {
   schemaVersion: PROJECT_SCHEMA_VERSION,
   engineVersion: ENGINE_VERSION,
+  revision: 1,
+  projectHash: 'parity-test-project',
   createdAt: '2026-07-11T00:00:00.000Z',
   modifiedAt: '2026-07-11T00:00:00.000Z',
   mode: 'exact' as const,

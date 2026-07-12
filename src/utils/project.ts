@@ -24,6 +24,72 @@ import type { EditorLocks } from './editor';
 import type { ProtocolSettings } from './protocol';
 import type { ThermodynamicConditions } from './thermodynamics';
 
+function stableSerialize(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right));
+  return `{${entries.map(([key, entryValue]) => `${JSON.stringify(key)}:${stableSerialize(entryValue)}`).join(',')}}`;
+}
+
+function calculationFingerprint(project: FusionProjectInput) {
+  return {
+    schemaVersion: project.schemaVersion,
+    engineVersion: project.engineVersion,
+    polymeraseId: project.polymeraseId,
+    mode: project.mode,
+    insertSequence: project.insertSequence,
+    coding: project.coding,
+    reactionConditions: project.reactionConditions,
+    protocolSettings: project.protocolSettings,
+    changeApprovals: project.changeApprovals,
+    fragmentA: project.fragmentA,
+    fragmentB: project.fragmentB,
+  };
+}
+
+function fnv1aHash(text: string) {
+  let hash = 2166136261;
+
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return `proj-${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+export function buildProjectHash(project: FusionProjectInput): string {
+  return fnv1aHash(stableSerialize(calculationFingerprint(project)));
+}
+
+export function stampProjectMetadata(
+  project: FusionProjectInput,
+  previousProject?: FusionProjectInput,
+  modifiedAt = new Date().toISOString(),
+): FusionProjectInput {
+  const projectHash = buildProjectHash(project);
+  const previousHash = previousProject?.projectHash ?? (previousProject ? buildProjectHash(previousProject) : null);
+  const revision =
+    previousProject == null
+      ? Math.max(1, Number.isFinite(project.revision) ? Math.floor(project.revision) : 1)
+      : projectHash === previousHash
+        ? previousProject.revision
+        : Math.max(1, previousProject.revision + 1);
+
+  return {
+    ...project,
+    revision,
+    projectHash,
+    modifiedAt,
+  };
+}
+
 function isFragmentInput(value: unknown): value is FragmentInput {
   if (!value || typeof value !== 'object') {
     return false;
@@ -211,6 +277,8 @@ export function normalizeImportedProject(value: unknown): FusionProjectInput | n
   return {
     schemaVersion: typeof candidate.schemaVersion === 'string' ? candidate.schemaVersion : PROJECT_SCHEMA_VERSION,
     engineVersion: typeof candidate.engineVersion === 'string' ? candidate.engineVersion : ENGINE_VERSION,
+    revision: typeof candidate.revision === 'number' && Number.isFinite(candidate.revision) ? Math.max(1, Math.floor(candidate.revision)) : 1,
+    projectHash: typeof candidate.projectHash === 'string' ? candidate.projectHash : '',
     name: candidate.name as string,
     polymeraseId: candidate.polymeraseId as FusionProjectInput['polymeraseId'],
     mode: (typeof candidate.mode === 'string' ? candidate.mode : 'exact') as DesignMode,
@@ -241,7 +309,8 @@ export function loadInitialProject(storageKey: string, fallbackProject: FusionPr
 
   try {
     const parsed = JSON.parse(stored) as unknown;
-    return normalizeImportedProject(parsed) ?? fallbackProject;
+    const normalized = normalizeImportedProject(parsed);
+    return normalized ? stampProjectMetadata(normalized, undefined, normalized.modifiedAt) : fallbackProject;
   } catch {
     return fallbackProject;
   }

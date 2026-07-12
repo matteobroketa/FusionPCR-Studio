@@ -997,6 +997,8 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
     ...projectInput,
     schemaVersion: projectInput.schemaVersion || PROJECT_SCHEMA_VERSION,
     engineVersion: ENGINE_VERSION,
+    revision: Math.max(1, Number.isFinite(projectInput.revision) ? Math.floor(projectInput.revision) : 1),
+    projectHash: projectInput.projectHash,
     insertSequence,
     reactionConditions,
     protocolSettings,
@@ -1014,7 +1016,7 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
       start: rangeB.start,
       end: rangeB.end,
     },
-    modifiedAt: new Date().toISOString(),
+    modifiedAt: projectInput.modifiedAt,
   };
 
   if (issues.length) {
@@ -1309,6 +1311,85 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
     sequenceChangeProposals,
     issues,
     warnings,
+  };
+}
+
+export function createPlaceholderFusionDesign(projectInput: FusionProjectInput): FusionDesign {
+  const profile = polymeraseProfiles[projectInput.polymeraseId] ?? polymeraseProfiles.q5;
+  const reactionConditions = normalizeReactionConditions(projectInput.reactionConditions);
+  const protocolSettings = normalizeProtocolConfig(projectInput.protocolSettings);
+  const editorLocks = normalizeEditorLocks(projectInput.editorLocks);
+  const changeApprovals = normalizeChangeApprovals(projectInput.changeApprovals);
+  const insertSequence = normalizeSequence(projectInput.insertSequence);
+  const normalizedA = normalizeSequence(projectInput.fragmentA.sequence);
+  const normalizedB = normalizeSequence(projectInput.fragmentB.sequence);
+  const rangeA = clampRange(normalizedA.length, projectInput.fragmentA.topology, projectInput.fragmentA.start, projectInput.fragmentA.end);
+  const rangeB = clampRange(normalizedB.length, projectInput.fragmentB.topology, projectInput.fragmentB.start, projectInput.fragmentB.end);
+  const selectedA = selectRange(normalizedA, rangeA);
+  const selectedB = selectRange(normalizedB, rangeB);
+  const normalizedProject: FusionProjectInput = {
+    ...projectInput,
+    schemaVersion: projectInput.schemaVersion || PROJECT_SCHEMA_VERSION,
+    engineVersion: ENGINE_VERSION,
+    revision: Math.max(1, Number.isFinite(projectInput.revision) ? Math.floor(projectInput.revision) : 1),
+    projectHash: projectInput.projectHash,
+    insertSequence,
+    reactionConditions,
+    protocolSettings,
+    editorLocks,
+    changeApprovals,
+    fragmentA: {
+      ...projectInput.fragmentA,
+      sequence: normalizedA,
+      start: rangeA.start,
+      end: rangeA.end,
+    },
+    fragmentB: {
+      ...projectInput.fragmentB,
+      sequence: normalizedB,
+      start: rangeB.start,
+      end: rangeB.end,
+    },
+    modifiedAt: projectInput.modifiedAt,
+  };
+  const targetSequence = `${selectedA}${insertSequence}${selectedB}`;
+
+  return {
+    project: normalizedProject,
+    profile,
+    selectedA,
+    selectedB,
+    effectiveSelectedA: selectedA,
+    effectiveSelectedB: selectedB,
+    insertSequence,
+    overlapSequence: '',
+    targetSequence,
+    stageAProduct: '',
+    stageBProduct: '',
+    finalProduct: '',
+    finalProductVerified: false,
+    primers: [],
+    reactions: [],
+    proteinValidation: null,
+    specificityTemplates: [],
+    intendedAmplicons: [],
+    offTargetAmplicons: [],
+    primerPairInteractions: [],
+    protocolPlan: emptyProtocolPlan(),
+    qualityScore: 0,
+    qualityBreakdown: {
+      tmBalance: 0,
+      bodyFit: 0,
+      overlap: 0,
+      structure: 0,
+      specificity: 0,
+      synthesis: 0,
+      total: 0,
+    },
+    alternativeDesigns: [],
+    sequenceChangeProposals: [],
+    issues: [],
+    warnings: [],
   };
 }
 
