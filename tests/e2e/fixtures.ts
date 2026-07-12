@@ -12,7 +12,7 @@ async function assertNoDisplayedNonFiniteValues(page: Page) {
 }
 
 export const test = base.extend<{ browserAudit: BrowserAudit }>({
-  browserAudit: async ({ page }, use) => {
+  browserAudit: [async ({ page }, use) => {
     const audit: BrowserAudit = {
       consoleErrors: [],
       pageErrors: [],
@@ -42,7 +42,7 @@ export const test = base.extend<{ browserAudit: BrowserAudit }>({
     expect(audit.consoleErrors, `Browser console errors:\n${audit.consoleErrors.join('\n')}`).toEqual([]);
     expect(audit.pageErrors, `Uncaught browser exceptions:\n${audit.pageErrors.join('\n')}`).toEqual([]);
     expect(audit.requestFailures, `Failed critical browser requests:\n${audit.requestFailures.join('\n')}`).toEqual([]);
-  },
+  }, { auto: true }],
 });
 
 export { expect };
@@ -50,4 +50,20 @@ export { expect };
 export async function waitForDesignReady(page: Page) {
   await expect(page.getByText('Exact product verified')).toBeVisible();
   await expect(page.getByText('Experimental-use warning:', { exact: false })).toBeVisible();
+}
+
+export async function loadRunnableExample(page: Page) {
+  await page.getByRole('button', { name: 'Load selected example' }).click();
+  await waitForDesignReady(page);
+}
+
+export async function openWorkbenchStep(page: Page, label: 'Sequences' | 'Construct' | 'Primers' | 'Protocol' | 'Export') {
+  const stepButton = page.getByRole('button', { name: `${label} step` });
+  if (!(await stepButton.isVisible().catch(() => false))) {
+    const toggle = page.getByRole('button', { name: 'Show steps' });
+    if (await toggle.isVisible().catch(() => false)) {
+      await toggle.click();
+    }
+  }
+  await stepButton.click();
 }

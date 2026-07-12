@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { expect, test, waitForDesignReady } from './fixtures';
+import { expect, loadRunnableExample, openWorkbenchStep, test } from './fixtures';
 
 test.describe('FusionPCR Studio production build', () => {
   test('starts the design worker, renders a runnable example, and loads every built-in example', async ({ page }) => {
@@ -10,9 +10,10 @@ test.describe('FusionPCR Studio production build', () => {
     const worker = await workerPromise;
     expect(worker.url()).toContain('design.worker');
 
-    await waitForDesignReady(page);
+    await loadRunnableExample(page);
+    await openWorkbenchStep(page, 'Primers');
     await expect(page.getByRole('heading', { name: 'A_outer_F', exact: true })).toBeVisible();
-    await expect(page.getByText('Pass', { exact: true })).toBeVisible();
+    await expect(page.getByText('Primer results')).toBeVisible();
 
     const projectName = page.getByLabel('Project name');
     const examples = [
@@ -24,25 +25,28 @@ test.describe('FusionPCR Studio production build', () => {
 
     for (const example of examples) {
       await page.getByLabel('Example library').selectOption(example.id);
-      await page.getByRole('button', { name: 'Load example' }).click();
+      await page.getByRole('button', { name: 'Load selected example' }).click();
       await expect(projectName).toHaveValue(example.name);
     }
   });
 
   test('renders blocking issues instead of a runnable design for invalid sequence input', async ({ page }) => {
     await page.goto('./');
-    await waitForDesignReady(page);
+    await loadRunnableExample(page);
+    await openWorkbenchStep(page, 'Sequences');
 
     await page.getByPlaceholder('Paste fragment A DNA sequence').fill('ATGB');
+    await openWorkbenchStep(page, 'Construct');
 
     await expect(page.getByText('Awaiting valid design')).toBeVisible();
     await expect(page.getByText(/Fragment A contains unsupported bases: B/)).toBeVisible();
-    await expect(page.getByText(/issue\(s\)/)).toBeVisible();
+    await expect(page.getByText('2 issue(s)')).toBeVisible();
   });
 
   test('exports every principal artifact from the production build', async ({ page }, testInfo) => {
     await page.goto('./');
-    await waitForDesignReady(page);
+    await loadRunnableExample(page);
+    await openWorkbenchStep(page, 'Export');
 
     const exportExpectations: Array<{
       button: string;

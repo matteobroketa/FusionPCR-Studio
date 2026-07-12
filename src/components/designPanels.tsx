@@ -75,11 +75,15 @@ export function SequencePreview({
 
 export function PrimerCard({
   primer,
+  selected = false,
+  onSelect,
 }: {
   primer: PrimerDesign;
+  selected?: boolean;
+  onSelect?: (() => void) | undefined;
 }) {
   return (
-    <article className="primer-card">
+    <article className={`primer-card ${selected ? 'object-selected' : ''}`}>
       <div className="primer-card-header">
         <div>
           <h3>{primer.name}</h3>
@@ -89,6 +93,12 @@ export function PrimerCard({
           {primer.structure.risk}
         </span>
       </div>
+
+      {onSelect ? (
+        <button type="button" className="object-select-button" onClick={onSelect} aria-pressed={selected}>
+          Inspect primer
+        </button>
+      ) : null}
 
       <code className="primer-sequence">
         {primer.tail ? <span className="primer-tail">{primer.tail}</span> : null}
@@ -173,16 +183,25 @@ export function PrimerCard({
 
 export function ReactionCard({
   reaction,
+  selected = false,
+  onSelect,
 }: {
   reaction: ReactionPlan;
+  selected?: boolean;
+  onSelect?: (() => void) | undefined;
 }) {
   return (
-    <article className="reaction-card">
+    <article className={`reaction-card ${selected ? 'object-selected' : ''}`}>
       <div className="panel-header">
         <div>
           <p className="eyebrow">{reaction.name}</p>
           <h3>{reaction.primerNames.join(' + ')}</h3>
         </div>
+        {onSelect ? (
+          <button type="button" className="object-select-button" onClick={onSelect} aria-pressed={selected}>
+            Inspect stage
+          </button>
+        ) : null}
       </div>
       <div className="metric-grid compact-grid">
         <div className="metric">

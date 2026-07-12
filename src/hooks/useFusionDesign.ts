@@ -16,9 +16,10 @@ type DesignWorkerResponse =
       error: string;
     };
 
-export function useFusionDesign(project: FusionProjectInput): { design: FusionDesign; isDesignPending: boolean } {
+export function useFusionDesign(project: FusionProjectInput): { design: FusionDesign; isDesignPending: boolean; workerError: string | null } {
   const [design, setDesign] = useState<FusionDesign>(() => buildFusionDesign(project));
   const [isDesignPending, setIsDesignPending] = useState(false);
+  const [workerError, setWorkerError] = useState<string | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
 
@@ -26,6 +27,7 @@ export function useFusionDesign(project: FusionProjectInput): { design: FusionDe
     if (typeof Worker === 'undefined') {
       setDesign(buildFusionDesign(project));
       setIsDesignPending(false);
+      setWorkerError(null);
       return;
     }
 
@@ -44,8 +46,10 @@ export function useFusionDesign(project: FusionProjectInput): { design: FusionDe
 
       if ('design' in event.data) {
         setDesign(event.data.design);
+        setWorkerError(null);
       } else {
         setDesign(buildFusionDesign(project));
+        setWorkerError(event.data.error || 'Design worker returned an error. Falling back to main-thread calculation.');
       }
       setIsDesignPending(false);
     };
@@ -53,6 +57,7 @@ export function useFusionDesign(project: FusionProjectInput): { design: FusionDe
     const handleError = () => {
       setDesign(buildFusionDesign(project));
       setIsDesignPending(false);
+      setWorkerError('Design worker failed to load. Falling back to main-thread calculation.');
     };
 
     const worker = workerRef.current;
@@ -77,5 +82,6 @@ export function useFusionDesign(project: FusionProjectInput): { design: FusionDe
   return {
     design,
     isDesignPending,
+    workerError,
   };
 }
