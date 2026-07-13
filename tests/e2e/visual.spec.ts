@@ -63,7 +63,7 @@ for (const viewport of viewports) {
       await openWorkbenchStep(page, 'Primers');
       await expectNoHorizontalOverflow(page);
       if (viewport.label === 'phone') {
-        await expect(page.locator('.phone-primer-detail .primer-card')).toHaveCount(1);
+        await expect(page.locator('.phone-primer-detail .primer-detail-panel')).toHaveCount(1);
       }
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`primer-results-${viewport.width}x${viewport.height}.png`, screenshotOptions);

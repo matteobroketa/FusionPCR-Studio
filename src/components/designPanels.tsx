@@ -73,31 +73,89 @@ export function SequencePreview({
   );
 }
 
-export function PrimerCard({
+type PrimerStatusTone = 'success' | 'watch' | 'alert';
+
+export function summarizePrimerStatus(primer: PrimerDesign): { label: string; tone: PrimerStatusTone } {
+  const nonIntendedSpecificityHits = primer.specificitySites.filter(
+    (site) => site.risk !== 'low' && site.templateId !== primer.expectedTemplateId,
+  );
+  if (nonIntendedSpecificityHits.some((site) => site.risk === 'high')) {
+    return { label: 'Review off-targets', tone: 'alert' };
+  }
+  if (primer.structure.risk === 'High') {
+    return { label: 'Review structure', tone: 'alert' };
+  }
+  if (nonIntendedSpecificityHits.length || primer.structure.risk === 'Watch') {
+    return { label: 'Watch', tone: 'watch' };
+  }
+  return { label: 'Ready', tone: 'success' };
+}
+
+function summarizeStructureFindings(primer: PrimerDesign): string[] {
+  const findings: string[] = [];
+
+  if (primer.structure.hairpin && primer.structure.hairpin.risk !== 'Low') {
+    findings.push(
+      `Hairpin ${primer.structure.hairpin.risk.toLowerCase()}: dG ${primer.structure.hairpin.deltaG} kcal/mol, Tm ${primer.structure.hairpin.predictedTm} C.`,
+    );
+  }
+  if (primer.structure.homodimer && primer.structure.homodimer.risk !== 'Low') {
+    findings.push(
+      `Homodimer ${primer.structure.homodimer.risk.toLowerCase()}: dG ${primer.structure.homodimer.deltaG} kcal/mol, stem ${primer.structure.homodimer.longestContiguousStem}.`,
+    );
+  }
+  if (primer.structure.threePrimeHomodimer && primer.structure.threePrimeHomodimer.risk !== 'Low') {
+    findings.push(
+      `3 prime homodimer ${primer.structure.threePrimeHomodimer.risk.toLowerCase()}: dG ${primer.structure.threePrimeHomodimer.deltaG} kcal/mol, ${primer.structure.threePrimeHomodimer.threePrimePairedBasesA} paired 3 prime bases.`,
+    );
+  }
+
+  return findings.length ? findings : ['No watch/high findings in the approximate structure model.'];
+}
+
+function summarizeSpecificityFindings(primer: PrimerDesign): string[] {
+  const findings = primer.specificitySites
+    .filter((site) => site.risk !== 'low' && site.templateId !== primer.expectedTemplateId)
+    .slice(0, 4)
+    .map(
+      (site) =>
+        `${site.templateName} ${site.start}-${site.end}: ${site.risk} risk, ${site.mismatchCount} mismatch(es), 3 prime match ${site.threePrimeMatchedBases} nt.`,
+    );
+
+  return findings.length ? findings : ['No elevated local specificity findings beyond the intended template site.'];
+}
+
+export function PrimerDetailPanel({
   primer,
   selected = false,
-  onSelect,
+  onCopy,
 }: {
   primer: PrimerDesign;
   selected?: boolean;
-  onSelect?: (() => void) | undefined;
+  onCopy?: (() => void) | undefined;
 }) {
+  const status = summarizePrimerStatus(primer);
+  const structureFindings = summarizeStructureFindings(primer);
+  const specificityFindings = summarizeSpecificityFindings(primer);
+
   return (
-    <article className={`primer-card ${selected ? 'object-selected' : ''}`}>
+    <article className={`primer-detail-panel ${selected ? 'object-selected' : ''}`}>
       <div className="primer-card-header">
         <div>
           <h3>{primer.name}</h3>
           <p>{primer.role}</p>
         </div>
-        <span className={`pill ${primer.structure.risk === 'High' ? 'pill-alert' : primer.structure.risk === 'Watch' ? 'pill-watch' : 'pill-success'}`}>
-          {primer.structure.risk}
+        <span className={`pill ${status.tone === 'alert' ? 'pill-alert' : status.tone === 'watch' ? 'pill-watch' : 'pill-success'}`}>
+          {status.label}
         </span>
       </div>
 
-      {onSelect ? (
-        <button type="button" className="object-select-button" onClick={onSelect} aria-pressed={selected}>
-          Inspect primer
-        </button>
+      {onCopy ? (
+        <div className="action-row">
+          <button type="button" className="button button-secondary" onClick={onCopy}>
+            Copy primer
+          </button>
+        </div>
       ) : null}
 
       <code className="primer-sequence">
@@ -111,16 +169,12 @@ export function PrimerCard({
           <strong>{primer.reaction}</strong>
         </div>
         <div className="metric">
-          <span>Body Tm</span>
+          <span>Length</span>
+          <strong>{primer.fullLength} nt</strong>
+        </div>
+        <div className="metric">
+          <span>Annealing-body Tm</span>
           <strong>{primer.bodyTm.toFixed(1)} C</strong>
-        </div>
-        <div className="metric">
-          <span>Full oligo Tm</span>
-          <strong>{primer.fullOligoTm.toFixed(1)} C</strong>
-        </div>
-        <div className="metric">
-          <span>Overlap Tm</span>
-          <strong>{primer.overlapTm !== null ? `${primer.overlapTm.toFixed(1)} C` : 'n/a'}</strong>
         </div>
         <div className="metric">
           <span>Body GC</span>
@@ -130,50 +184,22 @@ export function PrimerCard({
           <span>Body length</span>
           <strong>{primer.bodyLength} nt</strong>
         </div>
-        <div className="metric">
-          <span>Delta H</span>
-          <strong>{primer.bodyThermodynamics.deltaHKcalPerMol.toFixed(1)} kcal/mol</strong>
-        </div>
-        <div className="metric">
-          <span>Delta S</span>
-          <strong>{primer.bodyThermodynamics.deltaSCalPerMolK.toFixed(1)} cal/mol/K</strong>
-        </div>
-        <div className="metric">
-          <span>Hairpin</span>
-          <strong>{primer.structure.hairpin?.longestContiguousStem ?? 0} stem</strong>
-        </div>
-        <div className="metric">
-          <span>3 prime dimer</span>
-          <strong>{primer.structure.threePrimeHomodimer?.threePrimePairedBasesA ?? 0} paired</strong>
-        </div>
-        <div className="metric">
-          <span>Specificity hits</span>
-          <strong>{primer.specificitySites.filter((site) => site.risk !== 'low').length}</strong>
-        </div>
       </div>
 
       <div className="status-block">
-        <p className="status-title">Approximate structure summary</p>
+        <p className="status-title">Approximate structure findings</p>
         <ul className="status-list">
-          <li>
-            Hairpin: {primer.structure.hairpin ? `${primer.structure.hairpin.deltaG} kcal/mol, Tm ${primer.structure.hairpin.predictedTm} C` : 'none'}
-          </li>
-          <li>
-            Homodimer: {primer.structure.homodimer ? `${primer.structure.homodimer.deltaG} kcal/mol, stem ${primer.structure.homodimer.longestContiguousStem}` : 'none'}
-          </li>
-          <li>
-            3 prime homodimer: {primer.structure.threePrimeHomodimer ? `${primer.structure.threePrimeHomodimer.deltaG} kcal/mol, 3 prime ${primer.structure.threePrimeHomodimer.threePrimePairedBasesA}` : 'none'}
-          </li>
+          {structureFindings.map((finding) => (
+            <li key={`${primer.name}-structure-${finding}`}>{finding}</li>
+          ))}
         </ul>
       </div>
 
       <div className="status-block">
-        <p className="status-title">Local specificity</p>
+        <p className="status-title">Local specificity findings</p>
         <ul className="status-list">
-          {primer.specificitySites.slice(0, 4).map((site) => (
-            <li key={`${primer.name}-${site.templateId}-${site.start}`}>
-              {site.templateName} {site.start}-{site.end}, {site.risk} risk, {site.mismatchCount} mismatch(es), 3 prime match {site.threePrimeMatchedBases} nt
-            </li>
+          {specificityFindings.map((finding) => (
+            <li key={`${primer.name}-specificity-${finding}`}>{finding}</li>
           ))}
         </ul>
       </div>

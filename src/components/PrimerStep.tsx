@@ -1,4 +1,5 @@
-import { PrimerCard } from './designPanels';
+import { useState } from 'react';
+import { PrimerDetailPanel, summarizePrimerStatus } from './designPanels';
 import type { ComparisonSnapshot } from '../hooks/useProjectController';
 import type { FusionDesign, PrimerDesign } from '../utils/fusion';
 
@@ -41,10 +42,44 @@ export function PrimerStep({
   onPrimerResultTabChange,
   onSelectPrimer,
 }: PrimerStepProps) {
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const selectedPrimer =
     visiblePrimers.find((primer) => primer.name === selectedPrimerName) ??
     visiblePrimers[0] ??
     null;
+  const copyStatusId = 'primer-copy-status';
+
+  const writeClipboard = async (content: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(content);
+      return;
+    }
+
+    const fallbackInput = document.createElement('textarea');
+    fallbackInput.value = content;
+    fallbackInput.setAttribute('readonly', 'true');
+    fallbackInput.style.position = 'absolute';
+    fallbackInput.style.left = '-9999px';
+    document.body.appendChild(fallbackInput);
+    fallbackInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(fallbackInput);
+  };
+
+  const handleCopyPrimer = async (primer: PrimerDesign | null) => {
+    if (!primer) {
+      return;
+    }
+
+    await writeClipboard(primer.sequence);
+    setCopyStatus(`Copied ${primer.name} primer sequence.`);
+  };
+
+  const handleCopyAllPrimers = async () => {
+    const fasta = visiblePrimers.map((primer) => `>${primer.name}\n${primer.sequence}`).join('\n');
+    await writeClipboard(fasta);
+    setCopyStatus(`Copied all ${visiblePrimers.length} primer sequence(s).`);
+  };
 
   if (phoneReviewMode) {
     return (
@@ -77,6 +112,18 @@ export function PrimerStep({
             </div>
           </div>
 
+          <div className="action-row">
+            <button type="button" className="button button-secondary" onClick={() => void handleCopyAllPrimers()} disabled={!visiblePrimers.length}>
+              Copy all primers
+            </button>
+          </div>
+
+          {copyStatus ? (
+            <p id={copyStatusId} className="status-note status-note-success">
+              {copyStatus}
+            </p>
+          ) : null}
+
           <div className="phone-primer-selector" role="tablist" aria-label="Primer selector">
             {visiblePrimers.map((primer) => (
               <button
@@ -93,7 +140,7 @@ export function PrimerStep({
 
           {selectedPrimer ? (
             <div className="phone-primer-detail">
-              <PrimerCard primer={selectedPrimer} selected />
+              <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} />
             </div>
           ) : (
             <div className="status-block">
@@ -112,7 +159,7 @@ export function PrimerStep({
         <div className="panel-header">
           <div>
             <p className="eyebrow">Primers</p>
-            <h2>Primer results</h2>
+            <h2>Primer review</h2>
           </div>
           <span className="pill pill-muted">{visiblePrimers.length} primer(s)</span>
         </div>
@@ -145,30 +192,95 @@ export function PrimerStep({
                 <span>Unintended products</span>
                 <strong>{design.offTargetAmplicons.length}</strong>
               </div>
+              <div className="metric">
+                <span>Sequence reconstruction</span>
+                <strong>{design.finalProductVerified ? 'Pass' : 'Pending'}</strong>
+              </div>
             </div>
-            <div className="primer-grid">
-              {visiblePrimers.map((primer) => (
-                <PrimerCard
-                  key={primer.name}
-                  primer={primer}
-                  selected={selectedPrimerName === primer.name}
-                  onSelect={() => onSelectPrimer(primer.name)}
-                />
-              ))}
+
+            <div className="action-row">
+              <button type="button" className="button button-secondary" onClick={() => void handleCopyAllPrimers()} disabled={!visiblePrimers.length}>
+                Copy all primers
+              </button>
+            </div>
+
+            {copyStatus ? (
+              <p id={copyStatusId} className="status-note status-note-success">
+                {copyStatus}
+              </p>
+            ) : null}
+
+            <div className="primer-review-layout">
+              <div className="primer-review-table-wrap">
+                <table className="primer-review-table" aria-label="Primer review table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Primer</th>
+                      <th scope="col">Reaction</th>
+                      <th scope="col">Length</th>
+                      <th scope="col">Annealing-body Tm</th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visiblePrimers.map((primer) => {
+                      const status = summarizePrimerStatus(primer);
+                      return (
+                        <tr key={primer.name} className={selectedPrimerName === primer.name ? 'primer-review-row-selected' : ''}>
+                          <th scope="row">
+                            <button
+                              type="button"
+                              className={`primer-row-button ${selectedPrimerName === primer.name ? 'primer-row-button-selected' : ''}`}
+                              onClick={() => onSelectPrimer(primer.name)}
+                              aria-pressed={selectedPrimerName === primer.name}
+                            >
+                              {primer.name}
+                            </button>
+                          </th>
+                          <td>{primer.reaction}</td>
+                          <td>{primer.fullLength} nt</td>
+                          <td>{primer.bodyTm.toFixed(1)} C</td>
+                          <td>
+                            <span className={`pill ${status.tone === 'alert' ? 'pill-alert' : status.tone === 'watch' ? 'pill-watch' : 'pill-success'}`}>
+                              {status.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {selectedPrimer ? (
+                <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} />
+              ) : (
+                <div className="status-block">
+                  <p className="status-title">No primer selected</p>
+                  <p>Select a primer row to inspect one detail panel.</p>
+                </div>
+              )}
             </div>
           </>
         ) : null}
 
         {primerResultTab === 'sequences' ? (
-          <div className="primer-grid">
-            {visiblePrimers.map((primer) => (
-              <PrimerCard
-                key={primer.name}
-                primer={primer}
-                selected={selectedPrimerName === primer.name}
-                onSelect={() => onSelectPrimer(primer.name)}
-              />
-            ))}
+          <div className="workspace-two-column">
+            <div className="status-block">
+              <p className="status-title">Primer sequences</p>
+              <ul className="status-list">
+                {visiblePrimers.map((primer) => (
+                  <li key={`${primer.name}-sequence-tab`}>
+                    <button type="button" className="inline-link-button" onClick={() => onSelectPrimer(primer.name)}>
+                      {primer.name}
+                    </button>{' '}
+                    {primer.tail.length ? `${primer.tail.length} nt tail + ` : ''}
+                    {primer.bodyLength} nt annealing body
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {selectedPrimer ? <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} /> : null}
           </div>
         ) : null}
 
@@ -202,6 +314,7 @@ export function PrimerStep({
                 )}
               </ul>
             </div>
+            {selectedPrimer ? <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} /> : null}
           </div>
         ) : null}
 
@@ -241,6 +354,7 @@ export function PrimerStep({
                 )}
               </ul>
             </div>
+            {selectedPrimer ? <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} /> : null}
           </div>
         ) : null}
 

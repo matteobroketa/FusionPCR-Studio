@@ -231,6 +231,14 @@ code,
   transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
 
+.inline-link-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  text-decoration: underline;
+}
+
 .button:hover:not(:disabled) {
   border-color: var(--primary);
 }
@@ -470,6 +478,7 @@ select.text-input,
 .field-grid,
 .metric-grid,
 .primer-grid,
+.primer-review-layout,
 .export-grid,
 .import-record-grid,
 .toggle-grid {
@@ -510,6 +519,7 @@ select.text-input,
 .status-block,
 .preview-block,
 .primer-card,
+.primer-detail-panel,
 .reaction-card,
 .candidate-card,
 .recipe-card,
@@ -647,6 +657,63 @@ select.text-input,
   gap: var(--space-3);
   min-width: 0;
   max-width: 100%;
+}
+
+.primer-review-layout {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.primer-review-table-wrap {
+  overflow-x: auto;
+}
+
+.primer-review-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-secondary);
+}
+
+.primer-review-table th,
+.primer-review-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.primer-review-table thead th {
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.primer-review-table tbody tr:last-child th,
+.primer-review-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.primer-review-row-selected {
+  background: #eff6ff;
+}
+
+.primer-row-button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-weight: 700;
+}
+
+.primer-row-button-selected {
+  color: var(--primary);
 }
 
 .issue-drawer {
@@ -946,6 +1013,7 @@ select.text-input,
 
 .reaction-card h3,
 .primer-card h3,
+.primer-detail-panel h3,
 .candidate-card h3,
 .recipe-card h3,
 .workspace-section h2,
@@ -1055,6 +1123,7 @@ select.text-input,
   .field-grid,
   .workspace-two-column,
   .primer-grid,
+  .primer-review-layout,
   .import-record-grid,
   .export-grid,
   .toggle-grid,

@@ -13,7 +13,7 @@ test.describe('FusionPCR Studio production build', () => {
     await loadRunnableExample(page);
     await openWorkbenchStep(page, 'Primers');
     await expect(page.getByRole('heading', { name: 'A_outer_F', exact: true })).toBeVisible();
-    await expect(page.getByText('Primer results')).toBeVisible();
+    await expect(page.getByText('Primer review')).toBeVisible();
 
     const projectName = page.getByLabel('Project name');
     const examples = [
@@ -117,6 +117,33 @@ test.describe('FusionPCR Studio production build', () => {
     await expect(page.locator('.inspector-pane').getByText('Scientific scope')).toHaveCount(0);
   });
 
+  test('uses a compact primer table with one detail panel and copy controls', async ({ page }) => {
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://127.0.0.1:4173' });
+    await page.goto('./');
+    await loadRunnableExample(page);
+    await openWorkbenchStep(page, 'Primers');
+
+    await expect(page.getByRole('table', { name: 'Primer review table' })).toBeVisible();
+    await expect(page.locator('.primer-review-table tbody tr')).toHaveCount(4);
+    await expect(page.locator('.primer-detail-panel')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'B_outer_R' }).click();
+    await expect(page.locator('.primer-detail-panel').getByRole('heading', { name: 'B_outer_R', exact: true })).toBeVisible();
+
+    const selectedSequence =
+      (await page.locator('.primer-detail-panel .primer-sequence').textContent())?.replace(/\s+/g, '') ?? '';
+    await page.locator('.primer-detail-panel').getByRole('button', { name: 'Copy primer' }).click();
+    await expect(page.getByText('Copied B_outer_R primer sequence.')).toBeVisible();
+    await expect
+      .poll(async () => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(selectedSequence);
+
+    await page.getByRole('button', { name: 'Copy all primers' }).first().click();
+    await expect
+      .poll(async () => page.evaluate(() => navigator.clipboard.readText()))
+      .toContain('>A_outer_F');
+  });
+
   test('renders a recoverable worker error and recalculates after Retry', async ({ page }) => {
     await page.route('**/*design.worker*.js', (route) =>
       route.fulfill({
@@ -165,10 +192,12 @@ test.describe('FusionPCR Studio responsive review', () => {
 
     await openWorkbenchStep(page, 'Primers');
     await expect(page.locator('.phone-primer-selector')).toBeVisible();
-    await expect(page.locator('.phone-primer-detail .primer-card')).toHaveCount(1);
+    await expect(page.locator('.phone-primer-detail .primer-detail-panel')).toHaveCount(1);
+    await expect(page.locator('.phone-primer-detail').getByRole('button', { name: 'Copy primer' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Copy all primers' })).toBeVisible();
 
     await page.getByRole('button', { name: 'B_outer_R' }).click();
-    await expect(page.locator('.phone-primer-detail .primer-card')).toHaveCount(1);
+    await expect(page.locator('.phone-primer-detail .primer-detail-panel')).toHaveCount(1);
     await expect(page.locator('.phone-primer-detail').getByRole('heading', { name: 'B_outer_R', exact: true })).toBeVisible();
   });
 });
