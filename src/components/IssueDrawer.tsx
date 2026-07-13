@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 
 type IssueDrawerProps = {
   issues: string[];
   warnings: string[];
+  headingRef?: RefObject<HTMLHeadingElement | null>;
 };
 
-export function IssueDrawer({ issues, warnings }: IssueDrawerProps) {
+export function IssueDrawer({ issues, warnings, headingRef }: IssueDrawerProps) {
   const [open, setOpen] = useState(false);
   const items = [
     ...issues.map((message) => ({ severity: 'blocking' as const, message })),
@@ -21,7 +22,9 @@ export function IssueDrawer({ issues, warnings }: IssueDrawerProps) {
       <div className="panel-header">
         <div>
           <p className="eyebrow">Review issues</p>
-          <h2>{items.length} item(s) need review</h2>
+          <h2 ref={headingRef} tabIndex={-1}>
+            {items.length} item(s) need review
+          </h2>
         </div>
         <button type="button" className="button button-secondary" onClick={() => setOpen((current) => !current)} aria-expanded={open}>
           {open ? 'Hide issue list' : 'Show all issues'}

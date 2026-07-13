@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import { SequencePreview, SequenceRail } from './designPanels';
 import type { CanvasTracks, ComparisonSnapshot } from '../hooks/useProjectController';
 import type { FusionDesign, PrimerDesign, ProteinValidation } from '../utils/fusion';
@@ -8,6 +9,15 @@ type CompareRow = {
   current: string;
   baseline: string;
 };
+
+function focusCompactInspectorHeading() {
+  window.setTimeout(() => {
+    const heading = document.querySelector('.inspector-pane h2');
+    if (heading instanceof HTMLElement) {
+      heading.focus();
+    }
+  }, 220);
+}
 
 type JunctionStepProps = {
   design: FusionDesign;
@@ -23,6 +33,7 @@ type JunctionStepProps = {
   stageSequencePreviews: Array<{ label: string; sequence: string }>;
   comparisonSnapshot: ComparisonSnapshot | null;
   compareRows: CompareRow[];
+  headingRef?: RefObject<HTMLHeadingElement | null>;
   onInspectorFocusChange: (focus: 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction') => void;
   onSelectPrimer: (primerName: string) => void;
   onShowInspector: () => void;
@@ -45,6 +56,7 @@ export function JunctionStep({
   stageSequencePreviews,
   comparisonSnapshot,
   compareRows,
+  headingRef,
   onInspectorFocusChange,
   onSelectPrimer,
   onShowInspector,
@@ -60,7 +72,9 @@ export function JunctionStep({
         <div className="panel-header">
           <div>
             <p className="eyebrow">Construct workspace</p>
-            <h2>Stage-aware assembly map</h2>
+            <h2 ref={headingRef} tabIndex={-1}>
+              Stage-aware assembly map
+            </h2>
           </div>
           <div className="panel-actions">
             <span className="pill pill-muted">{selectedStageLabel}</span>
@@ -85,7 +99,11 @@ export function JunctionStep({
               type="button"
               className={`construct-block block-a construct-button ${inspectorFocus === 'fragment-a' ? 'construct-active' : ''}`}
               style={{ flexGrow: Math.max(design.selectedA.length, 1) }}
-              onClick={() => onInspectorFocusChange('fragment-a')}
+              onClick={() => {
+                onInspectorFocusChange('fragment-a');
+                onShowInspector();
+                focusCompactInspectorHeading();
+              }}
               aria-label={`Fragment A block: ${projectNameA}, ${design.selectedA.length} base pairs`}
               aria-pressed={inspectorFocus === 'fragment-a'}
             >
@@ -96,7 +114,11 @@ export function JunctionStep({
               type="button"
               className={`construct-block block-insert construct-button ${inspectorFocus === 'junction' ? 'construct-active' : ''}`}
               style={{ flexGrow: Math.max(design.insertSequence.length || design.overlapSequence.length, 1) }}
-              onClick={() => onInspectorFocusChange('junction')}
+              onClick={() => {
+                onInspectorFocusChange('junction');
+                onShowInspector();
+                focusCompactInspectorHeading();
+              }}
               aria-label={
                 design.insertSequence.length
                   ? `Inserted sequence block at the junction, ${design.insertSequence.length} base pairs`
@@ -111,7 +133,11 @@ export function JunctionStep({
               type="button"
               className={`construct-block block-b construct-button ${inspectorFocus === 'fragment-b' ? 'construct-active' : ''}`}
               style={{ flexGrow: Math.max(design.selectedB.length, 1) }}
-              onClick={() => onInspectorFocusChange('fragment-b')}
+              onClick={() => {
+                onInspectorFocusChange('fragment-b');
+                onShowInspector();
+                focusCompactInspectorHeading();
+              }}
               aria-label={`Fragment B block: ${projectNameB}, ${design.selectedB.length} base pairs`}
               aria-pressed={inspectorFocus === 'fragment-b'}
             >
@@ -131,6 +157,7 @@ export function JunctionStep({
               onClick={() => {
                 onSelectPrimer(primer.name);
                 onShowInspector();
+                focusCompactInspectorHeading();
               }}
             >
               <strong>{primer.name}</strong>

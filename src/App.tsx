@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { ContextInspector } from './components/ContextInspector';
 import { ExperimentalNotice } from './components/ExperimentalNotice';
@@ -47,6 +47,40 @@ function formatStepStatus(level: StepStatusLevel, text: string) {
   }
 }
 
+function getActiveFocusableElement() {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return document.activeElement instanceof HTMLElement ? document.activeElement : null;
+}
+
+function isEditableElement(element: HTMLElement | null) {
+  if (!element) {
+    return false;
+  }
+
+  const tagName = element.tagName.toLowerCase();
+  return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || element.isContentEditable;
+}
+
+function focusInspectorPanel() {
+  window.setTimeout(() => {
+    const retryButton = Array.from(document.querySelectorAll('.inspector-pane button')).find((button) =>
+      button.textContent?.includes('Retry'),
+    );
+    if (retryButton instanceof HTMLElement && retryButton.textContent?.includes('Retry')) {
+      retryButton.focus();
+      return;
+    }
+
+    const heading = document.querySelector('.inspector-pane h2');
+    if (heading instanceof HTMLElement) {
+      heading.focus();
+    }
+  }, 220);
+}
+
 function App() {
   const [selectedStage, setSelectedStage] = useState<WorkflowStage>('overview');
   const [inspectorFocus, setInspectorFocus] = useState<InspectorFocus>('junction');
@@ -78,9 +112,23 @@ function App() {
   const [primerResultTab, setPrimerResultTab] = useState<PrimerResultTab>('overview');
   const [protocolResultTab, setProtocolResultTab] = useState<ProtocolResultTab>('overview');
   const [selectedPrimerName, setSelectedPrimerName] = useState<string | null>(null);
+  const workspaceHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const issueDrawerHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const inspectorHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const retryCalculationButtonRef = useRef<HTMLButtonElement | null>(null);
+  const mobileInspectorToggleRef = useRef<HTMLButtonElement | null>(null);
+  const confirmationCancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const inspectorTriggerRef = useRef<HTMLElement | null>(null);
+  const confirmationTriggerRef = useRef<HTMLElement | null>(null);
   const viewportMode = useViewportMode();
   const { design, calculationState, isDesignPending, isDesignCurrent, workerError, retry } = useFusionDesign(project);
   const { persistenceState, persistenceError, retryPersistence } = useProjectPersistence(STORAGE_KEY, project);
+  const previousShowInspectorRef = useRef(showInspector);
+  const previousIssueCountRef = useRef(0);
+  const previousCalculationRef = useRef<{ state: 'idle' | 'pending' | 'complete' | 'stale' | 'error'; isCurrent: boolean }>({
+    state: 'idle',
+    isCurrent: false,
+  });
   const fragmentAMetrics = summarizeSequenceMetrics(project.fragmentA.sequence);
   const fragmentBMetrics = summarizeSequenceMetrics(project.fragmentB.sequence);
   const isPhoneViewport = viewportMode === 'phone';
@@ -223,6 +271,73 @@ function App() {
     setSelectedPrimerName((current) => (current && visiblePrimers.some((primer) => primer.name === current) ? current : visiblePrimers[0].name));
   }, [visiblePrimers]);
 
+  useEffect(() => {
+    if (showInspector && !previousShowInspectorRef.current) {
+      window.setTimeout(() => {
+        if (workerError) {
+          retryCalculationButtonRef.current?.focus();
+          return;
+        }
+        inspectorHeadingRef.current?.focus();
+      }, 180);
+    }
+
+    if (!showInspector && previousShowInspectorRef.current) {
+      inspectorTriggerRef.current?.focus();
+      inspectorTriggerRef.current = null;
+    }
+
+    previousShowInspectorRef.current = showInspector;
+  }, [showInspector, workerError]);
+
+  useEffect(() => {
+    if (confirmationState && !confirmationTriggerRef.current) {
+      confirmationTriggerRef.current = getActiveFocusableElement();
+      window.requestAnimationFrame(() => confirmationCancelButtonRef.current?.focus());
+      return;
+    }
+
+    if (!confirmationState && confirmationTriggerRef.current) {
+      confirmationTriggerRef.current.focus();
+      confirmationTriggerRef.current = null;
+    }
+  }, [confirmationState]);
+
+  useEffect(() => {
+    const activeElement = getActiveFocusableElement();
+    const becameBlocking = previousIssueCountRef.current === 0 && design.issues.length > 0;
+    if (becameBlocking && showWorkbench && !isEditableElement(activeElement)) {
+      window.requestAnimationFrame(() => issueDrawerHeadingRef.current?.focus());
+    }
+    previousIssueCountRef.current = design.issues.length;
+  }, [design.issues.length, showWorkbench]);
+
+  useEffect(() => {
+    const previous = previousCalculationRef.current;
+    const completedCalculation =
+      (previous.state !== 'complete' || !previous.isCurrent) &&
+      calculationState === 'complete' &&
+      isDesignCurrent &&
+      showWorkbench &&
+      !design.issues.length;
+    const activeElement = getActiveFocusableElement();
+
+    if (completedCalculation && !isEditableElement(activeElement)) {
+      window.requestAnimationFrame(() => workspaceHeadingRef.current?.focus());
+    }
+
+    previousCalculationRef.current = {
+      state: calculationState,
+      isCurrent: isDesignCurrent,
+    };
+  }, [calculationState, isDesignCurrent, design.issues.length, showWorkbench]);
+
+  const openInspector = () => {
+    inspectorTriggerRef.current = getActiveFocusableElement();
+    setShowInspector(true);
+    focusInspectorPanel();
+  };
+
   const handleLoadExample = (exampleId = selectedExampleId) => {
     projectController.loadExample(exampleId);
     setActiveStep('construct');
@@ -319,7 +434,25 @@ function App() {
         ) : (
           <>
             <div className="workbench-mobile-actions">
-              <button type="button" className="button button-secondary" onClick={() => setShowInspector((current) => !current)}>
+              <button
+                ref={mobileInspectorToggleRef}
+                type="button"
+                className="button button-secondary"
+                onClick={() => {
+                  if (showInspector) {
+                    setShowInspector(false);
+                    return;
+                  }
+                  inspectorTriggerRef.current = getActiveFocusableElement() ?? mobileInspectorToggleRef.current;
+                  setShowInspector(true);
+                  window.setTimeout(() => {
+                    const heading = document.querySelector('.inspector-pane h2');
+                    if (heading instanceof HTMLElement) {
+                      heading.focus();
+                    }
+                  }, 220);
+                }}
+              >
                 {showInspector ? 'Hide inspector' : 'Show inspector'}
               </button>
             </div>
@@ -345,7 +478,7 @@ function App() {
               />
 
               <section className="workspace-pane">
-                <IssueDrawer issues={design.issues} warnings={design.warnings} />
+                <IssueDrawer issues={design.issues} warnings={design.warnings} headingRef={issueDrawerHeadingRef} />
 
                 {activeStep === 'sequences' ? (
                   <SequenceStep
@@ -364,6 +497,7 @@ function App() {
                     isPolymeraseLocked={isPolymeraseLocked}
                     activeFragmentLocked={activeFragmentLocked}
                     counterpartFragmentLocked={counterpartFragmentLocked}
+                    headingRef={workspaceHeadingRef}
                     onApplyImportedSource={handleImportedSourceSelection}
                     onApplyFirstTwoImportedSources={handleApplyFirstTwoImportedSources}
                     onApplyMutationWorkflow={handleApplyMutationWorkflow}
@@ -385,12 +519,13 @@ function App() {
                     stageSequencePreviews={stageSequencePreviews}
                     comparisonSnapshot={comparisonSnapshot}
                     compareRows={compareRows}
+                    headingRef={workspaceHeadingRef}
                     onInspectorFocusChange={setInspectorFocus}
                     onSelectPrimer={(primerName) => {
                       setSelectedPrimerName(primerName);
                       setInspectorFocus('primer');
                     }}
-                    onShowInspector={() => setShowInspector(true)}
+                    onShowInspector={openInspector}
                     onToggleCanvasTrack={projectController.toggleCanvasTrack}
                     onCaptureComparisonSnapshot={() => projectController.captureComparisonSnapshot(comparisonMetrics)}
                     onClearComparisonSnapshot={() => setComparisonSnapshot(null)}
@@ -406,11 +541,12 @@ function App() {
                     phoneReviewMode={isPhoneViewport}
                     comparisonSnapshot={comparisonSnapshot}
                     compareRows={compareRows}
+                    headingRef={workspaceHeadingRef}
                     onPrimerResultTabChange={setPrimerResultTab}
                     onSelectPrimer={(primerName) => {
                       setSelectedPrimerName(primerName);
                       setInspectorFocus('primer');
-                      setShowInspector(true);
+                      openInspector();
                     }}
                   />
                 ) : null}
@@ -426,13 +562,17 @@ function App() {
                     selectedReactionName={selectedReaction?.name ?? null}
                     hasExportableDesign={hasExportableDesign}
                     isPolymeraseLocked={isPolymeraseLocked}
+                    headingRef={workspaceHeadingRef}
                     onProtocolResultTabChange={setProtocolResultTab}
                     onSelectOverviewReaction={(reactionName) => {
                       setSelectedStage(reactionName === 'PCR 1A' ? 'pcr1a' : reactionName === 'PCR 1B' ? 'pcr1b' : 'fusion');
                       setInspectorFocus('reaction');
-                      setShowInspector(true);
+                      openInspector();
                     }}
-                    onInspectReaction={() => setInspectorFocus('reaction')}
+                    onInspectReaction={() => {
+                      setInspectorFocus('reaction');
+                      openInspector();
+                    }}
                   />
                 ) : null}
               </section>
@@ -458,6 +598,8 @@ function App() {
                 onRetryCalculation={retry}
                 onRetryPersistence={retryPersistence}
                 showInspector={showInspector}
+                headingRef={inspectorHeadingRef}
+                retryCalculationButtonRef={retryCalculationButtonRef}
               />
             </section>
 
@@ -475,6 +617,7 @@ function App() {
           title={confirmationState?.title ?? ''}
           message={confirmationState?.message ?? ''}
           confirmLabel={confirmationState?.confirmLabel ?? 'Confirm'}
+          cancelButtonRef={confirmationCancelButtonRef}
           onConfirm={() => {
             const action = confirmationState;
             setConfirmationState(null);

@@ -1,8 +1,11 @@
+import type { RefObject } from 'react';
+
 type ConfirmationDialogProps = {
   open: boolean;
   title: string;
   message: string;
   confirmLabel: string;
+  cancelButtonRef?: RefObject<HTMLButtonElement | null>;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -12,6 +15,7 @@ export function ConfirmationDialog({
   title,
   message,
   confirmLabel,
+  cancelButtonRef,
   onConfirm,
   onCancel,
 }: ConfirmationDialogProps) {
@@ -30,7 +34,7 @@ export function ConfirmationDialog({
         </div>
         <p>{message}</p>
         <div className="action-row">
-          <button type="button" className="button button-secondary" onClick={onCancel}>
+          <button ref={cancelButtonRef} type="button" className="button button-secondary" onClick={onCancel}>
             Cancel
           </button>
           <button type="button" className="button button-primary" onClick={onConfirm}>

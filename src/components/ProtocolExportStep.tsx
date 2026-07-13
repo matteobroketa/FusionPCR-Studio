@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import { ReactionCard, SequencePreview } from './designPanels';
 import type { useProjectController } from '../hooks/useProjectController';
 import {
@@ -24,6 +25,7 @@ type ProtocolExportStepProps = {
   selectedReactionName: string | null;
   hasExportableDesign: boolean;
   isPolymeraseLocked: boolean;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
   onProtocolResultTabChange: (tab: ProtocolResultTab) => void;
   onSelectOverviewReaction: (reactionName: ReactionPlan['name']) => void;
   onInspectReaction: () => void;
@@ -135,6 +137,7 @@ export function ProtocolExportStep({
   selectedReactionName,
   hasExportableDesign,
   isPolymeraseLocked,
+  headingRef,
   onProtocolResultTabChange,
   onSelectOverviewReaction,
   onInspectReaction,
@@ -147,7 +150,9 @@ export function ProtocolExportStep({
         <div className="panel-header">
           <div>
             <p className="eyebrow">Protocol & Export</p>
-            <h2>Reaction planning and deliverables</h2>
+            <h2 ref={headingRef} tabIndex={-1}>
+              Reaction planning and deliverables
+            </h2>
           </div>
           <span className="pill pill-muted">{project.protocolSettings.mixStrategy}</span>
         </div>

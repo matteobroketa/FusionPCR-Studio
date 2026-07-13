@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import { SequencePreview } from './designPanels';
 import type { useProjectController } from '../hooks/useProjectController';
 import { describeFeatureSelection, parseFeatureSelection } from '../utils/features';
@@ -87,6 +88,7 @@ type SequenceStepProps = {
   isPolymeraseLocked: boolean;
   activeFragmentLocked: boolean;
   counterpartFragmentLocked: boolean;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
   onApplyImportedSource: (fragmentKey: 'fragmentA' | 'fragmentB', source: ImportedSource) => void;
   onApplyFirstTwoImportedSources: () => void;
   onApplyMutationWorkflow: () => void;
@@ -112,6 +114,7 @@ export function SequenceStep({
   isPolymeraseLocked,
   activeFragmentLocked,
   counterpartFragmentLocked,
+  headingRef,
   onApplyImportedSource,
   onApplyFirstTwoImportedSources,
   onApplyMutationWorkflow,
@@ -125,7 +128,9 @@ export function SequenceStep({
           <div className="panel-header">
             <div>
               <p className="eyebrow">Sequence review</p>
-              <h2>Read-only project summary</h2>
+              <h2 ref={headingRef} tabIndex={-1}>
+                Read-only project summary
+              </h2>
             </div>
             <span className="pill pill-watch">Phone review mode</span>
           </div>
@@ -187,7 +192,9 @@ export function SequenceStep({
         <div className="panel-header">
           <div>
             <p className="eyebrow">Project setup</p>
-            <h2>Sequences and construct definition</h2>
+            <h2 ref={headingRef} tabIndex={-1}>
+              Sequences and construct definition
+            </h2>
           </div>
           <span className="pill pill-muted">{selectedPublicExampleDescription}</span>
         </div>

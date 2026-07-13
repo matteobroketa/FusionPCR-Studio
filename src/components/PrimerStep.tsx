@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { PrimerDetailPanel, summarizePrimerStatus } from './designPanels';
 import type { ComparisonSnapshot } from '../hooks/useProjectController';
 import type { FusionDesign, PrimerDesign } from '../utils/fusion';
@@ -19,6 +19,7 @@ type PrimerStepProps = {
   phoneReviewMode: boolean;
   comparisonSnapshot: ComparisonSnapshot | null;
   compareRows: CompareRow[];
+  headingRef?: RefObject<HTMLHeadingElement | null>;
   onPrimerResultTabChange: (tab: PrimerResultTab) => void;
   onSelectPrimer: (primerName: string) => void;
 };
@@ -39,6 +40,7 @@ export function PrimerStep({
   phoneReviewMode,
   comparisonSnapshot,
   compareRows,
+  headingRef,
   onPrimerResultTabChange,
   onSelectPrimer,
 }: PrimerStepProps) {
@@ -88,7 +90,9 @@ export function PrimerStep({
           <div className="panel-header">
             <div>
               <p className="eyebrow">Primers</p>
-              <h2>Primer review</h2>
+              <h2 ref={headingRef} tabIndex={-1}>
+                Primer review
+              </h2>
             </div>
             <span className="pill pill-muted">{visiblePrimers.length} primer(s)</span>
           </div>
@@ -159,7 +163,9 @@ export function PrimerStep({
         <div className="panel-header">
           <div>
             <p className="eyebrow">Primers</p>
-            <h2>Primer review</h2>
+            <h2 ref={headingRef} tabIndex={-1}>
+              Primer review
+            </h2>
           </div>
           <span className="pill pill-muted">{visiblePrimers.length} primer(s)</span>
         </div>

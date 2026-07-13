@@ -1,6 +1,18 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import type { Locator, Page } from '@playwright/test';
 import { expect, loadRunnableExample, openWorkbenchStep, test } from './fixtures';
+
+async function tabUntilFocused(page: Page, locator: Locator, maxTabs = 30) {
+  for (let index = 0; index < maxTabs; index += 1) {
+    if (await locator.evaluate((node) => node === document.activeElement).catch(() => false)) {
+      return;
+    }
+    await page.keyboard.press('Tab');
+  }
+
+  await expect(locator).toBeFocused();
+}
 
 test.describe('FusionPCR Studio production build', () => {
   test('starts the design worker, renders a runnable example, and loads the supported built-in examples', async ({ page }) => {
@@ -163,6 +175,66 @@ test.describe('FusionPCR Studio production build', () => {
 
     await expect(page.getByText('Sequence reconstruction verified.')).toBeVisible();
     await expect(page.getByText('Design worker failed. Review the project and use Retry to calculate again.')).toHaveCount(0);
+  });
+
+  test('completes the exact-fusion workflow using only the keyboard', async ({ page }) => {
+    await page.goto('./');
+
+    const loadExactExampleButton = page.getByRole('button', { name: 'Load exact fusion example' });
+    await tabUntilFocused(page, loadExactExampleButton);
+    await page.keyboard.press('Enter');
+
+    await expect(page.getByRole('heading', { name: 'Stage-aware assembly map' })).toBeFocused();
+    await expect(page.getByLabel('Project name')).toHaveValue('Exact fusion example');
+
+    const primersStepButton = page.getByRole('button', { name: 'Primers step' });
+    await tabUntilFocused(page, primersStepButton);
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Primer review' })).toBeVisible();
+
+    const protocolStepButton = page.getByRole('button', { name: 'Protocol & Export step' });
+    await tabUntilFocused(page, protocolStepButton);
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Reaction planning and deliverables' })).toBeVisible();
+
+    const downloadPromise = page.waitForEvent('download');
+    const exportButton = page.getByRole('button', { name: 'Download oligo CSV' });
+    await tabUntilFocused(page, exportButton);
+    await page.keyboard.press('Enter');
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('fusionpcr-primers.csv');
+  });
+
+  test('moves focus logically for inspector, blocking errors, and destructive confirmation', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto('./');
+    await loadRunnableExample(page);
+
+    const junctionButton = page.locator('.block-insert');
+    await junctionButton.click();
+    await expect(page.locator('.inspector-pane').getByRole('heading', { name: 'Junction 1' })).toBeFocused();
+
+    const hideInspectorButton = page.getByRole('button', { name: 'Hide inspector' });
+    await tabUntilFocused(page, hideInspectorButton);
+    await page.keyboard.press('Enter');
+    await expect(junctionButton).toBeFocused();
+
+    await openWorkbenchStep(page, 'Sequences');
+    const fragmentAInput = page.getByPlaceholder('Paste fragment A DNA sequence');
+    const originalFragmentA = await fragmentAInput.inputValue();
+    await fragmentAInput.fill('ATGB');
+    await openWorkbenchStep(page, 'Junction');
+    await expect(page.getByRole('heading', { name: '2 item(s) need review' })).toBeFocused();
+
+    await openWorkbenchStep(page, 'Sequences');
+    await fragmentAInput.fill(originalFragmentA);
+    await openWorkbenchStep(page, 'Junction');
+
+    const clearProjectButton = page.getByRole('button', { name: 'Clear project' });
+    await clearProjectButton.click();
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(clearProjectButton).toBeFocused();
   });
 });
 

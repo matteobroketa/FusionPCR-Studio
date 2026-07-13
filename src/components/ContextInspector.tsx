@@ -1,3 +1,4 @@
+import { useEffect, type RefObject } from 'react';
 import { SequencePreview } from './designPanels';
 import type { FusionDesign, PrimerDesign, ReactionPlan } from '../utils/fusion';
 
@@ -26,6 +27,8 @@ type ContextInspectorProps = {
   onRetryCalculation: () => void;
   onRetryPersistence: () => void;
   showInspector: boolean;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
+  retryCalculationButtonRef?: RefObject<HTMLButtonElement | null>;
 };
 
 export function ContextInspector({
@@ -42,6 +45,8 @@ export function ContextInspector({
   onRetryCalculation,
   onRetryPersistence,
   showInspector,
+  headingRef,
+  retryCalculationButtonRef,
 }: ContextInspectorProps) {
   const headerTone = workerError || persistenceError || importError ? 'pill-alert' : 'pill-muted';
   const headerLabel = workerError ? 'Calculation failed' : persistenceError ? 'Local save failed' : importError ? 'Import error' : 'Context details';
@@ -56,12 +61,38 @@ export function ContextInspector({
             ? activeReaction?.name ?? 'Reaction'
             : 'Junction 1';
 
+  useEffect(() => {
+    if (!showInspector) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      if (workerError) {
+        const retryButton = Array.from(document.querySelectorAll('.inspector-pane button')).find((button) =>
+          button.textContent?.includes('Retry'),
+        );
+        if (retryButton instanceof HTMLElement) {
+          retryButton.focus();
+          return;
+        }
+      }
+
+      const heading = document.querySelector('.inspector-pane h2');
+      if (heading instanceof HTMLElement) {
+        heading.focus();
+        return;
+      }
+    }, 180);
+  }, [headingRef, retryCalculationButtonRef, showInspector, workerError]);
+
   return (
     <aside className={`inspector-pane panel ${showInspector ? 'is-open' : ''}`}>
       <div className="panel-header">
         <div>
           <p className="eyebrow">Inspector</p>
-          <h2>{heading}</h2>
+          <h2 ref={headingRef} tabIndex={-1}>
+            {heading}
+          </h2>
         </div>
         <span className={`pill ${headerTone}`}>{headerLabel}</span>
       </div>
@@ -146,7 +177,7 @@ export function ContextInspector({
         <div className="status-block">
           <p className="status-note status-note-alert">{workerError}</p>
           <div className="action-row">
-            <button type="button" className="button button-secondary" onClick={onRetryCalculation}>
+            <button ref={retryCalculationButtonRef} type="button" className="button button-secondary" onClick={onRetryCalculation}>
               Retry calculation
             </button>
           </div>
