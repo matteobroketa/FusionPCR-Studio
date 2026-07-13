@@ -13,9 +13,11 @@ import { StepNavigation } from './components/StepNavigation';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { exampleProjectOptions } from './data/example';
 import { useFusionDesign } from './hooks/useFusionDesign';
+import { useAppFocusManagement } from './hooks/useAppFocusManagement';
 import { useProjectController } from './hooks/useProjectController';
 import { useProjectPersistence } from './hooks/useProjectPersistence';
 import { useViewportMode } from './hooks/useViewportMode';
+import { buildCompareRows, buildStepStatuses, focusInspectorPanel, formatStepStatus, getActiveFocusableElement, isEditableElement } from './utils/app-ui';
 import { countPrimerScopedReviewItems, filterActionableReviewItems } from './utils/review-items';
 import { summarizeSequenceMetrics } from './utils/fusion';
 import { buildMutationPlan, selectedFragmentSequence, type MutationPlannerMode } from './utils/mutation';
@@ -32,55 +34,6 @@ const STORAGE_KEY = 'fusionpcr-studio-project';
 
 type InspectorFocus = 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction';
 type WorkbenchStep = 'sequences' | 'construct' | 'primers' | 'protocol';
-
-type StepStatusLevel = 'complete' | 'warning' | 'error' | 'pending';
-
-function formatStepStatus(level: StepStatusLevel, text: string) {
-  switch (level) {
-    case 'complete':
-      return `✓ ${text}`;
-    case 'warning':
-      return `! ${text}`;
-    case 'error':
-      return `× ${text}`;
-    default:
-      return `○ ${text}`;
-  }
-}
-
-function getActiveFocusableElement() {
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  return document.activeElement instanceof HTMLElement ? document.activeElement : null;
-}
-
-function isEditableElement(element: HTMLElement | null) {
-  if (!element) {
-    return false;
-  }
-
-  const tagName = element.tagName.toLowerCase();
-  return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || element.isContentEditable;
-}
-
-function focusInspectorPanel() {
-  window.setTimeout(() => {
-    const retryButton = Array.from(document.querySelectorAll('.inspector-pane button')).find((button) =>
-      button.textContent?.includes('Retry'),
-    );
-    if (retryButton instanceof HTMLElement && retryButton.textContent?.includes('Retry')) {
-      retryButton.focus();
-      return;
-    }
-
-    const heading = document.querySelector('.inspector-pane h2');
-    if (heading instanceof HTMLElement) {
-      heading.focus();
-    }
-  }, 220);
-}
 
 function App() {
   const [selectedStage, setSelectedStage] = useState<WorkflowStage>('overview');
@@ -119,16 +72,22 @@ function App() {
   const retryCalculationButtonRef = useRef<HTMLButtonElement | null>(null);
   const mobileInspectorToggleRef = useRef<HTMLButtonElement | null>(null);
   const confirmationCancelButtonRef = useRef<HTMLButtonElement | null>(null);
-  const inspectorTriggerRef = useRef<HTMLElement | null>(null);
-  const confirmationTriggerRef = useRef<HTMLElement | null>(null);
   const viewportMode = useViewportMode();
   const { design, calculationState, isDesignPending, isDesignCurrent, workerError, retry } = useFusionDesign(project);
   const { persistenceState, persistenceError, retryPersistence } = useProjectPersistence(STORAGE_KEY, project);
-  const previousShowInspectorRef = useRef(showInspector);
-  const previousIssueCountRef = useRef(0);
-  const previousCalculationRef = useRef<{ state: 'idle' | 'pending' | 'complete' | 'stale' | 'error'; isCurrent: boolean }>({
-    state: 'idle',
-    isCurrent: false,
+  const { inspectorTriggerRef, confirmationTriggerRef } = useAppFocusManagement({
+    showInspector,
+    workerError,
+    confirmationState,
+    issueCount: design.issues.length,
+    showWorkbench,
+    calculationState,
+    isDesignCurrent,
+    issueDrawerHeadingRef,
+    workspaceHeadingRef,
+    inspectorHeadingRef,
+    retryCalculationButtonRef,
+    confirmationCancelButtonRef,
   });
   const fragmentAMetrics = summarizeSequenceMetrics(project.fragmentA.sequence);
   const fragmentBMetrics = summarizeSequenceMetrics(project.fragmentB.sequence);
@@ -211,62 +170,14 @@ function App() {
     workerError ? 'alert' : calculationState === 'complete' && isDesignCurrent ? 'success' : 'watch';
   const publicExampleOptions = exampleProjectOptions.filter((option) => option.id === 'protein-fusion' || option.id === 'exact-fusion');
   const selectedPublicExampleDescription = publicExampleOptions.find((option) => option.id === selectedExampleId)?.description ?? 'Built-in example';
-  const sequenceStepStatus: { level: StepStatusLevel; text: string } =
-    project.fragmentA.sequence.trim() && project.fragmentB.sequence.trim()
-      ? { level: 'complete', text: 'Two sequences loaded' }
-      : project.fragmentA.sequence.trim() || project.fragmentB.sequence.trim()
-        ? { level: 'warning', text: 'One fragment still missing' }
-        : { level: 'pending', text: 'No sequences loaded' };
-  const constructStepStatus: { level: StepStatusLevel; text: string } = blockingReviewCount
-    ? { level: 'error', text: `${blockingReviewCount} blocking issue(s)` }
-    : design.finalProductVerified
-      ? { level: 'complete', text: 'Target verified' }
-      : { level: 'pending', text: 'Target not yet verified' };
-  const primerStepStatus: { level: StepStatusLevel; text: string } = !design.primers.length
-    ? { level: 'pending', text: 'No primer set yet' }
-    : primerScopedReviewCount
-      ? { level: 'warning', text: `${primerScopedReviewCount} primer review item(s)` }
-      : { level: 'complete', text: `${design.primers.length} primers ready` };
-  const protocolStepStatus: { level: StepStatusLevel; text: string } = !design.reactions.length
-    ? { level: 'pending', text: 'Protocol not reviewed' }
-    : blockingReviewCount
-      ? { level: 'warning', text: 'Protocol blocked by design issues' }
-      : actionableReviewItems.length
-        ? { level: 'warning', text: `${actionableReviewItems.length} review item(s)` }
-        : { level: 'complete', text: `${design.reactions.length} reactions planned` };
-  const compareRows = [
-    {
-      label: 'Total oligo nt',
-      current: String(comparisonMetrics.totalOligoLength),
-      baseline: comparisonSnapshot ? String(comparisonSnapshot.metrics.totalOligoLength) : 'n/a',
-    },
-    {
-      label: 'Worst dimer dG',
-      current: comparisonMetrics.worstDimerDeltaG !== null ? comparisonMetrics.worstDimerDeltaG.toFixed(1) : 'n/a',
-      baseline:
-        comparisonSnapshot && comparisonSnapshot.metrics.worstDimerDeltaG !== null
-          ? comparisonSnapshot.metrics.worstDimerDeltaG.toFixed(1)
-          : 'n/a',
-    },
-    {
-      label: 'Tm spread',
-      current: `${comparisonMetrics.tmSpread.toFixed(1)} C`,
-      baseline: comparisonSnapshot ? `${comparisonSnapshot.metrics.tmSpread.toFixed(1)} C` : 'n/a',
-    },
-    {
-      label: 'Overlap Tm',
-      current: comparisonMetrics.overlapTm !== null ? `${comparisonMetrics.overlapTm.toFixed(1)} C` : 'n/a',
-      baseline:
-        comparisonSnapshot && comparisonSnapshot.metrics.overlapTm !== null
-          ? `${comparisonSnapshot.metrics.overlapTm.toFixed(1)} C`
-          : 'n/a',
-    },
-    {
-      label: 'Local off-targets',
-      current: String(comparisonMetrics.localOffTargets),
-      baseline: comparisonSnapshot ? String(comparisonSnapshot.metrics.localOffTargets) : 'n/a',
-    },
-  ];
+  const { sequenceStepStatus, constructStepStatus, primerStepStatus, protocolStepStatus } = buildStepStatuses({
+    project,
+    design,
+    blockingReviewCount,
+    actionableReviewCount: actionableReviewItems.length,
+    primerScopedReviewCount,
+  });
+  const compareRows = buildCompareRows(comparisonMetrics, comparisonSnapshot);
 
   useEffect(() => {
     if (!visiblePrimers.length) {
@@ -276,67 +187,6 @@ function App() {
 
     setSelectedPrimerName((current) => (current && visiblePrimers.some((primer) => primer.name === current) ? current : visiblePrimers[0].name));
   }, [visiblePrimers]);
-
-  useEffect(() => {
-    if (showInspector && !previousShowInspectorRef.current) {
-      window.setTimeout(() => {
-        if (workerError) {
-          retryCalculationButtonRef.current?.focus();
-          return;
-        }
-        inspectorHeadingRef.current?.focus();
-      }, 180);
-    }
-
-    if (!showInspector && previousShowInspectorRef.current) {
-      inspectorTriggerRef.current?.focus();
-      inspectorTriggerRef.current = null;
-    }
-
-    previousShowInspectorRef.current = showInspector;
-  }, [showInspector, workerError]);
-
-  useEffect(() => {
-    if (confirmationState && !confirmationTriggerRef.current) {
-      confirmationTriggerRef.current = getActiveFocusableElement();
-      window.requestAnimationFrame(() => confirmationCancelButtonRef.current?.focus());
-      return;
-    }
-
-    if (!confirmationState && confirmationTriggerRef.current) {
-      confirmationTriggerRef.current.focus();
-      confirmationTriggerRef.current = null;
-    }
-  }, [confirmationState]);
-
-  useEffect(() => {
-    const activeElement = getActiveFocusableElement();
-    const becameBlocking = previousIssueCountRef.current === 0 && design.issues.length > 0;
-    if (becameBlocking && showWorkbench && !isEditableElement(activeElement)) {
-      window.requestAnimationFrame(() => issueDrawerHeadingRef.current?.focus());
-    }
-    previousIssueCountRef.current = design.issues.length;
-  }, [design.issues.length, showWorkbench]);
-
-  useEffect(() => {
-    const previous = previousCalculationRef.current;
-    const completedCalculation =
-      (previous.state !== 'complete' || !previous.isCurrent) &&
-      calculationState === 'complete' &&
-      isDesignCurrent &&
-      showWorkbench &&
-      !design.issues.length;
-    const activeElement = getActiveFocusableElement();
-
-    if (completedCalculation && !isEditableElement(activeElement)) {
-      window.requestAnimationFrame(() => workspaceHeadingRef.current?.focus());
-    }
-
-    previousCalculationRef.current = {
-      state: calculationState,
-      isCurrent: isDesignCurrent,
-    };
-  }, [calculationState, isDesignCurrent, design.issues.length, showWorkbench]);
 
   const openInspector = () => {
     inspectorTriggerRef.current = getActiveFocusableElement();
