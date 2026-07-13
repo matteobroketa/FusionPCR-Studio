@@ -780,10 +780,26 @@ select.text-input,
   font-weight: 600;
 }
 
+.construct-summary-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .construct-strip {
+  position: relative;
   display: flex;
   gap: 8px;
   align-items: stretch;
+  padding-top: 18px;
+}
+
+.construct-strip-exact {
+  gap: 0;
+}
+
+.construct-strip-inserted {
+  gap: 8px;
 }
 
 .construct-button {
@@ -804,6 +820,16 @@ select.text-input,
   box-shadow: inset 0 0 0 2px var(--primary);
 }
 
+.construct-exact-left {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.construct-exact-right {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
 .block-a {
   border-color: rgba(59, 130, 246, 0.35);
   background: rgba(59, 130, 246, 0.08);
@@ -817,6 +843,59 @@ select.text-input,
 .block-insert {
   border-color: rgba(124, 58, 237, 0.25);
   background: rgba(124, 58, 237, 0.08);
+}
+
+.construct-overlap-button {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  border-radius: 999px;
+  background: rgb(255 247 237 / 0.96);
+  color: var(--text);
+  text-align: center;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-sm);
+  z-index: 1;
+}
+
+.construct-overlap-button::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  width: 2px;
+  height: 14px;
+  background: rgba(180, 83, 9, 0.45);
+  transform: translateX(-50%);
+}
+
+.construct-overlap-button span,
+.construct-overlap-button strong {
+  display: block;
+}
+
+.construct-overlap-button-exact {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(59 130 246 / 0.12) 0 50%,
+      rgb(22 163 74 / 0.12) 50% 100%
+    ),
+    rgb(255 255 255 / 0.96);
+}
+
+.construct-overlap-button-inserted {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(59 130 246 / 0.12) 0 34%,
+      rgb(124 58 237 / 0.12) 34% 66%,
+      rgb(22 163 74 / 0.12) 66% 100%
+    ),
+    rgb(255 255 255 / 0.96);
 }
 
 .primer-direction-grid {
@@ -1151,6 +1230,27 @@ select.text-input,
 
   .construct-strip {
     flex-direction: column;
+    padding-top: 0;
+    gap: var(--space-3);
+  }
+
+  .construct-strip-exact {
+    gap: var(--space-3);
+  }
+
+  .construct-overlap-button {
+    position: static;
+    width: 100% !important;
+    transform: none;
+  }
+
+  .construct-overlap-button::after {
+    display: none;
+  }
+
+  .construct-exact-left,
+  .construct-exact-right {
+    border-radius: var(--radius-md);
   }
 
   .button,

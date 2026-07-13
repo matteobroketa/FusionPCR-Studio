@@ -51,7 +51,7 @@ for (const viewport of viewports) {
     test('selected junction', async ({ page }) => {
       await gotoApp(page);
       await loadExample(page, 'protein-fusion');
-      await page.locator('.block-insert').click();
+      await page.getByRole('button', { name: /Overlap span at the junction/i }).click();
       await expectNoHorizontalOverflow(page);
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`selected-junction-${viewport.width}x${viewport.height}.png`, screenshotOptions);

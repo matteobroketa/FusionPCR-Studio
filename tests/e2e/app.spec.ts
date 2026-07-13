@@ -14,6 +14,10 @@ async function tabUntilFocused(page: Page, locator: Locator, maxTabs = 30) {
   await expect(locator).toBeFocused();
 }
 
+function junctionControl(page: Page) {
+  return page.getByRole('button', { name: /Overlap span at the junction/i });
+}
+
 test.describe('FusionPCR Studio production build', () => {
   test('starts the design worker, renders a runnable example, and loads the supported built-in examples', async ({ page }) => {
     const workerPromise = page.waitForEvent('worker');
@@ -121,12 +125,26 @@ test.describe('FusionPCR Studio production build', () => {
     await page.goto('./');
     await loadRunnableExample(page);
 
-    await page.locator('.block-insert').click();
+    await junctionControl(page).click();
 
     await expect(page.getByText('Review issues')).toBeVisible();
     await expect(page.getByText('Upstream stop codon removal is proposed but not yet approved.')).toBeVisible();
     await expect(page.locator('.inspector-pane').getByText('Upstream stop codon removal is proposed but not yet approved.')).toHaveCount(0);
     await expect(page.locator('.inspector-pane').getByText('Scientific scope')).toHaveCount(0);
+  });
+
+  test('renders exact fusion overlap without a false inserted centre block', async ({ page }) => {
+    await page.goto('./');
+    await page.getByRole('button', { name: 'Load exact fusion example' }).click();
+    await expect(page.getByText('Sequence reconstruction verified.')).toBeVisible();
+    await openWorkbenchStep(page, 'Junction');
+
+    await expect(page.locator('.block-insert')).toHaveCount(0);
+    await expect(junctionControl(page)).toBeVisible();
+
+    const targetSummary = page.locator('.construct-summary-row');
+    await expect(targetSummary).toContainText(/Target construct \d+ bp/);
+    await expect(targetSummary).toContainText(/Overlap \d+ bp/);
   });
 
   test('uses a compact primer table with one detail panel and copy controls', async ({ page }) => {
@@ -210,7 +228,7 @@ test.describe('FusionPCR Studio production build', () => {
     await page.goto('./');
     await loadRunnableExample(page);
 
-    const junctionButton = page.locator('.block-insert');
+    const junctionButton = junctionControl(page);
     await junctionButton.click();
     await expect(page.locator('.inspector-pane').getByRole('heading', { name: 'Junction 1' })).toBeFocused();
 
