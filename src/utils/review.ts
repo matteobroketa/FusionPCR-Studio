@@ -1,5 +1,6 @@
 import { reverseComplement } from './pcr';
 import type { FusionDesign, PrimerDesign } from './fusion';
+import { filterActionableReviewItems } from './review-items';
 
 export type WorkflowStage = 'overview' | 'pcr1a' | 'pcr1b' | 'fusion' | 'verification';
 
@@ -51,7 +52,7 @@ export function summarizeDesignComparison(design: FusionDesign): DesignCompariso
     localOffTargets: design.offTargetAmplicons.length,
     highRiskOffTargets: design.offTargetAmplicons.filter((amplicon) => amplicon.risk === 'high').length,
     finalProductLength: design.finalProduct.length,
-    warningCount: design.warnings.length,
+    warningCount: filterActionableReviewItems(design.reviewItems).length,
   };
 }
 

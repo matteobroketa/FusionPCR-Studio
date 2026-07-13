@@ -16,6 +16,8 @@ import { stampProjectMetadata } from '../utils/project';
 const now = new Date().toISOString();
 const fragmentASequence = 'ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG';
 const fragmentBSequence = 'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG';
+const proteinFragmentASequence = 'GCGCCGACCGGTGCCGGGACCCAGCCAGTTGCGGTGGATAAT';
+const proteinFragmentBSequence = 'CCGGCGGTAACAGTACAAGGTCCGGCCACTGGTGGTTCGCCT';
 const mutationTemplateSequence = 'GCCGCTGAAAGGGTGCCCGATAGATGGCCATTGTAATGGGCC';
 
 export type ExampleProjectId = 'exact-fusion' | 'protein-fusion' | 'insertion' | 'mutation';
@@ -75,21 +77,23 @@ const proteinFusionExample = stampProjectMetadata({
   name: 'Protein fusion demo',
   polymeraseId: 'q5',
   mode: 'protein-fusion',
-  insertSequence: 'GGTGGTGGTGGTTCT',
-  notes: 'Fuse two coding fragments with a short glycine-serine linker.',
+  insertSequence: 'GGTGGTAGC',
+  notes: 'Fuse two coding fragments with a short glycine-rich linker while preserving the reading frame.',
   coding: {
     ...defaultCodingIntent(),
     linkerRequired: true,
-    preserveProtein: true,
-    flexibleCodons: 2,
+    preserveProtein: false,
+    flexibleCodons: 0,
+    retainUpstreamStop: true,
+    retainDownstreamStart: true,
   },
   genomicSpecificity: {
     ...defaultGenomicSpecificitySettings(),
     organism: 'Homo sapiens',
     notes: 'Use the Primer-BLAST handoff export if an external genomic specificity screen is required.',
   },
-  fragmentA: buildFragment('Upstream CDS', fragmentASequence),
-  fragmentB: buildFragment('Downstream CDS', fragmentBSequence),
+  fragmentA: buildFragment('Upstream CDS', proteinFragmentASequence),
+  fragmentB: buildFragment('Downstream CDS', proteinFragmentBSequence),
 });
 
 const insertionExample = stampProjectMetadata({

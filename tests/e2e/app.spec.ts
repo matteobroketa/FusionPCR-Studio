@@ -126,10 +126,11 @@ test.describe('FusionPCR Studio production build', () => {
     await loadRunnableExample(page);
 
     await junctionControl(page).click();
+    await page.getByRole('button', { name: 'Show all issues' }).click();
 
     await expect(page.getByText('Review issues')).toBeVisible();
-    await expect(page.getByText('Upstream stop codon removal is proposed but not yet approved.')).toBeVisible();
-    await expect(page.locator('.inspector-pane').getByText('Upstream stop codon removal is proposed but not yet approved.')).toHaveCount(0);
+    await expect(page.locator('.issue-drawer').getByText('The overlap is outside one or more documented operating criteria.').first()).toBeVisible();
+    await expect(page.locator('.inspector-pane').getByText('The overlap is outside one or more documented operating criteria.')).toHaveCount(0);
     await expect(page.locator('.inspector-pane').getByText('Scientific scope')).toHaveCount(0);
   });
 

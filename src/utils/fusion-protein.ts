@@ -1,5 +1,6 @@
 import { normalizeSequence } from './pcr';
-import type { CodingIntent, DesignMode, SynonymousOptimization, ProteinValidation } from './fusion-model';
+import type { CodingIntent, DesignMode, ReviewItem, SynonymousOptimization, ProteinValidation } from './fusion-model';
+import { createReviewItem } from './review-items';
 import { formatAminoAcidWindow, translateSequence } from './translation';
 
 const STOP_CODONS = new Set(['TAA', 'TAG', 'TGA']);
@@ -79,29 +80,88 @@ export function validateProteinFusion(
   const upstreamHasTerminalStop = upstreamFullTranslation.codons.at(-1) !== undefined && STOP_CODONS.has(upstreamFullTranslation.codons.at(-1)!);
   const downstreamHasStartCodon = downstreamFullTranslation.codons[0] === 'ATG';
   const proteinWarnings: string[] = [];
+  const proteinReviewItems: ReviewItem[] = [];
 
   if (!framePreserved) {
     const delta = (expectedFrame - observedFrame + 3) % 3;
-    proteinWarnings.push(
-      `Frameshift: the current junction leaves remainder ${observedFrame}; adjust the inserted sequence by ${delta === 0 ? 3 : delta} base(s) to reach downstream frame ${expectedFrame}.`,
+    const title = `Frameshift: the current junction leaves remainder ${observedFrame}.`;
+    proteinWarnings.push(title);
+    proteinReviewItems.push(
+      createReviewItem({
+        severity: 'warning',
+        scope: 'protein',
+        relatedObjectId: 'junction-1',
+        title,
+        explanation: `The current fusion does not preserve the downstream frame ${expectedFrame}.`,
+        recommendedAction: `Adjust the inserted sequence by ${delta === 0 ? 3 : delta} base(s) to restore the reading frame.`,
+        deduplicationKey: `protein:frameshift:${observedFrame}:${expectedFrame}`,
+      }),
     );
   }
 
   if (upstreamHasTerminalStop && coding.retainUpstreamStop) {
-    proteinWarnings.push('Premature termination: the upstream fragment retains its stop codon.');
+    const title = 'Premature termination: the upstream fragment retains its stop codon.';
+    proteinWarnings.push(title);
+    proteinReviewItems.push(
+      createReviewItem({
+        severity: 'warning',
+        scope: 'protein',
+        relatedObjectId: 'fragment-a',
+        title,
+        explanation: 'Translation would terminate at the upstream stop codon before reaching the fused downstream coding region.',
+        recommendedAction: 'Approve removal of the upstream stop codon or choose a fragment range without a terminal stop.',
+        deduplicationKey: 'protein:upstream-stop-retained',
+      }),
+    );
   }
 
   if (downstreamHasStartCodon && coding.retainDownstreamStart) {
-    proteinWarnings.push('Unexpected N-terminal methionine: the downstream ATG is retained.');
+    const title = 'Unexpected N-terminal methionine: the downstream ATG is retained.';
+    proteinWarnings.push(title);
+    proteinReviewItems.push(
+      createReviewItem({
+        severity: 'review',
+        scope: 'protein',
+        relatedObjectId: 'fragment-b',
+        title,
+        explanation: 'The downstream coding fragment still begins with ATG, which can add an extra methionine to the fused product.',
+        recommendedAction: 'Approve removal of the downstream start codon if continuous fusion is intended.',
+        deduplicationKey: 'protein:downstream-start-retained',
+      }),
+    );
   }
 
   if (coding.linkerRequired && !insertSequence.length) {
-    proteinWarnings.push('Linker required: protein fusion mode is configured to require an inserted linker sequence.');
+    const title = 'Linker required: protein fusion mode is configured to require an inserted linker sequence.';
+    proteinWarnings.push(title);
+    proteinReviewItems.push(
+      createReviewItem({
+        severity: 'warning',
+        scope: 'protein',
+        relatedObjectId: 'junction-1',
+        title,
+        explanation: 'Protein-fusion mode is configured to require a linker, but the current design inserts no bases at the junction.',
+        recommendedAction: 'Provide the intended linker or disable the linker-required coding setting.',
+        deduplicationKey: 'protein:linker-required',
+      }),
+    );
   }
 
   const firstPrematureStop = finalTranslation.stopPositions.find((position) => position < finalTranslation.aminoAcids.length - 1);
   if (firstPrematureStop !== undefined) {
-    proteinWarnings.push(`Premature stop codon detected at amino-acid position ${firstPrematureStop + 1} in the fused product.`);
+    const title = `Premature stop codon detected at amino-acid position ${firstPrematureStop + 1} in the fused product.`;
+    proteinWarnings.push(title);
+    proteinReviewItems.push(
+      createReviewItem({
+        severity: 'warning',
+        scope: 'protein',
+        relatedObjectId: 'junction-1',
+        title,
+        explanation: 'The fused coding sequence introduces an internal stop codon before the end of the translated product.',
+        recommendedAction: 'Adjust the fragment ranges, reading frame, or inserted sequence before ordering primers.',
+        deduplicationKey: `protein:premature-stop:${firstPrematureStop + 1}`,
+      }),
+    );
   }
 
   const junctionAaIndex = Math.max(0, Math.floor(codingBasesBeforeJunction / 3) - 1);
@@ -123,6 +183,7 @@ export function validateProteinFusion(
     junctionAminoAcids: formatAminoAcidWindow(finalTranslation.aminoAcids, junctionAaIndex),
     linkerAminoAcids: insertTranslation.aminoAcids,
     synonymousOptimization,
+    reviewItems: proteinReviewItems,
     warnings: proteinWarnings,
   };
 }

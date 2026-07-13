@@ -16,6 +16,7 @@ Status values are intentionally conservative:
 | Tm scientific fixtures | Done | [test-data/reference/tm-reference.json](test-data/reference/tm-reference.json), [scripts/generate-tm-reference.py](scripts/generate-tm-reference.py), [src/utils/thermodynamics.test.ts](src/utils/thermodynamics.test.ts) |
 | OE-PCR reconstruction fixtures | Done | [test-data/reference/product-reconstruction.json](test-data/reference/product-reconstruction.json), [src/utils/fusion.test.ts](src/utils/fusion.test.ts) |
 | TypeScript versus Rust parity | Done | [src/utils/parity.test.ts](src/utils/parity.test.ts), [crates/fusion-core/src/bin/parity-cli.rs](crates/fusion-core/src/bin/parity-cli.rs), [METHODS.md](METHODS.md) |
+| Structured review items and clean built-in example limits | Done | [src/utils/fusion-model.ts](src/utils/fusion-model.ts), [src/utils/review-items.ts](src/utils/review-items.ts), [src/components/IssueDrawer.tsx](src/components/IssueDrawer.tsx), [src/data/example.ts](src/data/example.ts) | [src/utils/fusion.test.ts](src/utils/fusion.test.ts), [tests/e2e/app.spec.ts](tests/e2e/app.spec.ts) |
 | Remaining scientific gaps documented | Partial | [VALIDATION.md](VALIDATION.md), [LIMITATIONS.md](LIMITATIONS.md), [src/App.tsx](src/App.tsx), [src/utils/export.ts](src/utils/export.ts) |
 
 Current validated fixture counts:
@@ -23,6 +24,7 @@ Current validated fixture counts:
 - Tm reference fixtures: `32`
 - OE-PCR reconstruction fixtures: `12`
 - Public built-in examples exercised in Playwright: `2`
+- Public built-in examples at or below the current actionable review-item limit: `2`
 - Public exports exercised in Playwright: `5`
 
 Current browser-test coverage:

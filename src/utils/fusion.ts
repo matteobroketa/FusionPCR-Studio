@@ -31,6 +31,7 @@ import {
   type PrimerPairInteraction,
   type ProteinValidation,
   type ReactionPlan,
+  type ReviewItem,
   type SequenceChangeProposal,
   type SequenceFeature,
   type SequenceTopology,
@@ -38,7 +39,9 @@ import {
   type SynonymousOptimizationChange,
 } from './fusion-model';
 import { removeFirstInFrameStartCodon, replaceLastInFrameCodon, validateProteinFusion } from './fusion-protein';
+import { getNonIntendedSpecificitySites, primerPairSharesReaction } from './primer-review';
 import { clampRange, isFiniteThermodynamicResult, longestHomopolymerRun, type NormalizedRange, selectRange } from './fusion-sequence';
+import { createReviewItem, deduplicateReviewItems, sortReviewItems, summarizeReviewItem } from './review-items';
 
 type CandidateBody = {
   templateSequence: string;
@@ -76,6 +79,7 @@ type DesignVariant = {
   protocolPlan: ProtocolPlan;
   qualityScore: number;
   qualityBreakdown: DesignQualityBreakdown;
+  reviewItems: ReviewItem[];
   warnings: string[];
   totalOligoLength: number;
   worstNonIntendedDimerDeltaG: number | null;
@@ -520,6 +524,17 @@ function buildSpecificityTemplates(project: FusionProjectInput, stageAProduct: s
   return templates.filter((template) => template.sequence.length > 0);
 }
 
+function finalizeReviewItems(reviewItems: ReviewItem[]): ReviewItem[] {
+  return sortReviewItems(deduplicateReviewItems(reviewItems));
+}
+
+function deriveLegacyReviewLists(reviewItems: ReviewItem[]): { issues: string[]; warnings: string[] } {
+  return {
+    issues: reviewItems.filter((item) => item.severity === 'blocking').map(summarizeReviewItem),
+    warnings: reviewItems.filter((item) => item.severity === 'warning' || item.severity === 'review').map(summarizeReviewItem),
+  };
+}
+
 function clampQuality(value: number): number {
   return Math.max(0.05, Math.min(1, value));
 }
@@ -768,35 +783,111 @@ function buildDesignVariant(
     selectedBLength: effectiveSelectedB.length,
     finalProductLength: finalProduct.length,
   });
-  const variantWarnings: string[] = [];
-  for (const primer of primersWithSpecificity) {
-    if (primer.structure.risk !== 'Low') {
-      variantWarnings.push(`${primer.name} has ${primer.structure.risk.toLowerCase()} structure risk.`);
-    }
-    const extraRiskySites = primer.specificitySites.filter(
-      (site) =>
-        site.risk !== 'low' &&
-        !(site.templateId === primer.expectedTemplateId && site.mismatchCount === 0 && site.matchedSequence === primer.bodyTemplateSequence),
+  const variantReviewItems: ReviewItem[] = [];
+  const primersWithStructureRisk = primersWithSpecificity.filter((primer) => primer.structure.risk !== 'Low');
+  if (primersWithStructureRisk.length) {
+    variantReviewItems.push(
+      createReviewItem({
+        severity: 'information',
+        scope: 'primer',
+        relatedObjectId: null,
+        title: `${primersWithStructureRisk.length} primer(s) show approximate structure-screen findings.`,
+        explanation: primersWithStructureRisk.map((primer) => `${primer.name}: ${primer.structure.risk.toLowerCase()} risk`).join('; '),
+        recommendedAction: 'Inspect the named primers in the detail panel and compare alternative designs if the structure burden is unacceptable.',
+        deduplicationKey: `variant:structure:${primersWithStructureRisk.map((primer) => `${primer.name}-${primer.structure.risk}`).join('|')}`,
+      }),
     );
-    if (extraRiskySites.length) {
-      variantWarnings.push(`${primer.name} has ${extraRiskySites.length} additional local specificity match(es) beyond the intended template site.`);
+    for (const primer of primersWithStructureRisk) {
+      variantReviewItems.push(
+        createReviewItem({
+          severity: 'information',
+          scope: 'primer',
+          relatedObjectId: primer.name,
+          title: `${primer.name} has ${primer.structure.risk.toLowerCase()} approximate structure risk.`,
+          explanation: `The approximate structure model detected a non-low hairpin, homodimer, or 3 prime dimer pattern for ${primer.name}.`,
+          recommendedAction: 'Review the structure findings for this primer before ordering oligos.',
+          deduplicationKey: `primer-structure:${primer.name}:${primer.structure.risk}`,
+        }),
+      );
+    }
+  }
+  const specificitySummaries = primersWithSpecificity
+    .map((primer) => {
+      const extraRiskySites = getNonIntendedSpecificitySites(primer);
+      return {
+        primer,
+        extraRiskySites,
+      };
+    })
+    .filter((entry) => entry.extraRiskySites.length > 0);
+  if (specificitySummaries.length) {
+    const hasHighSpecificityRisk = specificitySummaries.some((entry) => entry.extraRiskySites.some((site) => site.risk === 'high'));
+    variantReviewItems.push(
+      createReviewItem({
+        severity: hasHighSpecificityRisk ? 'warning' : 'review',
+        scope: 'primer',
+        relatedObjectId: null,
+        title: `${specificitySummaries.length} primer(s) have additional local specificity matches beyond the intended template site.`,
+        explanation: specificitySummaries
+          .map((entry) => `${entry.primer.name}: ${entry.extraRiskySites.length} extra match(es)`)
+          .join('; '),
+        recommendedAction: 'Inspect the local specificity panel and consider different fragment ranges if these extra matches are unacceptable.',
+        deduplicationKey: `variant:specificity:${specificitySummaries.map((entry) => `${entry.primer.name}-${entry.extraRiskySites.length}`).join('|')}`,
+      }),
+    );
+    for (const entry of specificitySummaries) {
+      variantReviewItems.push(
+        createReviewItem({
+          severity: 'information',
+          scope: 'primer',
+          relatedObjectId: entry.primer.name,
+          title: `${entry.primer.name} has ${entry.extraRiskySites.length} additional local specificity match(es).`,
+          explanation: `These extra local matches exclude the intended template site and should be reviewed in the specificity panel.`,
+          recommendedAction: 'Review the local specificity hits for this primer before ordering oligos.',
+          deduplicationKey: `primer-specificity:${entry.primer.name}:${entry.extraRiskySites.length}`,
+        }),
+      );
     }
   }
   const innerTmSpread = Math.abs(primersWithSpecificity[1].bodyTm - primersWithSpecificity[2].bodyTm);
   if (innerTmSpread >= 4) {
-    variantWarnings.push(`Inner primer body Tm spread is ${innerTmSpread.toFixed(1)} C; consider adjusting the selected ranges.`);
+    variantReviewItems.push(
+      createReviewItem({
+        severity: 'information',
+        scope: 'junction',
+        relatedObjectId: 'junction-1',
+        title: `Inner primer body Tm spread is ${innerTmSpread.toFixed(1)} C.`,
+        explanation: 'The inner-primer body temperatures are farther apart than the documented 4 C review threshold.',
+        recommendedAction: 'Consider adjusting the selected ranges if you want a tighter inner-primer Tm match.',
+        deduplicationKey: `junction:inner-tm-spread:${innerTmSpread.toFixed(1)}`,
+      }),
+    );
   }
+  const failedOverlapCriteria: string[] = [];
   if (!overlapAssessment.criteria.tm) {
-    variantWarnings.push(`Overlap Tm ${overlapTm.toFixed(1)} C is outside the documented ${58}-${72} C operating window.`);
+    failedOverlapCriteria.push(`Tm ${overlapTm.toFixed(1)} C is outside the documented 58-72 C operating window`);
   }
   if (!overlapAssessment.criteria.gc) {
-    variantWarnings.push(`Overlap GC ${overlapAssessment.gcPercent.toFixed(1)}% is outside the documented 35-65% range.`);
+    failedOverlapCriteria.push(`GC ${overlapAssessment.gcPercent.toFixed(1)}% is outside the documented 35-65% range`);
   }
   if (!overlapAssessment.criteria.length) {
-    variantWarnings.push(`Overlap length ${overlapSequence.length} nt is below the documented 24 nt minimum.`);
+    failedOverlapCriteria.push(`length ${overlapSequence.length} nt is below the documented 24 nt minimum`);
   }
   if (!overlapAssessment.criteria.homopolymer) {
-    variantWarnings.push(`Overlap contains a homopolymer run of ${overlapAssessment.homopolymerRun} bases, above the documented maximum of 4.`);
+    failedOverlapCriteria.push(`homopolymer run ${overlapAssessment.homopolymerRun} exceeds the documented maximum of 4`);
+  }
+  if (failedOverlapCriteria.length) {
+    variantReviewItems.push(
+      createReviewItem({
+        severity: 'review',
+        scope: 'junction',
+        relatedObjectId: 'junction-1',
+        title: 'The overlap is outside one or more documented operating criteria.',
+        explanation: failedOverlapCriteria.join('; '),
+        recommendedAction: 'Review the overlap criteria and adjust the selected ranges or inserted sequence if you need a different junction window.',
+        deduplicationKey: `junction:overlap-criteria:${failedOverlapCriteria.join('|')}`,
+      }),
+    );
   }
   const highRiskOffTargets = offTargetAmplicons.filter(
     (amplicon) =>
@@ -804,13 +895,37 @@ function buildDesignVariant(
       (amplicon.templateId.endsWith('-rc') || amplicon.templateId === 'fragment-a' || amplicon.templateId === 'fragment-b'),
   );
   if (highRiskOffTargets.length) {
-    variantWarnings.push(`${highRiskOffTargets.length} high-risk unintended amplicon candidate(s) were detected locally.`);
+    variantReviewItems.push(
+      createReviewItem({
+        severity: 'warning',
+        scope: 'design',
+        relatedObjectId: null,
+        title: `${highRiskOffTargets.length} high-risk unintended amplicon candidate(s) were detected locally.`,
+        explanation: 'These unintended products arise from the local in-project specificity scan and exclude the intended amplicon models.',
+        recommendedAction: 'Inspect the unintended amplicons before ordering primers or exporting the protocol.',
+        deduplicationKey: `design:high-risk-offtargets:${highRiskOffTargets.length}`,
+      }),
+    );
   }
-  const riskyCrossDimers = primerPairInteractions.filter((pair) => pair.interaction?.risk === 'High' && !pair.intended);
+  const riskyCrossDimers = primerPairInteractions.filter(
+    (pair) => pair.interaction?.risk === 'High' && !pair.intended && primerPairSharesReaction(pair, reactions),
+  );
   if (riskyCrossDimers.length) {
-    variantWarnings.push(`${riskyCrossDimers.length} high-risk cross-dimer interaction(s) were detected among the current primers.`);
+    variantReviewItems.push(
+      createReviewItem({
+        severity: 'information',
+        scope: 'primer',
+        relatedObjectId: null,
+        title: `${riskyCrossDimers.length} approximate cross-dimer interaction(s) were flagged among primers used together.`,
+        explanation: riskyCrossDimers.map((pair) => `${pair.primerAName}/${pair.primerBName}`).join('; '),
+        recommendedAction: 'Inspect the pairwise interaction panel and compare alternative primer sets if these interactions are unacceptable.',
+        deduplicationKey: `variant:cross-dimer:${riskyCrossDimers.map((pair) => `${pair.primerAName}-${pair.primerBName}`).join('|')}`,
+      }),
+    );
   }
   const scored = scoreDesignVariant(profile, primersWithSpecificity, offTargetAmplicons, primerPairInteractions, overlapAssessment);
+  const reviewItems = finalizeReviewItems(variantReviewItems);
+  const { warnings } = deriveLegacyReviewLists(reviewItems);
 
   return {
     id: [
@@ -835,7 +950,8 @@ function buildDesignVariant(
     overlapAssessment,
     qualityScore: scored.qualityScore,
     qualityBreakdown: scored.qualityBreakdown,
-    warnings: variantWarnings,
+    reviewItems,
+    warnings,
     totalOligoLength: scored.totalOligoLength,
     worstNonIntendedDimerDeltaG: scored.worstNonIntendedDimerDeltaG,
     highRiskOffTargets: scored.highRiskOffTargets,
@@ -851,27 +967,76 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
   const insertSequence = normalizeSequence(projectInput.insertSequence);
   const normalizedA = normalizeSequence(projectInput.fragmentA.sequence);
   const normalizedB = normalizeSequence(projectInput.fragmentB.sequence);
-  const issues: string[] = [];
-  const warnings: string[] = [];
+  const reviewItems: ReviewItem[] = [];
 
   const invalidFragmentA = findInvalidBases(normalizedA, false);
   const invalidFragmentB = findInvalidBases(normalizedB, false);
   const invalidInsert = findInvalidBases(insertSequence, false);
 
   if (invalidFragmentA.length) {
-    issues.push(`Fragment A contains unsupported bases: ${invalidFragmentA.join(', ')}`);
+    reviewItems.push(
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'sequence',
+        relatedObjectId: 'fragment-a',
+        title: `Fragment A contains unsupported bases: ${invalidFragmentA.join(', ')}`,
+        explanation: 'Only A, C, G, and T are accepted in the public MVP DNA-entry workflow.',
+        recommendedAction: 'Replace the unsupported characters in Fragment A before calculating primers.',
+        deduplicationKey: `sequence:fragment-a:invalid:${invalidFragmentA.join('|')}`,
+      }),
+    );
   }
   if (invalidFragmentB.length) {
-    issues.push(`Fragment B contains unsupported bases: ${invalidFragmentB.join(', ')}`);
+    reviewItems.push(
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'sequence',
+        relatedObjectId: 'fragment-b',
+        title: `Fragment B contains unsupported bases: ${invalidFragmentB.join(', ')}`,
+        explanation: 'Only A, C, G, and T are accepted in the public MVP DNA-entry workflow.',
+        recommendedAction: 'Replace the unsupported characters in Fragment B before calculating primers.',
+        deduplicationKey: `sequence:fragment-b:invalid:${invalidFragmentB.join('|')}`,
+      }),
+    );
   }
   if (invalidInsert.length) {
-    issues.push(`Insert sequence contains unsupported bases: ${invalidInsert.join(', ')}`);
+    reviewItems.push(
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'junction',
+        relatedObjectId: 'junction-1',
+        title: `Insert sequence contains unsupported bases: ${invalidInsert.join(', ')}`,
+        explanation: 'The optional inserted sequence must also be valid DNA in the public MVP workflow.',
+        recommendedAction: 'Replace the unsupported inserted bases before calculating primers.',
+        deduplicationKey: `sequence:insert:invalid:${invalidInsert.join('|')}`,
+      }),
+    );
   }
   if (!normalizedA.length) {
-    issues.push('Fragment A is empty.');
+    reviewItems.push(
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'sequence',
+        relatedObjectId: 'fragment-a',
+        title: 'Fragment A is empty.',
+        explanation: 'A two-fragment OE-PCR design requires a non-empty upstream fragment selection.',
+        recommendedAction: 'Provide Fragment A sequence content before calculating primers.',
+        deduplicationKey: 'sequence:fragment-a:empty',
+      }),
+    );
   }
   if (!normalizedB.length) {
-    issues.push('Fragment B is empty.');
+    reviewItems.push(
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'sequence',
+        relatedObjectId: 'fragment-b',
+        title: 'Fragment B is empty.',
+        explanation: 'A two-fragment OE-PCR design requires a non-empty downstream fragment selection.',
+        recommendedAction: 'Provide Fragment B sequence content before calculating primers.',
+        deduplicationKey: 'sequence:fragment-b:empty',
+      }),
+    );
   }
 
   const rangeA = clampRange(normalizedA.length, projectInput.fragmentA.topology, projectInput.fragmentA.start, projectInput.fragmentA.end);
@@ -884,16 +1049,56 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
   const sequenceChangeProposals: SequenceChangeProposal[] = [];
 
   if (rangeA.clamped) {
-    warnings.push('Fragment A range was normalized to stay within the sequence bounds.');
+    reviewItems.push(
+      createReviewItem({
+        severity: 'information',
+        scope: 'sequence',
+        relatedObjectId: 'fragment-a',
+        title: 'Fragment A range was normalized to stay within the sequence bounds.',
+        explanation: 'The selected coordinates were clamped to the available Fragment A sequence length.',
+        recommendedAction: 'Review the displayed Fragment A coordinates if the normalized range is not what you intended.',
+        deduplicationKey: 'sequence:fragment-a:range-normalized',
+      }),
+    );
   }
   if (rangeB.clamped) {
-    warnings.push('Fragment B range was normalized to stay within the sequence bounds.');
+    reviewItems.push(
+      createReviewItem({
+        severity: 'information',
+        scope: 'sequence',
+        relatedObjectId: 'fragment-b',
+        title: 'Fragment B range was normalized to stay within the sequence bounds.',
+        explanation: 'The selected coordinates were clamped to the available Fragment B sequence length.',
+        recommendedAction: 'Review the displayed Fragment B coordinates if the normalized range is not what you intended.',
+        deduplicationKey: 'sequence:fragment-b:range-normalized',
+      }),
+    );
   }
   if (selectedA.length < profile.minBodyLength) {
-    issues.push(`Fragment A contributes only ${selectedA.length} bases, below the ${profile.minBodyLength} nt minimum primer-body length for ${profile.label}.`);
+    reviewItems.push(
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'sequence',
+        relatedObjectId: 'fragment-a',
+        title: `Fragment A contributes only ${selectedA.length} bases, below the ${profile.minBodyLength} nt minimum primer-body length for ${profile.label}.`,
+        explanation: 'The upstream fragment selection is too short to support a physically valid annealing body under the chosen polymerase profile.',
+        recommendedAction: 'Extend the Fragment A selection or choose different source coordinates before calculating primers.',
+        deduplicationKey: `sequence:fragment-a:too-short:${selectedA.length}:${profile.id}`,
+      }),
+    );
   }
   if (selectedB.length < profile.minBodyLength) {
-    issues.push(`Fragment B contributes only ${selectedB.length} bases, below the ${profile.minBodyLength} nt minimum primer-body length for ${profile.label}.`);
+    reviewItems.push(
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'sequence',
+        relatedObjectId: 'fragment-b',
+        title: `Fragment B contributes only ${selectedB.length} bases, below the ${profile.minBodyLength} nt minimum primer-body length for ${profile.label}.`,
+        explanation: 'The downstream fragment selection is too short to support a physically valid annealing body under the chosen polymerase profile.',
+        recommendedAction: 'Extend the Fragment B selection or choose different source coordinates before calculating primers.',
+        deduplicationKey: `sequence:fragment-b:too-short:${selectedB.length}:${profile.id}`,
+      }),
+    );
   }
 
   if (projectInput.mode === 'protein-fusion') {
@@ -915,9 +1120,29 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
       }
       if (removed.removed && changeApprovals.removeUpstreamStop) {
         effectiveSelectedA = removed.sequence;
-        warnings.push('Upstream terminal stop codon removal was approved and applied to the fused coding product.');
+        reviewItems.push(
+          createReviewItem({
+            severity: 'information',
+            scope: 'protein',
+            relatedObjectId: 'fragment-a',
+            title: 'Upstream terminal stop codon removal was approved and applied to the fused coding product.',
+            explanation: `The terminal stop codon ${removed.codon} was removed from the upstream coding fragment after approval.`,
+            recommendedAction: 'Review the updated effective Fragment A sequence before ordering primers.',
+            deduplicationKey: 'protein:upstream-stop-approved',
+          }),
+        );
       } else if (removed.removed) {
-        warnings.push('Upstream stop codon removal is proposed but not yet approved.');
+        reviewItems.push(
+          createReviewItem({
+            severity: 'review',
+            scope: 'protein',
+            relatedObjectId: 'fragment-a',
+            title: 'Upstream stop codon removal is proposed but not yet approved.',
+            explanation: `The upstream coding fragment ends with stop codon ${removed.codon}, which would terminate translation before the fused product continues downstream.`,
+            recommendedAction: 'Approve removal of the upstream stop codon if continuous translation across the junction is intended.',
+            deduplicationKey: 'protein:upstream-stop-pending',
+          }),
+        );
       }
     }
 
@@ -939,9 +1164,29 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
       }
       if (removed.removed && changeApprovals.removeDownstreamStart) {
         effectiveSelectedB = removed.sequence;
-        warnings.push('Downstream initial ATG removal was approved and applied to the fused coding product.');
+        reviewItems.push(
+          createReviewItem({
+            severity: 'information',
+            scope: 'protein',
+            relatedObjectId: 'fragment-b',
+            title: 'Downstream initial ATG removal was approved and applied to the fused coding product.',
+            explanation: 'The first in-frame downstream ATG was removed after approval to avoid an extra N-terminal methionine in the fusion.',
+            recommendedAction: 'Review the updated effective Fragment B sequence before ordering primers.',
+            deduplicationKey: 'protein:downstream-start-approved',
+          }),
+        );
       } else if (removed.removed) {
-        warnings.push('Downstream start-codon removal is proposed but not yet approved.');
+        reviewItems.push(
+          createReviewItem({
+            severity: 'review',
+            scope: 'protein',
+            relatedObjectId: 'fragment-b',
+            title: 'Downstream start-codon removal is proposed but not yet approved.',
+            explanation: 'The downstream coding fragment still begins with ATG, which can add an extra methionine to the fused protein product.',
+            recommendedAction: 'Approve removal of the downstream start codon if continuous fusion is intended.',
+            deduplicationKey: 'protein:downstream-start-pending',
+          }),
+        );
       }
     }
 
@@ -985,10 +1230,22 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
           aminoAcid: change.aminoAcid,
         })),
       );
-      warnings.push(
-        accepted.appliedIds.length
-          ? `Accepted ${accepted.appliedIds.length} of ${synonymousOptimization.changes.length} proposed synonymous codon change(s).`
-          : 'Synonymous optimization produced proposed codon changes pending approval.',
+      reviewItems.push(
+        createReviewItem({
+          severity: accepted.appliedIds.length ? 'information' : 'review',
+          scope: 'protein',
+          relatedObjectId: 'junction-1',
+          title: accepted.appliedIds.length
+            ? `Accepted ${accepted.appliedIds.length} of ${synonymousOptimization.changes.length} proposed synonymous codon change(s).`
+            : 'Synonymous optimization produced proposed codon changes pending approval.',
+          explanation: synonymousOptimization.summary,
+          recommendedAction: accepted.appliedIds.length
+            ? 'Review the accepted synonymous codon changes in the protein validation output.'
+            : 'Review and approve individual synonymous codon changes if you want to apply them.',
+          deduplicationKey: accepted.appliedIds.length
+            ? `protein:synonymous-approved:${accepted.appliedIds.length}:${synonymousOptimization.changes.length}`
+            : `protein:synonymous-pending:${synonymousOptimization.changes.length}`,
+        }),
       );
     }
   }
@@ -1019,7 +1276,9 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
     modifiedAt: projectInput.modifiedAt,
   };
 
-  if (issues.length) {
+  if (reviewItems.some((item) => item.severity === 'blocking')) {
+    const finalizedReviewItems = finalizeReviewItems(reviewItems);
+    const { issues, warnings } = deriveLegacyReviewLists(finalizedReviewItems);
     return {
       project: normalizedProject,
       profile,
@@ -1054,6 +1313,7 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
       },
       alternativeDesigns: [],
       sequenceChangeProposals,
+      reviewItems: finalizedReviewItems,
       issues,
       warnings,
     };
@@ -1065,6 +1325,19 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
   const outerReverseCandidates = enumerateBodyCandidates(effectiveSelectedB, 'end', 'reverse', profile, normalizedProject.reactionConditions, bodyLimit);
 
   if (!outerForwardCandidates.length || !innerReverseCandidates.length || !innerForwardCandidates.length || !outerReverseCandidates.length) {
+    const finalizedReviewItems = finalizeReviewItems([
+      ...reviewItems,
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'primer',
+        relatedObjectId: null,
+        title: `No physically valid primer bodies could be generated within the ${profile.minBodyLength}-${profile.maxBodyLength} nt range for ${profile.label}.`,
+        explanation: 'At least one fragment range cannot support a finite thermodynamic annealing body under the selected polymerase constraints.',
+        recommendedAction: 'Adjust the fragment selections or polymerase profile before calculating primers.',
+        deduplicationKey: `primer:no-valid-bodies:${profile.id}`,
+      }),
+    ]);
+    const { issues, warnings } = deriveLegacyReviewLists(finalizedReviewItems);
     return {
       project: normalizedProject,
       profile,
@@ -1099,10 +1372,8 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
       },
       alternativeDesigns: [],
       sequenceChangeProposals,
-      issues: [
-        ...issues,
-        `No physically valid primer bodies could be generated within the ${profile.minBodyLength}-${profile.maxBodyLength} nt range for ${profile.label}.`,
-      ],
+      reviewItems: finalizedReviewItems,
+      issues,
       warnings,
     };
   }
@@ -1166,6 +1437,19 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
     });
 
   if (!evaluatedVariants.length) {
+    const finalizedReviewItems = finalizeReviewItems([
+      ...reviewItems,
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'design',
+        relatedObjectId: null,
+        title: 'No physically valid complete primer design satisfied the current thermodynamic and overlap checks.',
+        explanation: 'Candidate primer bodies were found, but no complete four-primer OE-PCR design passed the current design checks.',
+        recommendedAction: 'Adjust the fragment selections, inserted sequence, or polymerase profile before recalculating.',
+        deduplicationKey: 'design:no-valid-complete-design',
+      }),
+    ]);
+    const { issues, warnings } = deriveLegacyReviewLists(finalizedReviewItems);
     return {
       project: normalizedProject,
       profile,
@@ -1200,7 +1484,8 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
       },
       alternativeDesigns: [],
       sequenceChangeProposals,
-      issues: [...issues, 'No physically valid complete primer design satisfied the current thermodynamic and overlap checks.'],
+      reviewItems: finalizedReviewItems,
+      issues,
       warnings,
     };
   }
@@ -1219,15 +1504,22 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
     normalizedProject.coding,
     synonymousOptimization,
   );
-
+  const finalReviewItems = [...reviewItems, ...bestVariant.reviewItems, ...(proteinValidation?.reviewItems ?? [])];
   if (!bestVariant.finalProductVerified) {
-    issues.push('The simulated fusion product does not match the requested target sequence.');
+    finalReviewItems.push(
+      createReviewItem({
+        severity: 'blocking',
+        scope: 'junction',
+        relatedObjectId: 'junction-1',
+        title: 'The simulated fusion product does not match the requested target sequence.',
+        explanation: 'The reconstructed final product differs from the requested target sequence for the current design inputs.',
+        recommendedAction: 'Review the fragment ranges and inserted sequence before exporting primers or protocol outputs.',
+        deduplicationKey: 'junction:final-product-mismatch',
+      }),
+    );
   }
-
-  warnings.push(...bestVariant.warnings);
-  if (proteinValidation) {
-    warnings.push(...proteinValidation.warnings);
-  }
+  const finalizedReviewItems = finalizeReviewItems(finalReviewItems);
+  const { issues, warnings } = deriveLegacyReviewLists(finalizedReviewItems);
 
   const alternativeDesigns: AlternativeDesign[] = [];
   const alternativeStrategies: Array<{
@@ -1277,6 +1569,7 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
       totalOligoLength: variant.totalOligoLength,
       worstNonIntendedDimerDeltaG: variant.worstNonIntendedDimerDeltaG,
       highRiskOffTargets: variant.highRiskOffTargets,
+      reviewItems: variant.reviewItems,
       warnings: variant.warnings,
       primers: variant.primers,
       reactions: variant.reactions,
@@ -1309,6 +1602,7 @@ export function buildFusionDesign(projectInput: FusionProjectInput): FusionDesig
     qualityBreakdown: bestVariant.qualityBreakdown,
     alternativeDesigns,
     sequenceChangeProposals,
+    reviewItems: finalizedReviewItems,
     issues,
     warnings,
   };
@@ -1388,6 +1682,7 @@ export function createPlaceholderFusionDesign(projectInput: FusionProjectInput):
     },
     alternativeDesigns: [],
     sequenceChangeProposals: [],
+    reviewItems: [],
     issues: [],
     warnings: [],
   };

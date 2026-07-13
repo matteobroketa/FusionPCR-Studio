@@ -1,4 +1,5 @@
 import { checksumSequence, type FragmentInput, type FusionDesign, type FusionProjectInput, type PrimerDesign } from './fusion';
+import { filterActionableReviewItems } from './review-items';
 import { buildJunctionSummary } from './review';
 
 const FASTA_LINE_WIDTH = 80;
@@ -226,7 +227,10 @@ function formatOrigin(sequence: string): string[] {
 }
 
 function describeDesignWarnings(design: FusionDesign): string[] {
-  return design.warnings.length ? design.warnings : ['No design warnings were emitted.'];
+  const warnings = design.reviewItems
+    .filter((item) => item.severity === 'warning' || item.severity === 'review')
+    .map((item) => `${item.title} ${item.recommendedAction}`.trim());
+  return warnings.length ? warnings : ['No design warnings were emitted.'];
 }
 
 function buildThermocyclerBlock(design: FusionDesign, reactionName: 'PCR 1A' | 'PCR 1B' | 'Fusion PCR'): string[] {
@@ -268,7 +272,7 @@ function buildValidationSummary(design: FusionDesign): ValidationSummary {
     targetChecksum: checksumSequence(design.targetSequence),
     finalChecksum: checksumSequence(design.finalProduct),
     issueCount: design.issues.length,
-    warningCount: design.warnings.length,
+    warningCount: filterActionableReviewItems(design.reviewItems).length,
     localOffTargetAmplicons: design.offTargetAmplicons.length,
     highRiskSpecificitySites,
     watchSpecificitySites,
@@ -836,6 +840,7 @@ export function buildCalculationManifest(design: FusionDesign): string {
     })),
     reactions: design.reactions,
     protocolPlan: design.protocolPlan,
+    reviewItems: design.reviewItems,
     warnings: design.warnings,
     issues: design.issues,
   };

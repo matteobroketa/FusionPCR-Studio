@@ -1,4 +1,6 @@
-import type { PrimerDesign, ReactionPlan } from '../utils/fusion';
+import type { PrimerDesign, ReactionPlan, ReviewItem } from '../utils/fusion';
+import { getNonIntendedSpecificitySites } from '../utils/primer-review';
+import { summarizePrimerReviewStatus } from '../utils/review-items';
 
 export function SequenceRail({
   label,
@@ -75,10 +77,11 @@ export function SequencePreview({
 
 type PrimerStatusTone = 'success' | 'watch' | 'alert';
 
-export function summarizePrimerStatus(primer: PrimerDesign): { label: string; tone: PrimerStatusTone } {
-  const nonIntendedSpecificityHits = primer.specificitySites.filter(
-    (site) => site.risk !== 'low' && site.templateId !== primer.expectedTemplateId,
-  );
+export function summarizePrimerStatus(primer: PrimerDesign, reviewItems: ReviewItem[] = []): { label: string; tone: PrimerStatusTone } {
+  if (reviewItems.length) {
+    return summarizePrimerReviewStatus(primer, reviewItems);
+  }
+  const nonIntendedSpecificityHits = getNonIntendedSpecificitySites(primer);
   if (nonIntendedSpecificityHits.some((site) => site.risk === 'high')) {
     return { label: 'Review off-targets', tone: 'alert' };
   }
@@ -114,8 +117,7 @@ function summarizeStructureFindings(primer: PrimerDesign): string[] {
 }
 
 function summarizeSpecificityFindings(primer: PrimerDesign): string[] {
-  const findings = primer.specificitySites
-    .filter((site) => site.risk !== 'low' && site.templateId !== primer.expectedTemplateId)
+  const findings = getNonIntendedSpecificitySites(primer)
     .slice(0, 4)
     .map(
       (site) =>
@@ -129,14 +131,17 @@ export function PrimerDetailPanel({
   primer,
   selected = false,
   onCopy,
+  reviewItems = [],
 }: {
   primer: PrimerDesign;
   selected?: boolean;
   onCopy?: (() => void) | undefined;
+  reviewItems?: ReviewItem[];
 }) {
-  const status = summarizePrimerStatus(primer);
+  const status = summarizePrimerStatus(primer, reviewItems);
   const structureFindings = summarizeStructureFindings(primer);
   const specificityFindings = summarizeSpecificityFindings(primer);
+  const actionableReviewItems = reviewItems.filter((item) => item.severity !== 'information');
 
   return (
     <article className={`primer-detail-panel ${selected ? 'object-selected' : ''}`}>
@@ -203,6 +208,19 @@ export function PrimerDetailPanel({
           ))}
         </ul>
       </div>
+
+      {actionableReviewItems.length ? (
+        <div className="status-block">
+          <p className="status-title">Primer review items</p>
+          <ul className="status-list">
+            {actionableReviewItems.map((item) => (
+              <li key={item.id}>
+                <strong>{item.title}</strong> {item.recommendedAction}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </article>
   );
 }

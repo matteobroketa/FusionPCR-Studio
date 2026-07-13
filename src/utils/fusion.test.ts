@@ -14,6 +14,7 @@ import {
   type FusionProjectInput,
   type FragmentInput,
 } from './fusion';
+import { exampleProjects } from '../data/example';
 import { translateSequence } from './translation';
 
 type ProductReconstructionFixture = {
@@ -403,5 +404,39 @@ describe('fusion design engine', () => {
     expect(design.intendedAmplicons.some((amplicon) => amplicon.templateId === 'fragment-b')).toBe(true);
     expect(design.intendedAmplicons.some((amplicon) => amplicon.templateId === 'final-product')).toBe(true);
     expect(design.offTargetAmplicons.every((amplicon) => amplicon.templateId !== 'final-product' || amplicon.length !== design.finalProduct.length)).toBe(true);
+  });
+
+  it('emits structured review items with the required metadata fields', () => {
+    const design = buildFusionDesign({
+      ...baseProject,
+      name: 'Structured review items',
+      polymeraseId: 'q5',
+      insertSequence: '',
+      notes: '',
+      fragmentA: makeFragment('A', 'ATGACTGACCGTACGTTAGGCTAACCG'),
+      fragmentB: makeFragment('B', 'GGCAGTACCTTAGCGATCGTACCATGG'),
+    });
+
+    expect(design.reviewItems.length).toBeGreaterThan(0);
+    for (const item of design.reviewItems) {
+      expect(item.id.length).toBeGreaterThan(0);
+      expect(item.deduplicationKey.length).toBeGreaterThan(0);
+      expect(item.title.length).toBeGreaterThan(0);
+      expect(item.explanation.length).toBeGreaterThan(0);
+      expect(item.recommendedAction.length).toBeGreaterThan(0);
+      expect(['information', 'review', 'warning', 'blocking']).toContain(item.severity);
+      expect(['design', 'sequence', 'junction', 'primer', 'protein', 'protocol']).toContain(item.scope);
+    }
+  });
+
+  it('keeps the supported built-in exact and protein examples within the current review-item limits', () => {
+    for (const exampleId of ['exact-fusion', 'protein-fusion'] as const) {
+      const design = buildFusionDesign(exampleProjects[exampleId]);
+      const blockingItems = design.reviewItems.filter((item) => item.severity === 'blocking');
+      const actionableItems = design.reviewItems.filter((item) => item.severity === 'review' || item.severity === 'warning');
+
+      expect(blockingItems, exampleId).toHaveLength(0);
+      expect(actionableItems.length, exampleId).toBeLessThanOrEqual(2);
+    }
   });
 });

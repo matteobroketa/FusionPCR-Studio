@@ -135,6 +135,20 @@ export type ReactionPlan = {
   gradientRecommendation?: string;
 };
 
+export type ReviewSeverity = 'information' | 'review' | 'warning' | 'blocking';
+export type ReviewScope = 'design' | 'sequence' | 'junction' | 'primer' | 'protein' | 'protocol';
+
+export type ReviewItem = {
+  id: string;
+  severity: ReviewSeverity;
+  scope: ReviewScope;
+  relatedObjectId: string | null;
+  title: string;
+  explanation: string;
+  recommendedAction: string;
+  deduplicationKey: string;
+};
+
 export type DesignQualityBreakdown = {
   tmBalance: number;
   bodyFit: number;
@@ -156,6 +170,7 @@ export type AlternativeDesign = {
   totalOligoLength: number;
   worstNonIntendedDimerDeltaG: number | null;
   highRiskOffTargets: number;
+  reviewItems: ReviewItem[];
   warnings: string[];
   primers: PrimerDesign[];
   reactions: ReactionPlan[];
@@ -199,6 +214,7 @@ export type ProteinValidation = {
   junctionAminoAcids: string;
   linkerAminoAcids: string;
   synonymousOptimization: SynonymousOptimization | null;
+  reviewItems: ReviewItem[];
   warnings: string[];
 };
 
@@ -242,6 +258,7 @@ export type FusionDesign = {
   qualityBreakdown: DesignQualityBreakdown;
   alternativeDesigns: AlternativeDesign[];
   sequenceChangeProposals: SequenceChangeProposal[];
+  reviewItems: ReviewItem[];
   issues: string[];
   warnings: string[];
 };

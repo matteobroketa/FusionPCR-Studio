@@ -16,6 +16,7 @@ import { useFusionDesign } from './hooks/useFusionDesign';
 import { useProjectController } from './hooks/useProjectController';
 import { useProjectPersistence } from './hooks/useProjectPersistence';
 import { useViewportMode } from './hooks/useViewportMode';
+import { countPrimerScopedReviewItems, filterActionableReviewItems } from './utils/review-items';
 import { summarizeSequenceMetrics } from './utils/fusion';
 import { buildMutationPlan, selectedFragmentSequence, type MutationPlannerMode } from './utils/mutation';
 import {
@@ -193,6 +194,9 @@ function App() {
       ? null
       : design.reactions.find((reaction) => reaction.name === getWorkflowStageLabel(selectedStage));
   const activeReaction = selectedReaction ?? design.reactions[0] ?? null;
+  const actionableReviewItems = filterActionableReviewItems(design.reviewItems);
+  const blockingReviewCount = design.reviewItems.filter((item) => item.severity === 'blocking').length;
+  const primerScopedReviewCount = countPrimerScopedReviewItems(design);
   const saveStateLabel =
     persistenceState === 'saving'
       ? 'Saving locally'
@@ -213,21 +217,23 @@ function App() {
       : project.fragmentA.sequence.trim() || project.fragmentB.sequence.trim()
         ? { level: 'warning', text: 'One fragment still missing' }
         : { level: 'pending', text: 'No sequences loaded' };
-  const constructStepStatus: { level: StepStatusLevel; text: string } = design.issues.length
-    ? { level: 'error', text: `${design.issues.length} blocking issue(s)` }
+  const constructStepStatus: { level: StepStatusLevel; text: string } = blockingReviewCount
+    ? { level: 'error', text: `${blockingReviewCount} blocking issue(s)` }
     : design.finalProductVerified
       ? { level: 'complete', text: 'Target verified' }
       : { level: 'pending', text: 'Target not yet verified' };
   const primerStepStatus: { level: StepStatusLevel; text: string } = !design.primers.length
     ? { level: 'pending', text: 'No primer set yet' }
-    : design.warnings.length
-      ? { level: 'warning', text: `${design.warnings.length} primer warning(s)` }
+    : primerScopedReviewCount
+      ? { level: 'warning', text: `${primerScopedReviewCount} primer review item(s)` }
       : { level: 'complete', text: `${design.primers.length} primers ready` };
   const protocolStepStatus: { level: StepStatusLevel; text: string } = !design.reactions.length
     ? { level: 'pending', text: 'Protocol not reviewed' }
-    : design.issues.length
+    : blockingReviewCount
       ? { level: 'warning', text: 'Protocol blocked by design issues' }
-      : { level: 'complete', text: `${design.reactions.length} reactions planned` };
+      : actionableReviewItems.length
+        ? { level: 'warning', text: `${actionableReviewItems.length} review item(s)` }
+        : { level: 'complete', text: `${design.reactions.length} reactions planned` };
   const compareRows = [
     {
       label: 'Total oligo nt',
@@ -478,7 +484,7 @@ function App() {
               />
 
               <section className="workspace-pane">
-                <IssueDrawer issues={design.issues} warnings={design.warnings} headingRef={issueDrawerHeadingRef} />
+                <IssueDrawer reviewItems={design.reviewItems} headingRef={issueDrawerHeadingRef} />
 
                 {activeStep === 'sequences' ? (
                   <SequenceStep

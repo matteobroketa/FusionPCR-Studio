@@ -2,6 +2,7 @@ import { useState, type RefObject } from 'react';
 import { PrimerDetailPanel, summarizePrimerStatus } from './designPanels';
 import type { ComparisonSnapshot } from '../hooks/useProjectController';
 import type { FusionDesign, PrimerDesign } from '../utils/fusion';
+import { getPrimerReviewItems } from '../utils/review-items';
 
 export type PrimerResultTab = 'overview' | 'sequences' | 'structures' | 'specificity' | 'alternatives';
 
@@ -144,7 +145,12 @@ export function PrimerStep({
 
           {selectedPrimer ? (
             <div className="phone-primer-detail">
-              <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} />
+              <PrimerDetailPanel
+                primer={selectedPrimer}
+                selected
+                onCopy={() => void handleCopyPrimer(selectedPrimer)}
+                reviewItems={getPrimerReviewItems(design, selectedPrimer.name)}
+              />
             </div>
           ) : (
             <div className="status-block">
@@ -230,7 +236,8 @@ export function PrimerStep({
                   </thead>
                   <tbody>
                     {visiblePrimers.map((primer) => {
-                      const status = summarizePrimerStatus(primer);
+                      const primerReviewItems = getPrimerReviewItems(design, primer.name);
+                      const status = summarizePrimerStatus(primer, primerReviewItems);
                       return (
                         <tr key={primer.name} className={selectedPrimerName === primer.name ? 'primer-review-row-selected' : ''}>
                           <th scope="row">
@@ -259,7 +266,12 @@ export function PrimerStep({
               </div>
 
               {selectedPrimer ? (
-                <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} />
+                <PrimerDetailPanel
+                  primer={selectedPrimer}
+                  selected
+                  onCopy={() => void handleCopyPrimer(selectedPrimer)}
+                  reviewItems={getPrimerReviewItems(design, selectedPrimer.name)}
+                />
               ) : (
                 <div className="status-block">
                   <p className="status-title">No primer selected</p>
@@ -286,7 +298,14 @@ export function PrimerStep({
                 ))}
               </ul>
             </div>
-            {selectedPrimer ? <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} /> : null}
+            {selectedPrimer ? (
+              <PrimerDetailPanel
+                primer={selectedPrimer}
+                selected
+                onCopy={() => void handleCopyPrimer(selectedPrimer)}
+                reviewItems={getPrimerReviewItems(design, selectedPrimer.name)}
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -320,7 +339,14 @@ export function PrimerStep({
                 )}
               </ul>
             </div>
-            {selectedPrimer ? <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} /> : null}
+            {selectedPrimer ? (
+              <PrimerDetailPanel
+                primer={selectedPrimer}
+                selected
+                onCopy={() => void handleCopyPrimer(selectedPrimer)}
+                reviewItems={getPrimerReviewItems(design, selectedPrimer.name)}
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -360,7 +386,14 @@ export function PrimerStep({
                 )}
               </ul>
             </div>
-            {selectedPrimer ? <PrimerDetailPanel primer={selectedPrimer} selected onCopy={() => void handleCopyPrimer(selectedPrimer)} /> : null}
+            {selectedPrimer ? (
+              <PrimerDetailPanel
+                primer={selectedPrimer}
+                selected
+                onCopy={() => void handleCopyPrimer(selectedPrimer)}
+                reviewItems={getPrimerReviewItems(design, selectedPrimer.name)}
+              />
+            ) : null}
           </div>
         ) : null}
 
