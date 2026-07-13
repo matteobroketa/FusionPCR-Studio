@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
+import { ContextInspector } from './components/ContextInspector';
 import { PrimerCard, ReactionCard, SequencePreview, SequenceRail } from './components/designPanels';
+import { JunctionStep } from './components/JunctionStep';
 import { ProjectToolbar } from './components/ProjectToolbar';
 import { StepNavigation } from './components/StepNavigation';
 import { WelcomeScreen } from './components/WelcomeScreen';
@@ -1050,128 +1052,30 @@ function App() {
                 ) : null}
 
                 {activeStep === 'construct' ? (
-                  <div className="workspace-stack">
-                    <section className="panel workspace-section canvas-panel">
-                      <div className="panel-header">
-                        <div>
-                          <p className="eyebrow">Construct workspace</p>
-                          <h2>Stage-aware assembly map</h2>
-                        </div>
-                        <div className="panel-actions">
-                          <span className="pill pill-muted">{getWorkflowStageLabel(selectedStage)}</span>
-                          <span className={`pill ${design.finalProductVerified ? 'pill-success' : 'pill-watch'}`}>{design.finalProductVerified ? 'Sequence reconstruction verified.' : 'Calculation pending'}</span>
-                        </div>
-                      </div>
-
-                      {canvasTracks.sourceFragments ? (
-                        <div className="canvas-stack">
-                          <SequenceRail label={project.fragmentA.label} sequenceLength={fragmentAMetrics.length} start={design.project.fragmentA.start} end={design.project.fragmentA.end} topology={design.project.fragmentA.topology} accentClass="rail-a" />
-                          <SequenceRail label={project.fragmentB.label} sequenceLength={fragmentBMetrics.length} start={design.project.fragmentB.start} end={design.project.fragmentB.end} topology={design.project.fragmentB.topology} accentClass="rail-b" />
-                        </div>
-                      ) : null}
-
-                      <div className="construct-workspace">
-                        <div className="construct-label-row">
-                          <span>Fragment A</span>
-                          <span>Fragment B</span>
-                        </div>
-                        <div className="construct-strip">
-                          <button type="button" className={`construct-block block-a construct-button ${inspectorFocus === 'fragment-a' ? 'construct-active' : ''}`} style={{ flexGrow: Math.max(design.selectedA.length, 1) }} onClick={() => setInspectorFocus('fragment-a')} aria-pressed={inspectorFocus === 'fragment-a'}>
-                            <span>{project.fragmentA.label}</span>
-                            <strong>{design.selectedA.length} bp</strong>
-                          </button>
-                          <button type="button" className={`construct-block block-insert construct-button ${inspectorFocus === 'junction' ? 'construct-active' : ''}`} style={{ flexGrow: Math.max(design.insertSequence.length || design.overlapSequence.length, 1) }} onClick={() => setInspectorFocus('junction')} aria-pressed={inspectorFocus === 'junction'}>
-                            <span>{design.insertSequence ? 'J1' : 'Join'}</span>
-                            <strong>{design.insertSequence.length ? `${design.insertSequence.length} bp` : `${design.overlapSequence.length} bp overlap`}</strong>
-                          </button>
-                          <button type="button" className={`construct-block block-b construct-button ${inspectorFocus === 'fragment-b' ? 'construct-active' : ''}`} style={{ flexGrow: Math.max(design.selectedB.length, 1) }} onClick={() => setInspectorFocus('fragment-b')} aria-pressed={inspectorFocus === 'fragment-b'}>
-                            <span>{project.fragmentB.label}</span>
-                            <strong>{design.selectedB.length} bp</strong>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="primer-direction-grid">
-                        {visiblePrimers.map((primer) => (
-                          <button
-                            key={primer.name}
-                            type="button"
-                            className={`primer-direction-card ${selectedPrimer?.name === primer.name ? 'primer-direction-card-active' : ''}`}
-                            onClick={() => {
-                              setSelectedPrimerName(primer.name);
-                              setInspectorFocus('primer');
-                              setShowInspector(true);
-                            }}
-                          >
-                            <strong>{primer.name}</strong>
-                            <span>{primer.name.endsWith('_R') ? '← reverse' : 'forward →'}</span>
-                            <span>Tail {primer.tail.length || 0} nt · Body {primer.bodyLength} nt</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="workspace-two-column">
-                        {stageSequencePreviews.map((preview) => (
-                          <SequencePreview key={preview.label} title={preview.label} sequence={preview.sequence} />
-                        ))}
-                      </div>
-
-                      {canvasTracks.translation && design.proteinValidation ? (
-                        <div className="status-block">
-                          <p className="status-title">Protein readout</p>
-                          <ul className="status-list">
-                            <li>{design.proteinValidation.frameMessage}</li>
-                            <li>Junction window: {design.proteinValidation.junctionAminoAcids || 'n/a'}</li>
-                            <li>Linker aa: {design.proteinValidation.linkerAminoAcids || 'none'}</li>
-                          </ul>
-                        </div>
-                      ) : null}
-                    </section>
-
-                    <details className="panel workspace-section advanced-disclosure">
-                      <summary>Advanced settings</summary>
-                      <div className="toggle-grid canvas-toggle-grid">
-                        <label className="toggle-card"><input type="checkbox" checked={canvasTracks.sourceFragments} onChange={() => toggleCanvasTrack('sourceFragments')} /><span>Source fragments</span></label>
-                        <label className="toggle-card"><input type="checkbox" checked={canvasTracks.finalConstruct} onChange={() => toggleCanvasTrack('finalConstruct')} /><span>Final construct</span></label>
-                        <label className="toggle-card"><input type="checkbox" checked={canvasTracks.primerOverlays} onChange={() => toggleCanvasTrack('primerOverlays')} /><span>Primer overlays</span></label>
-                        <label className="toggle-card"><input type="checkbox" checked={canvasTracks.gcAndTm} onChange={() => toggleCanvasTrack('gcAndTm')} /><span>GC and Tm</span></label>
-                        <label className="toggle-card"><input type="checkbox" checked={canvasTracks.stageProducts} onChange={() => toggleCanvasTrack('stageProducts')} /><span>Stage products</span></label>
-                        <label className="toggle-card"><input type="checkbox" checked={canvasTracks.translation} onChange={() => toggleCanvasTrack('translation')} /><span>Translation</span></label>
-                        <label className="toggle-card"><input type="checkbox" checked={canvasTracks.features} onChange={() => toggleCanvasTrack('features')} /><span>Feature track</span></label>
-                        <label className="toggle-card"><input type="checkbox" checked={canvasTracks.riskSummary} onChange={() => toggleCanvasTrack('riskSummary')} /><span>Risk summary</span></label>
-                      </div>
-
-                      <div className="action-row">
-                        <button type="button" className="button button-secondary" onClick={() => captureComparisonSnapshot(comparisonMetrics)}>
-                          {comparisonSnapshot ? 'Refresh pinned design' : 'Pin current design'}
-                        </button>
-                        {comparisonSnapshot ? (
-                          <button type="button" className="button button-secondary" onClick={() => setComparisonSnapshot(null)}>
-                            Clear compare
-                          </button>
-                        ) : null}
-                      </div>
-
-                      {comparisonSnapshot ? (
-                        <div className="compare-table" role="table" aria-label="Design comparison">
-                          <div className="compare-row compare-header" role="row">
-                            <span role="columnheader">Metric</span>
-                            <strong role="columnheader">Current</strong>
-                            <strong role="columnheader">Pinned</strong>
-                          </div>
-                          {compareRows.map((row) => (
-                            <div key={row.label} className="compare-row" role="row">
-                              <span role="cell">{row.label}</span>
-                              <strong role="cell">{row.current}</strong>
-                              <strong role="cell">{row.baseline}</strong>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="field-helper">Pin the current design to compare total oligo length, dimer severity, Tm spread, overlap Tm, and local off-target counts after each edit.</p>
-                      )}
-                    </details>
-                  </div>
+                  <JunctionStep
+                    design={design}
+                    projectNameA={project.fragmentA.label}
+                    projectNameB={project.fragmentB.label}
+                    fragmentALength={fragmentAMetrics.length}
+                    fragmentBLength={fragmentBMetrics.length}
+                    selectedStageLabel={getWorkflowStageLabel(selectedStage)}
+                    canvasTracks={canvasTracks}
+                    inspectorFocus={inspectorFocus}
+                    visiblePrimers={visiblePrimers}
+                    selectedPrimerName={selectedPrimer?.name ?? null}
+                    stageSequencePreviews={stageSequencePreviews}
+                    comparisonSnapshot={comparisonSnapshot}
+                    compareRows={compareRows}
+                    onInspectorFocusChange={setInspectorFocus}
+                    onSelectPrimer={(primerName) => {
+                      setSelectedPrimerName(primerName);
+                      setInspectorFocus('primer');
+                    }}
+                    onShowInspector={() => setShowInspector(true)}
+                    onToggleCanvasTrack={toggleCanvasTrack}
+                    onCaptureComparisonSnapshot={() => captureComparisonSnapshot(comparisonMetrics)}
+                    onClearComparisonSnapshot={() => setComparisonSnapshot(null)}
+                  />
                 ) : null}
 
                 {activeStep === 'primers' ? (
@@ -1584,152 +1488,28 @@ function App() {
                 ) : null}
               </section>
 
-              <aside className={`inspector-pane panel ${showInspector ? 'is-open' : ''}`}>
-                <div className="panel-header">
-                  <div>
-                    <p className="eyebrow">Inspector</p>
-                    <h2>
-                      {inspectorFocus === 'fragment-a'
-                        ? project.fragmentA.label
-                        : inspectorFocus === 'fragment-b'
-                          ? project.fragmentB.label
-                          : inspectorFocus === 'primer'
-                            ? selectedPrimer?.name ?? 'Primer'
-                            : inspectorFocus === 'reaction'
-                              ? activeReaction?.name ?? 'Reaction'
-                              : 'Junction 1'}
-                    </h2>
-                  </div>
-                  <span className={`pill ${design.issues.length ? 'pill-alert' : 'pill-success'}`}>{design.issues.length ? `${design.issues.length} issue(s)` : 'Calculation complete'}</span>
-                </div>
-
-                {inspectorFocus === 'junction' ? (
-                  <div className="status-block">
-                    <p className="status-title">Junction 1</p>
-                    <div className="property-list">
-                      <div className="property-row"><span>Mode</span><strong>{project.mode}</strong></div>
-                      <div className="property-row"><span>Inserted sequence</span><code>{junctionSummary.insertSequence || 'Direct join'}</code></div>
-                      <div className="property-row"><span>Reading frame</span><strong>{design.proteinValidation ? (design.proteinValidation.framePreserved ? 'Preserved' : 'Shifted') : 'n/a'}</strong></div>
-                      <div className="property-row"><span>Overlap</span><strong>{design.overlapSequence.length} bp · {comparisonMetrics.overlapTm !== null ? `${comparisonMetrics.overlapTm.toFixed(1)} C` : 'n/a'}</strong></div>
-                    </div>
-                    <SequencePreview title="Final junction window" sequence={junctionSummary.finalJunction || design.finalProduct} />
-                    <ul className="status-list">
-                      <li>A inner R 3 prime annealing region: {junctionSummary.upstreamAnnealRegion || 'n/a'}</li>
-                      <li>B inner F 3 prime annealing region: {junctionSummary.downstreamAnnealRegion || 'n/a'}</li>
-                      <li>A inner R tail contribution: {junctionSummary.aInnerTailContribution || 'none'}</li>
-                      <li>B inner F tail contribution: {junctionSummary.bInnerTailContribution || 'none'}</li>
-                    </ul>
-                  </div>
-                ) : null}
-
-                {inspectorFocus === 'fragment-a' ? (
-                  <div className="status-block">
-                    <div className="property-list">
-                      <div className="property-row"><span>Selected coordinates</span><strong>{design.project.fragmentA.start}-{design.project.fragmentA.end}</strong></div>
-                      <div className="property-row"><span>Source format</span><strong>{project.fragmentA.sourceFormat}</strong></div>
-                      <div className="property-row"><span>Topology</span><strong>{project.fragmentA.topology}</strong></div>
-                      <div className="property-row"><span>Checksum</span><strong>{project.fragmentA.checksum}</strong></div>
-                      <div className="property-row"><span>Features</span><strong>{project.fragmentA.features.length}</strong></div>
-                    </div>
-                  </div>
-                ) : null}
-
-                {inspectorFocus === 'fragment-b' ? (
-                  <div className="status-block">
-                    <div className="property-list">
-                      <div className="property-row"><span>Selected coordinates</span><strong>{design.project.fragmentB.start}-{design.project.fragmentB.end}</strong></div>
-                      <div className="property-row"><span>Source format</span><strong>{project.fragmentB.sourceFormat}</strong></div>
-                      <div className="property-row"><span>Topology</span><strong>{project.fragmentB.topology}</strong></div>
-                      <div className="property-row"><span>Checksum</span><strong>{project.fragmentB.checksum}</strong></div>
-                      <div className="property-row"><span>Features</span><strong>{project.fragmentB.features.length}</strong></div>
-                    </div>
-                  </div>
-                ) : null}
-
-                {inspectorFocus === 'primer' && selectedPrimer ? (
-                  <div className="status-block">
-                    <div className="property-list">
-                      <div className="property-row"><span>Reaction</span><strong>{selectedPrimer.reaction}</strong></div>
-                      <div className="property-row"><span>Role</span><strong>{selectedPrimer.role}</strong></div>
-                      <div className="property-row"><span>Body Tm</span><strong>{selectedPrimer.bodyTm.toFixed(1)} C</strong></div>
-                      <div className="property-row"><span>Overlap Tm</span><strong>{selectedPrimer.overlapTm !== null ? `${selectedPrimer.overlapTm.toFixed(1)} C` : 'n/a'}</strong></div>
-                      <div className="property-row"><span>Approximate risk</span><strong>{selectedPrimer.structure.risk}</strong></div>
-                    </div>
-                    <code className="primer-sequence">
-                      {selectedPrimer.tail ? <span className="primer-tail">{selectedPrimer.tail}</span> : null}
-                      <span className="primer-body">{selectedPrimer.body}</span>
-                    </code>
-                    <ul className="status-list">
-                      <li>Tail: {selectedPrimer.tail.length || 0} nt</li>
-                      <li>Annealing body: {selectedPrimer.bodyLength} nt</li>
-                      <li>Local specificity hits: {selectedPrimer.specificitySites.filter((site) => site.risk !== 'low').length}</li>
-                    </ul>
-                  </div>
-                ) : null}
-
-                {inspectorFocus === 'reaction' && activeReaction ? (
-                  <div className="status-block">
-                    <div className="property-list">
-                      <div className="property-row"><span>Primers</span><strong>{activeReaction.primerNames.join(' + ')}</strong></div>
-                      <div className="property-row"><span>Product</span><strong>{activeReaction.productLength} bp</strong></div>
-                      <div className="property-row"><span>Anneal</span><strong>{activeReaction.annealingTemperature} C</strong></div>
-                      <div className="property-row"><span>Extend</span><strong>{activeReaction.extensionSeconds} s</strong></div>
-                      <div className="property-row"><span>Gradient</span><strong>{activeReaction.gradientRecommendation ?? 'Not needed'}</strong></div>
-                    </div>
-                  </div>
-                ) : null}
-
-                {workerError ? (
-                  <div className="status-block">
-                    <p className="status-note status-note-alert">{workerError}</p>
-                    <div className="action-row">
-                      <button type="button" className="button button-secondary" onClick={retry}>
-                        Retry calculation
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-                {persistenceError ? (
-                  <div className="status-block">
-                    <p className="status-note status-note-alert">{persistenceError}</p>
-                    <div className="action-row">
-                      <button type="button" className="button button-secondary" onClick={retryPersistence}>
-                        Retry save
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-                {importError ? <p className="status-note status-note-alert">{importError}</p> : null}
-                {design.issues.length ? (
-                  <div className="status-block">
-                    <p className="status-title">Blocking issues</p>
-                    <ul className="status-list">
-                      {design.issues.map((issue) => (
-                        <li key={issue}>{issue}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <p className="status-note status-note-success">The simulated final product matches the requested target sequence exactly.</p>
-                )}
-
-                <div className="status-block">
-                  <p className="status-title">Warnings</p>
-                  <ul className="status-list">
-                    {(design.warnings.length ? design.warnings : ['No warnings for the current design.']).map((warning) => (
-                      <li key={warning}>{warning}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="status-block">
-                  <p className="status-title">Scientific scope</p>
-                  <ul className="status-list">
-                    <li>{design.intendedAmplicons.length} intended amplicon model(s) are reported separately from unintended penalties.</li>
-                    <li>Structure and quality outputs are heuristic approximations, not experimentally calibrated success probabilities.</li>
-                  </ul>
-                </div>
-              </aside>
+              <ContextInspector
+                design={design}
+                project={project}
+                inspectorFocus={inspectorFocus}
+                selectedPrimer={selectedPrimer}
+                activeReaction={activeReaction}
+                junctionSummary={{
+                  insertSequence: junctionSummary.insertSequence,
+                  finalJunction: junctionSummary.finalJunction,
+                  upstreamAnnealRegion: junctionSummary.upstreamAnnealRegion,
+                  downstreamAnnealRegion: junctionSummary.downstreamAnnealRegion,
+                  aInnerTailContribution: junctionSummary.aInnerTailContribution,
+                  bInnerTailContribution: junctionSummary.bInnerTailContribution,
+                }}
+                overlapTmLabel={comparisonMetrics.overlapTm !== null ? `${comparisonMetrics.overlapTm.toFixed(1)} C` : 'n/a'}
+                workerError={workerError}
+                persistenceError={persistenceError}
+                importError={importError}
+                onRetryCalculation={retry}
+                onRetryPersistence={retryPersistence}
+                showInspector={showInspector}
+              />
             </section>
 
             <section className="timeline-dock panel">
