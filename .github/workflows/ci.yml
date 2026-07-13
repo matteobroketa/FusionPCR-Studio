@@ -17,8 +17,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install web dependencies
         run: npm ci
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
       - name: Run web tests
         run: npm run test
       - name: Run production browser tests

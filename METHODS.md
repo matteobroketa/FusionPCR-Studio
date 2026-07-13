@@ -2,7 +2,7 @@
 
 ## Implemented release scope
 
-This repository currently implements a local-first `0.1.0-alpha.2` overlap-extension PCR workflow for two-fragment designs in the browser.
+This repository currently implements a local-first `0.1.0-alpha.3` overlap-extension PCR workflow for two-fragment designs in the browser.
 
 The repository now also contains a Rust workspace that begins the planned split between a browser UI and a reusable computational core. The current Rust side covers sequence normalization, target construction, and basic protocol conversions, while the broader calculation engine still remains primarily in TypeScript.
 
@@ -22,7 +22,6 @@ The application:
 - calculates nearest-neighbour Tm values under configurable ionic and DMSO conditions
 - computes local secondary-structure candidates for hairpins and dimers
 - scans local templates for exact 3 prime seed matches and mismatch-weighted off-target candidates
-- can export a Primer-BLAST handoff package for optional external genomic specificity review
 - simulates both first-stage products and the final fusion product
 - verifies the simulated final product against the requested target sequence
 - emits a starting PCR plan using polymerase profiles plus configurable protocol inputs
@@ -128,17 +127,17 @@ For each primer body, the app:
 
 This is a local heuristic screen, not a genome-scale specificity search.
 
-## External specificity handoff
+## Hidden external specificity handoff module
 
-The current simple-release external path is a local export rather than an in-app web request.
+The repository still contains a local handoff generator for experimental external review, but it is not part of the public alpha.3 MVP surface.
 
-The app now records:
+The hidden module can record:
 
 - target organism
 - selected database
 - handoff notes
 
-It then exports a Primer-BLAST handoff package containing:
+It can export a Primer-BLAST handoff package containing:
 
 - disclosure that sequences will leave the browser when submitted externally
 - stage-specific intended primer pairs
@@ -233,17 +232,17 @@ The current recipe layer supports:
 - explicit stage 1 source-template loading
 - explicit fusion-stage loading of PCR 1A and PCR 1B products based on the computed stage-mix targets
 
-## Export package
+## Public export package
 
-The current export layer now emits:
+The public alpha.3 export layer emits:
 
-- oligo-ordering CSV and primer FASTA
-- final-construct FASTA and first-stage amplicon FASTA
-- annotated GenBank for the assembled construct
-- printable protocol text plus thermocycler-program text
-- pipetting CSV derived from reaction-recipe and stage-mix calculations
-- junction, validation, and expected-gel reports
-- a JSON calculation manifest that records versions, settings, methods, scores, and protocol outputs
+- oligo-ordering CSV
+- primer FASTA
+- final-construct FASTA
+- printable protocol text
+- project JSON
+
+The repository also still contains hidden technical export builders for staged products, GenBank, pipetting tables, reports, and calculation manifests.
 
 The GenBank export is intentionally conservative.
 It always annotates fragment-contribution spans and any inserted payload.

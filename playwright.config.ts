@@ -27,10 +27,39 @@ export default defineConfig({
       },
   projects: [
     {
-      name: 'chromium',
+      name: 'chromium-functional',
       use: {
         ...devices['Desktop Chrome'],
       },
+      testMatch: /app\.spec\.ts/,
+    },
+    {
+      name: 'chromium-smoke',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+      testMatch: /(smoke|deployed-smoke)\.spec\.ts/,
+    },
+    {
+      name: 'firefox-smoke',
+      use: {
+        ...devices['Desktop Firefox'],
+      },
+      testMatch: /(smoke|deployed-smoke)\.spec\.ts/,
+    },
+    {
+      name: 'webkit-smoke',
+      use: {
+        ...devices['Desktop Safari'],
+      },
+      testMatch: /(smoke|deployed-smoke)\.spec\.ts/,
+    },
+    {
+      name: 'chromium-visual',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+      testMatch: /visual\.spec\.ts/,
     },
   ],
 });

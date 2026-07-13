@@ -7,9 +7,10 @@ The repository currently verifies:
 - TypeScript/Vite application build via `npm run build`
 - Vitest unit and integration coverage via `npm run test`
 - Playwright browser coverage against the production Vite build via `npm run test:e2e`
+  Chromium functional flow plus Chromium/Firefox/WebKit smoke projects
 - GitHub Pages built-asset smoke checks via `npm run smoke:pages:dist`
 - Rust workspace compilation and tests via `cargo test --workspace`
-- Post-deployment Playwright smoke checks against the public Pages URL in [.github/workflows/deploy-pages.yml](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/.github/workflows/deploy-pages.yml)
+- Post-deployment Playwright smoke checks against the public Pages URL in Chromium, Firefox, and WebKit via [.github/workflows/deploy-pages.yml](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/.github/workflows/deploy-pages.yml)
 
 ## Fixture inventory
 
@@ -24,13 +25,13 @@ The repository currently verifies:
 
 The Playwright suite currently covers:
 
-- worker startup from the production Vite build
+- worker startup from the production Vite build in Chromium, Firefox, and WebKit smoke runs
 - loading the two supported built-in examples
 - primer generation visibility and final-product verification on a runnable design
 - blocking-issue rendering for invalid input
 - all 5 public MVP exports:
-  `project JSON`, `primer CSV`, `primer FASTA`, `final FASTA`, `stage-product FASTA`, `annotated GenBank`, `protocol`, `pipetting table`, `thermocycler program`, `junction report`, `validation report`, `expected gel`, `calculation manifest`, and `Primer-BLAST handoff`
-- a deployed-pages smoke pass against the public GitHub Pages URL
+  `project JSON`, `oligo-ordering CSV`, `primer FASTA`, `final-construct FASTA`, and `printable protocol`
+- deployed-pages smoke passes against the public GitHub Pages URL in Chromium, Firefox, and WebKit
 
 The Playwright fixture fails the job on:
 
@@ -79,6 +80,6 @@ TypeScript is authoritative for the active browser design engine:
 - Tm fixtures are now Primer3-backed, but the TypeScript thermodynamics engine is still validated within documented tolerances rather than exact Primer3 numerical identity across all conditions.
 - Secondary-structure outputs remain heuristic approximations and are not calibrated against wet-lab outcomes.
 - Design quality scores remain heuristic and are not experimentally calibrated probabilities of success.
-- Local specificity remains a project-local screen; genome-scale specificity is still an external handoff.
+- Local specificity remains a project-local screen; genome-scale specificity is not part of the public MVP and survives only as a hidden experimental handoff module.
 - No wet-lab validation dataset is yet included.
 - Rust is not yet authoritative for the full primer-design, thermodynamics, specificity, or protocol-planning runtime.

@@ -173,10 +173,6 @@ export function PrimerStep({
                   <li>No unintended amplicons detected by the current local scan.</li>
                 )}
               </ul>
-              <p className="field-helper">
-                Exporting a handoff package keeps the app local by default, but submitting it to Primer-BLAST is an external
-                genomic-specificity check.
-              </p>
             </div>
           </div>
         ) : null}

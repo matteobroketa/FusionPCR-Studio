@@ -1039,47 +1039,6 @@ export function SequenceStep({
           </div>
         </section>
 
-        <section className="advanced-section specificity-panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Genomic specificity</p>
-              <h3>Primer-BLAST handoff</h3>
-            </div>
-          </div>
-          <div className="field-grid">
-            <label className="field-card">
-              <span className="field-label">Organism</span>
-              <input
-                className="text-input"
-                value={project.genomicSpecificity.organism}
-                onChange={(event) => controller.updateGenomicSpecificity('organism', event.target.value)}
-                placeholder="Example: Homo sapiens"
-              />
-            </label>
-            <label className="field-card">
-              <span className="field-label">Database</span>
-              <input
-                className="text-input"
-                value={project.genomicSpecificity.database}
-                onChange={(event) => controller.updateGenomicSpecificity('database', event.target.value)}
-                placeholder="Example: RefSeq representative genomes"
-              />
-            </label>
-          </div>
-          <label className="field-card">
-            <span className="field-label">Handoff notes</span>
-            <textarea
-              className="sequence-input short-input"
-              value={project.genomicSpecificity.notes}
-              onChange={(event) => controller.updateGenomicSpecificity('notes', event.target.value)}
-              placeholder="Why this external specificity check is needed, target organism, or reviewer notes"
-            />
-          </label>
-          <p className="status-note status-note-alert">
-            Exporting or submitting a Primer-BLAST handoff will move primer and target information outside this local-first
-            application.
-          </p>
-        </section>
       </details>
     </div>
   );
