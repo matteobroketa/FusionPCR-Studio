@@ -20,7 +20,11 @@ type StepNavigationProps = {
   formatStepStatus: (level: StepStatus['level'], text: string) => string;
 };
 
-const workflowSteps: Array<{ step: WorkbenchStep; label: string; index: number }> = [
+const workflowSteps: Array<{
+  step: WorkbenchStep;
+  label: string;
+  index: number;
+}> = [
   { step: 'sequences', label: 'Sequences', index: 1 },
   { step: 'construct', label: 'Junction', index: 2 },
   { step: 'primers', label: 'Primers', index: 3 },
@@ -70,7 +74,9 @@ export function StepNavigation({
               <span className="workflow-step-index">{index}</span>
               <span className="workflow-step-copy">
                 <strong>{label}</strong>
-                <span className={`step-status step-status-${status.level}`}>{formatStepStatus(status.level, status.text)}</span>
+                <span className={`step-status step-status-${status.level}`}>
+                  {formatStepStatus(status.level, status.text)}
+                </span>
               </span>
             </button>
           );
@@ -93,7 +99,11 @@ export function StepNavigation({
       </div>
 
       <div className="sidebar-actions">
-        <button type="button" className="button button-secondary" onClick={onClearProject}>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={onClearProject}
+        >
           Clear project
         </button>
       </div>

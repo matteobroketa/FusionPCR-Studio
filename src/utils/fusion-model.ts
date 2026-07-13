@@ -1,12 +1,32 @@
 import { defaultEditorLocks, type EditorLocks } from './editor';
 import { normalizeSequence } from './pcr';
-import { defaultProtocolSettings, normalizeProtocolSettings, type ProtocolPlan, type ProtocolSettings } from './protocol';
-import type { OffTargetAmplicon, PrimerDirection, SpecificitySite, SpecificityTemplate } from './specificity';
+import {
+  defaultProtocolSettings,
+  normalizeProtocolSettings,
+  type ProtocolPlan,
+  type ProtocolSettings,
+} from './protocol';
+import type {
+  OffTargetAmplicon,
+  PrimerDirection,
+  SpecificitySite,
+  SpecificityTemplate,
+} from './specificity';
 import type { PrimerStructureAnalysis, StructureResult } from './structure';
-import { defaultThermodynamicConditions, type ThermodynamicConditions, type ThermodynamicResult } from './thermodynamics';
+import {
+  defaultThermodynamicConditions,
+  type ThermodynamicConditions,
+  type ThermodynamicResult,
+} from './thermodynamics';
 
 export type PolymeraseId = 'q5' | 'phusion_plus';
-export type DesignMode = 'exact' | 'protein-fusion' | 'insertion' | 'deletion' | 'substitution' | 'domain-swap';
+export type DesignMode =
+  | 'exact'
+  | 'protein-fusion'
+  | 'insertion'
+  | 'deletion'
+  | 'substitution'
+  | 'domain-swap';
 export type SourceFormat = 'manual' | 'plain' | 'fasta' | 'genbank' | 'project';
 export type SequenceTopology = 'linear' | 'circular';
 export type AnnealingRule = 'lower-primer-plus-3c' | 'lower-primer-min-60c';
@@ -136,7 +156,8 @@ export type ReactionPlan = {
 };
 
 export type ReviewSeverity = 'information' | 'review' | 'warning' | 'blocking';
-export type ReviewScope = 'design' | 'sequence' | 'junction' | 'primer' | 'protein' | 'protocol';
+export type ReviewScope =
+  'design' | 'sequence' | 'junction' | 'primer' | 'protein' | 'protocol';
 
 export type ReviewItem = {
   id: string;
@@ -288,7 +309,10 @@ export const polymeraseProfiles: Record<PolymeraseId, PolymeraseProfile> = {
   },
 };
 
-export function resolveAnnealingTemperature(profile: PolymeraseProfile, lowerPrimerBodyTm: number): number {
+export function resolveAnnealingTemperature(
+  profile: PolymeraseProfile,
+  lowerPrimerBodyTm: number,
+): number {
   if (profile.annealingRule === 'lower-primer-min-60c') {
     return Math.round(Math.max(60, lowerPrimerBodyTm));
   }
@@ -312,11 +336,12 @@ export const defaultChangeApprovals = (): ChangeApprovals => ({
   acceptedSynonymousChanges: [],
 });
 
-export const defaultGenomicSpecificitySettings = (): GenomicSpecificitySettings => ({
-  organism: '',
-  database: 'refseq_representative_genomes',
-  notes: '',
-});
+export const defaultGenomicSpecificitySettings =
+  (): GenomicSpecificitySettings => ({
+    organism: '',
+    database: 'refseq_representative_genomes',
+    notes: '',
+  });
 
 export const defaultReactionConditions = defaultThermodynamicConditions;
 export const defaultProtocolConfig = defaultProtocolSettings;
@@ -350,7 +375,10 @@ export function createEmptyFragment(label: string): FragmentInput {
   };
 }
 
-export function normalizeFragmentInput(value: Partial<FragmentInput> | undefined, fallbackLabel: string): FragmentInput {
+export function normalizeFragmentInput(
+  value: Partial<FragmentInput> | undefined,
+  fallbackLabel: string,
+): FragmentInput {
   const label = typeof value?.label === 'string' ? value.label : fallbackLabel;
   const sequence = typeof value?.sequence === 'string' ? value.sequence : '';
   const length = normalizeSequence(sequence).length;
@@ -368,9 +396,17 @@ export function normalizeFragmentInput(value: Partial<FragmentInput> | undefined
       value?.sourceFormat === 'project'
         ? value.sourceFormat
         : 'manual',
-    importedName: typeof value?.importedName === 'string' ? value.importedName : label,
-    checksum: typeof value?.checksum === 'string' ? value.checksum : checksumSequence(sequence),
-    ambiguousBases: Array.isArray(value?.ambiguousBases) ? value.ambiguousBases.filter((item): item is string => typeof item === 'string') : [],
+    importedName:
+      typeof value?.importedName === 'string' ? value.importedName : label,
+    checksum:
+      typeof value?.checksum === 'string'
+        ? value.checksum
+        : checksumSequence(sequence),
+    ambiguousBases: Array.isArray(value?.ambiguousBases)
+      ? value.ambiguousBases.filter(
+          (item): item is string => typeof item === 'string',
+        )
+      : [],
     features: Array.isArray(value?.features)
       ? value.features.filter(
           (item): item is SequenceFeature =>
@@ -387,41 +423,73 @@ export function normalizeFragmentInput(value: Partial<FragmentInput> | undefined
   };
 }
 
-export function normalizeReactionConditions(value: Partial<ThermodynamicConditions> | undefined): ThermodynamicConditions {
+export function normalizeReactionConditions(
+  value: Partial<ThermodynamicConditions> | undefined,
+): ThermodynamicConditions {
   const defaults = defaultReactionConditions();
   return {
-    monovalentMillimolar: Math.max(value?.monovalentMillimolar ?? defaults.monovalentMillimolar, 0),
-    magnesiumMillimolar: Math.max(value?.magnesiumMillimolar ?? defaults.magnesiumMillimolar, 0),
-    dntpMillimolar: Math.max(value?.dntpMillimolar ?? defaults.dntpMillimolar, 0),
-    oligoNanomolar: Math.max(value?.oligoNanomolar ?? defaults.oligoNanomolar, 1e-6),
+    monovalentMillimolar: Math.max(
+      value?.monovalentMillimolar ?? defaults.monovalentMillimolar,
+      0,
+    ),
+    magnesiumMillimolar: Math.max(
+      value?.magnesiumMillimolar ?? defaults.magnesiumMillimolar,
+      0,
+    ),
+    dntpMillimolar: Math.max(
+      value?.dntpMillimolar ?? defaults.dntpMillimolar,
+      0,
+    ),
+    oligoNanomolar: Math.max(
+      value?.oligoNanomolar ?? defaults.oligoNanomolar,
+      1e-6,
+    ),
     dmsoPercent: Math.max(value?.dmsoPercent ?? defaults.dmsoPercent, 0),
     dmsoFactor: Math.max(value?.dmsoFactor ?? defaults.dmsoFactor, 0),
   };
 }
 
-export function normalizeProtocolConfig(value: Partial<ProtocolSettings> | undefined): ProtocolSettings {
+export function normalizeProtocolConfig(
+  value: Partial<ProtocolSettings> | undefined,
+): ProtocolSettings {
   return normalizeProtocolSettings(value);
 }
 
-export function normalizeEditorLocks(value: Partial<EditorLocks> | undefined): EditorLocks {
+export function normalizeEditorLocks(
+  value: Partial<EditorLocks> | undefined,
+): EditorLocks {
   const defaults = defaultEditorLockConfig();
   return {
     fragmentA: Boolean(value?.fragmentA ?? defaults.fragmentA),
     fragmentB: Boolean(value?.fragmentB ?? defaults.fragmentB),
-    fragmentABoundaries: Boolean(value?.fragmentABoundaries ?? defaults.fragmentABoundaries),
-    fragmentBBoundaries: Boolean(value?.fragmentBBoundaries ?? defaults.fragmentBBoundaries),
+    fragmentABoundaries: Boolean(
+      value?.fragmentABoundaries ?? defaults.fragmentABoundaries,
+    ),
+    fragmentBBoundaries: Boolean(
+      value?.fragmentBBoundaries ?? defaults.fragmentBBoundaries,
+    ),
     insertSequence: Boolean(value?.insertSequence ?? defaults.insertSequence),
-    polymeraseSettings: Boolean(value?.polymeraseSettings ?? defaults.polymeraseSettings),
+    polymeraseSettings: Boolean(
+      value?.polymeraseSettings ?? defaults.polymeraseSettings,
+    ),
   };
 }
 
-export function normalizeChangeApprovals(value: Partial<ChangeApprovals> | undefined): ChangeApprovals {
+export function normalizeChangeApprovals(
+  value: Partial<ChangeApprovals> | undefined,
+): ChangeApprovals {
   const defaults = defaultChangeApprovals();
   return {
-    removeUpstreamStop: Boolean(value?.removeUpstreamStop ?? defaults.removeUpstreamStop),
-    removeDownstreamStart: Boolean(value?.removeDownstreamStart ?? defaults.removeDownstreamStart),
+    removeUpstreamStop: Boolean(
+      value?.removeUpstreamStop ?? defaults.removeUpstreamStop,
+    ),
+    removeDownstreamStart: Boolean(
+      value?.removeDownstreamStart ?? defaults.removeDownstreamStart,
+    ),
     acceptedSynonymousChanges: Array.isArray(value?.acceptedSynonymousChanges)
-      ? value.acceptedSynonymousChanges.filter((item): item is string => typeof item === 'string')
+      ? value.acceptedSynonymousChanges.filter(
+          (item): item is string => typeof item === 'string',
+        )
       : defaults.acceptedSynonymousChanges,
   };
 }
@@ -431,8 +499,10 @@ export function normalizeGenomicSpecificitySettings(
 ): GenomicSpecificitySettings {
   const defaults = defaultGenomicSpecificitySettings();
   return {
-    organism: typeof value?.organism === 'string' ? value.organism : defaults.organism,
-    database: typeof value?.database === 'string' ? value.database : defaults.database,
+    organism:
+      typeof value?.organism === 'string' ? value.organism : defaults.organism,
+    database:
+      typeof value?.database === 'string' ? value.database : defaults.database,
     notes: typeof value?.notes === 'string' ? value.notes : defaults.notes,
   };
 }

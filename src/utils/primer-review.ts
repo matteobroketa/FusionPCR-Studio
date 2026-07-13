@@ -2,7 +2,9 @@ import type { PrimerPairInteraction, ReactionPlan } from './fusion-model';
 import type { PrimerDesign } from './fusion-model';
 import type { SpecificitySite } from './specificity';
 
-export function getIntendedTemplateIdsForPrimer(primer: Pick<PrimerDesign, 'name' | 'expectedTemplateId'>): Set<string> {
+export function getIntendedTemplateIdsForPrimer(
+  primer: Pick<PrimerDesign, 'name' | 'expectedTemplateId'>,
+): Set<string> {
   const templateIds = new Set<string>([primer.expectedTemplateId]);
 
   if (primer.name.startsWith('A_')) {
@@ -19,14 +21,25 @@ export function getIntendedTemplateIdsForPrimer(primer: Pick<PrimerDesign, 'name
 }
 
 export function isIntendedPrimerSpecificitySite(
-  primer: Pick<PrimerDesign, 'name' | 'expectedTemplateId' | 'bodyTemplateSequence'>,
+  primer: Pick<
+    PrimerDesign,
+    'name' | 'expectedTemplateId' | 'bodyTemplateSequence'
+  >,
   site: Pick<SpecificitySite, 'templateId' | 'matchedSequence'>,
 ): boolean {
-  return getIntendedTemplateIdsForPrimer(primer).has(site.templateId) && site.matchedSequence === primer.bodyTemplateSequence;
+  return (
+    getIntendedTemplateIdsForPrimer(primer).has(site.templateId) &&
+    site.matchedSequence === primer.bodyTemplateSequence
+  );
 }
 
-export function getNonIntendedSpecificitySites(primer: PrimerDesign): SpecificitySite[] {
-  return primer.specificitySites.filter((site) => site.risk !== 'low' && !isIntendedPrimerSpecificitySite(primer, site));
+export function getNonIntendedSpecificitySites(
+  primer: PrimerDesign,
+): SpecificitySite[] {
+  return primer.specificitySites.filter(
+    (site) =>
+      site.risk !== 'low' && !isIntendedPrimerSpecificitySite(primer, site),
+  );
 }
 
 export function primerPairSharesReaction(
@@ -34,6 +47,8 @@ export function primerPairSharesReaction(
   reactions: Array<Pick<ReactionPlan, 'primerNames'>>,
 ): boolean {
   return reactions.some(
-    (reaction) => reaction.primerNames.includes(pair.primerAName) && reaction.primerNames.includes(pair.primerBName),
+    (reaction) =>
+      reaction.primerNames.includes(pair.primerAName) &&
+      reaction.primerNames.includes(pair.primerBName),
   );
 }

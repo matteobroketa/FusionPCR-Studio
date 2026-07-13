@@ -1,4 +1,5 @@
-export type MixStrategy = 'equimolar' | 'user-defined' | 'limiting-a' | 'limiting-b';
+export type MixStrategy =
+  'equimolar' | 'user-defined' | 'limiting-a' | 'limiting-b';
 export type ProtocolPolymeraseId = 'q5' | 'phusion_plus';
 
 export type ProtocolSettings = {
@@ -48,7 +49,15 @@ export type ReactionMixPlan = {
 
 export type ReactionRecipeEntry = {
   label: string;
-  role: 'master-mix' | 'buffer' | 'dntp' | 'polymerase' | 'dmso' | 'primer' | 'template' | 'water';
+  role:
+    | 'master-mix'
+    | 'buffer'
+    | 'dntp'
+    | 'polymerase'
+    | 'dmso'
+    | 'primer'
+    | 'template'
+    | 'water';
   perReactionVolumeUl: number;
   totalVolumeUl: number;
   note?: string;
@@ -104,26 +113,82 @@ export function defaultProtocolSettings(): ProtocolSettings {
   };
 }
 
-export function normalizeProtocolSettings(value: Partial<ProtocolSettings> | undefined): ProtocolSettings {
+export function normalizeProtocolSettings(
+  value: Partial<ProtocolSettings> | undefined,
+): ProtocolSettings {
   const defaults = defaultProtocolSettings();
   return {
-    stageAConcentrationNgPerUl: Math.max(value?.stageAConcentrationNgPerUl ?? defaults.stageAConcentrationNgPerUl, 0.0001),
-    stageBConcentrationNgPerUl: Math.max(value?.stageBConcentrationNgPerUl ?? defaults.stageBConcentrationNgPerUl, 0.0001),
-    totalTemplatePmol: Math.max(value?.totalTemplatePmol ?? defaults.totalTemplatePmol, 0.000001),
+    stageAConcentrationNgPerUl: Math.max(
+      value?.stageAConcentrationNgPerUl ?? defaults.stageAConcentrationNgPerUl,
+      0.0001,
+    ),
+    stageBConcentrationNgPerUl: Math.max(
+      value?.stageBConcentrationNgPerUl ?? defaults.stageBConcentrationNgPerUl,
+      0.0001,
+    ),
+    totalTemplatePmol: Math.max(
+      value?.totalTemplatePmol ?? defaults.totalTemplatePmol,
+      0.000001,
+    ),
     mixStrategy: value?.mixStrategy ?? defaults.mixStrategy,
-    stageMixRatioA: Math.max(value?.stageMixRatioA ?? defaults.stageMixRatioA, 0.000001),
-    stageMixRatioB: Math.max(value?.stageMixRatioB ?? defaults.stageMixRatioB, 0.000001),
-    primerStockMicromolar: Math.max(value?.primerStockMicromolar ?? defaults.primerStockMicromolar, 0.000001),
-    primerWorkingMicromolar: Math.max(value?.primerWorkingMicromolar ?? defaults.primerWorkingMicromolar, 0.000001),
-    workingStockPrepMicroliters: Math.max(value?.workingStockPrepMicroliters ?? defaults.workingStockPrepMicroliters, 0.000001),
-    primerPerReactionMicroliters: Math.max(value?.primerPerReactionMicroliters ?? defaults.primerPerReactionMicroliters, 0.000001),
-    stage1TemplatePerReactionMicroliters: Math.max(value?.stage1TemplatePerReactionMicroliters ?? defaults.stage1TemplatePerReactionMicroliters, 0.000001),
-    reactionVolumeMicroliters: Math.max(value?.reactionVolumeMicroliters ?? defaults.reactionVolumeMicroliters, 0.000001),
-    stage1ReactionCountPerProduct: Math.max(Math.floor(value?.stage1ReactionCountPerProduct ?? defaults.stage1ReactionCountPerProduct), 1),
-    finalReactionCount: Math.max(Math.floor(value?.finalReactionCount ?? defaults.finalReactionCount), 1),
-    overfillPercent: Math.max(value?.overfillPercent ?? defaults.overfillPercent, 0),
-    stage1Cycles: Math.max(Math.floor(value?.stage1Cycles ?? defaults.stage1Cycles), 1),
-    finalCycles: Math.max(Math.floor(value?.finalCycles ?? defaults.finalCycles), 1),
+    stageMixRatioA: Math.max(
+      value?.stageMixRatioA ?? defaults.stageMixRatioA,
+      0.000001,
+    ),
+    stageMixRatioB: Math.max(
+      value?.stageMixRatioB ?? defaults.stageMixRatioB,
+      0.000001,
+    ),
+    primerStockMicromolar: Math.max(
+      value?.primerStockMicromolar ?? defaults.primerStockMicromolar,
+      0.000001,
+    ),
+    primerWorkingMicromolar: Math.max(
+      value?.primerWorkingMicromolar ?? defaults.primerWorkingMicromolar,
+      0.000001,
+    ),
+    workingStockPrepMicroliters: Math.max(
+      value?.workingStockPrepMicroliters ??
+        defaults.workingStockPrepMicroliters,
+      0.000001,
+    ),
+    primerPerReactionMicroliters: Math.max(
+      value?.primerPerReactionMicroliters ??
+        defaults.primerPerReactionMicroliters,
+      0.000001,
+    ),
+    stage1TemplatePerReactionMicroliters: Math.max(
+      value?.stage1TemplatePerReactionMicroliters ??
+        defaults.stage1TemplatePerReactionMicroliters,
+      0.000001,
+    ),
+    reactionVolumeMicroliters: Math.max(
+      value?.reactionVolumeMicroliters ?? defaults.reactionVolumeMicroliters,
+      0.000001,
+    ),
+    stage1ReactionCountPerProduct: Math.max(
+      Math.floor(
+        value?.stage1ReactionCountPerProduct ??
+          defaults.stage1ReactionCountPerProduct,
+      ),
+      1,
+    ),
+    finalReactionCount: Math.max(
+      Math.floor(value?.finalReactionCount ?? defaults.finalReactionCount),
+      1,
+    ),
+    overfillPercent: Math.max(
+      value?.overfillPercent ?? defaults.overfillPercent,
+      0,
+    ),
+    stage1Cycles: Math.max(
+      Math.floor(value?.stage1Cycles ?? defaults.stage1Cycles),
+      1,
+    ),
+    finalCycles: Math.max(
+      Math.floor(value?.finalCycles ?? defaults.finalCycles),
+      1,
+    ),
   };
 }
 
@@ -135,11 +200,17 @@ export function massNgToPmol(massNg: number, lengthBp: number): number {
   return (massNg * 1000) / (lengthBp * 660);
 }
 
-export function volumeForMass(requiredMassNg: number, concentrationNgPerUl: number): number {
+export function volumeForMass(
+  requiredMassNg: number,
+  concentrationNgPerUl: number,
+): number {
   return requiredMassNg / concentrationNgPerUl;
 }
 
-function targetPmolByStrategy(settings: ProtocolSettings): { stageA: number; stageB: number } {
+function targetPmolByStrategy(settings: ProtocolSettings): {
+  stageA: number;
+  stageB: number;
+} {
   const ratioA = settings.stageMixRatioA;
   const ratioB = settings.stageMixRatioB;
   const total = settings.totalTemplatePmol;
@@ -229,21 +300,37 @@ function buildReactionRecipe(
   overfilledReactionCount: number,
   polymeraseId: ProtocolPolymeraseId,
   reactionConditions: { dntpMillimolar: number; dmsoPercent: number },
-  templateEntries: Array<{ label: string; perReactionVolumeUl: number; note?: string }>,
+  templateEntries: Array<{
+    label: string;
+    perReactionVolumeUl: number;
+    note?: string;
+  }>,
   primerLabels: string[],
 ): ReactionRecipe {
   const recipeProfile = RECIPE_PROFILES[polymeraseId];
   const entries: ReactionRecipeEntry[] = [];
 
   if (recipeProfile.masterMixLabel && recipeProfile.masterMixFraction) {
-    entries.push(scaleEntry(recipeProfile.masterMixLabel, 'master-mix', settings.reactionVolumeMicroliters * recipeProfile.masterMixFraction, overfilledReactionCount));
+    entries.push(
+      scaleEntry(
+        recipeProfile.masterMixLabel,
+        'master-mix',
+        settings.reactionVolumeMicroliters * recipeProfile.masterMixFraction,
+        overfilledReactionCount,
+      ),
+    );
   } else {
-    if (recipeProfile.bufferLabel && recipeProfile.bufferStockX && recipeProfile.bufferFinalX) {
+    if (
+      recipeProfile.bufferLabel &&
+      recipeProfile.bufferStockX &&
+      recipeProfile.bufferFinalX
+    ) {
       entries.push(
         scaleEntry(
           recipeProfile.bufferLabel,
           'buffer',
-          settings.reactionVolumeMicroliters * (recipeProfile.bufferFinalX / recipeProfile.bufferStockX),
+          settings.reactionVolumeMicroliters *
+            (recipeProfile.bufferFinalX / recipeProfile.bufferStockX),
           overfilledReactionCount,
         ),
       );
@@ -253,13 +340,25 @@ function buildReactionRecipe(
         scaleEntry(
           recipeProfile.dntpLabel,
           'dntp',
-          (settings.reactionVolumeMicroliters * reactionConditions.dntpMillimolar) / recipeProfile.dntpStockMillimolarTotal,
+          (settings.reactionVolumeMicroliters *
+            reactionConditions.dntpMillimolar) /
+            recipeProfile.dntpStockMillimolarTotal,
           overfilledReactionCount,
         ),
       );
     }
-    if (recipeProfile.polymeraseLabel && recipeProfile.polymerasePerReactionUl) {
-      entries.push(scaleEntry(recipeProfile.polymeraseLabel, 'polymerase', recipeProfile.polymerasePerReactionUl, overfilledReactionCount));
+    if (
+      recipeProfile.polymeraseLabel &&
+      recipeProfile.polymerasePerReactionUl
+    ) {
+      entries.push(
+        scaleEntry(
+          recipeProfile.polymeraseLabel,
+          'polymerase',
+          recipeProfile.polymerasePerReactionUl,
+          overfilledReactionCount,
+        ),
+      );
     }
   }
 
@@ -268,7 +367,8 @@ function buildReactionRecipe(
       scaleEntry(
         'DMSO',
         'dmso',
-        settings.reactionVolumeMicroliters * (reactionConditions.dmsoPercent / 100),
+        settings.reactionVolumeMicroliters *
+          (reactionConditions.dmsoPercent / 100),
         overfilledReactionCount,
         'Optional additive from thermodynamic settings.',
       ),
@@ -276,22 +376,55 @@ function buildReactionRecipe(
   }
 
   for (const primerLabel of primerLabels) {
-    entries.push(scaleEntry(`${primerLabel} working primer`, 'primer', settings.primerPerReactionMicroliters, overfilledReactionCount));
+    entries.push(
+      scaleEntry(
+        `${primerLabel} working primer`,
+        'primer',
+        settings.primerPerReactionMicroliters,
+        overfilledReactionCount,
+      ),
+    );
   }
 
   for (const templateEntry of templateEntries) {
-    entries.push(scaleEntry(templateEntry.label, 'template', templateEntry.perReactionVolumeUl, overfilledReactionCount, templateEntry.note));
+    entries.push(
+      scaleEntry(
+        templateEntry.label,
+        'template',
+        templateEntry.perReactionVolumeUl,
+        overfilledReactionCount,
+        templateEntry.note,
+      ),
+    );
   }
 
-  const specifiedPerReaction = entries.reduce((sum, entry) => sum + entry.perReactionVolumeUl, 0);
-  const waterPerReaction = Math.max(0, settings.reactionVolumeMicroliters - specifiedPerReaction);
-  const overflow = Math.max(0, specifiedPerReaction - settings.reactionVolumeMicroliters);
-  entries.push(scaleEntry('Nuclease-free water', 'water', waterPerReaction, overfilledReactionCount));
+  const specifiedPerReaction = entries.reduce(
+    (sum, entry) => sum + entry.perReactionVolumeUl,
+    0,
+  );
+  const waterPerReaction = Math.max(
+    0,
+    settings.reactionVolumeMicroliters - specifiedPerReaction,
+  );
+  const overflow = Math.max(
+    0,
+    specifiedPerReaction - settings.reactionVolumeMicroliters,
+  );
+  entries.push(
+    scaleEntry(
+      'Nuclease-free water',
+      'water',
+      waterPerReaction,
+      overfilledReactionCount,
+    ),
+  );
 
   return {
     name,
     entries,
-    totalVolumeUl: roundVolume(entries.reduce((sum, entry) => sum + entry.totalVolumeUl, 0)),
+    totalVolumeUl: roundVolume(
+      entries.reduce((sum, entry) => sum + entry.totalVolumeUl, 0),
+    ),
     volumeOverflowUl: roundVolume(overflow * overfilledReactionCount),
     note:
       overflow > 0
@@ -325,7 +458,9 @@ export function buildProtocolPlan(
   }
 
   const overfillFactor = 1 + settings.overfillPercent / 100;
-  const fusionOverfilledReactionCount = Number((settings.finalReactionCount * overfillFactor).toFixed(2));
+  const fusionOverfilledReactionCount = Number(
+    (settings.finalReactionCount * overfillFactor).toFixed(2),
+  );
   const target = targetPmolByStrategy(settings);
   const stageMixEntries: StageMixEntry[] = [
     {
@@ -333,9 +468,15 @@ export function buildProtocolPlan(
       productLengthBp: lengths.stageAProductLength,
       concentrationNgPerUl: settings.stageAConcentrationNgPerUl,
       targetPmol: target.stageA * fusionOverfilledReactionCount,
-      requiredMassNg: pmolToMassNg(target.stageA * fusionOverfilledReactionCount, lengths.stageAProductLength),
+      requiredMassNg: pmolToMassNg(
+        target.stageA * fusionOverfilledReactionCount,
+        lengths.stageAProductLength,
+      ),
       requiredVolumeUl: volumeForMass(
-        pmolToMassNg(target.stageA * fusionOverfilledReactionCount, lengths.stageAProductLength),
+        pmolToMassNg(
+          target.stageA * fusionOverfilledReactionCount,
+          lengths.stageAProductLength,
+        ),
         settings.stageAConcentrationNgPerUl,
       ),
     },
@@ -344,9 +485,15 @@ export function buildProtocolPlan(
       productLengthBp: lengths.stageBProductLength,
       concentrationNgPerUl: settings.stageBConcentrationNgPerUl,
       targetPmol: target.stageB * fusionOverfilledReactionCount,
-      requiredMassNg: pmolToMassNg(target.stageB * fusionOverfilledReactionCount, lengths.stageBProductLength),
+      requiredMassNg: pmolToMassNg(
+        target.stageB * fusionOverfilledReactionCount,
+        lengths.stageBProductLength,
+      ),
       requiredVolumeUl: volumeForMass(
-        pmolToMassNg(target.stageB * fusionOverfilledReactionCount, lengths.stageBProductLength),
+        pmolToMassNg(
+          target.stageB * fusionOverfilledReactionCount,
+          lengths.stageBProductLength,
+        ),
         settings.stageBConcentrationNgPerUl,
       ),
     },
@@ -356,17 +503,30 @@ export function buildProtocolPlan(
     requiredVolumeUl: Number(entry.requiredVolumeUl.toFixed(2)),
   }));
 
-  const workingStockStockVolumeUl = (settings.primerWorkingMicromolar * settings.workingStockPrepMicroliters) / settings.primerStockMicromolar;
-  const workingStockDiluentVolumeUl = settings.workingStockPrepMicroliters - workingStockStockVolumeUl;
-  const outerPrimerReactionCount = settings.stage1ReactionCountPerProduct + settings.finalReactionCount;
+  const workingStockStockVolumeUl =
+    (settings.primerWorkingMicromolar * settings.workingStockPrepMicroliters) /
+    settings.primerStockMicromolar;
+  const workingStockDiluentVolumeUl =
+    settings.workingStockPrepMicroliters - workingStockStockVolumeUl;
+  const outerPrimerReactionCount =
+    settings.stage1ReactionCountPerProduct + settings.finalReactionCount;
   const innerPrimerReactionCount = settings.stage1ReactionCountPerProduct;
   const primerUsage = primerNames.map((primerName) => {
-    const reactionsUsingPrimer = primerName === 'A_outer_F' || primerName === 'B_outer_R' ? outerPrimerReactionCount : innerPrimerReactionCount;
+    const reactionsUsingPrimer =
+      primerName === 'A_outer_F' || primerName === 'B_outer_R'
+        ? outerPrimerReactionCount
+        : innerPrimerReactionCount;
     return {
       primerName,
       reactionsUsingPrimer,
       perReactionVolumeUl: settings.primerPerReactionMicroliters,
-      totalWorkingVolumeUl: Number((settings.primerPerReactionMicroliters * reactionsUsingPrimer * overfillFactor).toFixed(2)),
+      totalWorkingVolumeUl: Number(
+        (
+          settings.primerPerReactionMicroliters *
+          reactionsUsingPrimer *
+          overfillFactor
+        ).toFixed(2),
+      ),
     };
   });
 
@@ -374,25 +534,49 @@ export function buildProtocolPlan(
     {
       name: 'PCR 1A',
       reactionCount: settings.stage1ReactionCountPerProduct,
-      overfilledReactionCount: Number((settings.stage1ReactionCountPerProduct * overfillFactor).toFixed(2)),
+      overfilledReactionCount: Number(
+        (settings.stage1ReactionCountPerProduct * overfillFactor).toFixed(2),
+      ),
       reactionVolumeUl: settings.reactionVolumeMicroliters,
-      totalMasterMixVolumeUl: Number((settings.reactionVolumeMicroliters * settings.stage1ReactionCountPerProduct * overfillFactor).toFixed(2)),
+      totalMasterMixVolumeUl: Number(
+        (
+          settings.reactionVolumeMicroliters *
+          settings.stage1ReactionCountPerProduct *
+          overfillFactor
+        ).toFixed(2),
+      ),
       cycleCount: settings.stage1Cycles,
     },
     {
       name: 'PCR 1B',
       reactionCount: settings.stage1ReactionCountPerProduct,
-      overfilledReactionCount: Number((settings.stage1ReactionCountPerProduct * overfillFactor).toFixed(2)),
+      overfilledReactionCount: Number(
+        (settings.stage1ReactionCountPerProduct * overfillFactor).toFixed(2),
+      ),
       reactionVolumeUl: settings.reactionVolumeMicroliters,
-      totalMasterMixVolumeUl: Number((settings.reactionVolumeMicroliters * settings.stage1ReactionCountPerProduct * overfillFactor).toFixed(2)),
+      totalMasterMixVolumeUl: Number(
+        (
+          settings.reactionVolumeMicroliters *
+          settings.stage1ReactionCountPerProduct *
+          overfillFactor
+        ).toFixed(2),
+      ),
       cycleCount: settings.stage1Cycles,
     },
     {
       name: 'Fusion PCR',
       reactionCount: settings.finalReactionCount,
-      overfilledReactionCount: Number((settings.finalReactionCount * overfillFactor).toFixed(2)),
+      overfilledReactionCount: Number(
+        (settings.finalReactionCount * overfillFactor).toFixed(2),
+      ),
       reactionVolumeUl: settings.reactionVolumeMicroliters,
-      totalMasterMixVolumeUl: Number((settings.reactionVolumeMicroliters * settings.finalReactionCount * overfillFactor).toFixed(2)),
+      totalMasterMixVolumeUl: Number(
+        (
+          settings.reactionVolumeMicroliters *
+          settings.finalReactionCount *
+          overfillFactor
+        ).toFixed(2),
+      ),
       cycleCount: settings.finalCycles,
     },
   ];
@@ -406,7 +590,12 @@ export function buildProtocolPlan(
       stage1Overfilled,
       polymeraseId,
       reactionConditions,
-      [{ label: 'Fragment A source template', perReactionVolumeUl: settings.stage1TemplatePerReactionMicroliters }],
+      [
+        {
+          label: 'Fragment A source template',
+          perReactionVolumeUl: settings.stage1TemplatePerReactionMicroliters,
+        },
+      ],
       ['A_outer_F', 'A_inner_R'],
     ),
     buildReactionRecipe(
@@ -415,7 +604,12 @@ export function buildProtocolPlan(
       stage1Overfilled,
       polymeraseId,
       reactionConditions,
-      [{ label: 'Fragment B source template', perReactionVolumeUl: settings.stage1TemplatePerReactionMicroliters }],
+      [
+        {
+          label: 'Fragment B source template',
+          perReactionVolumeUl: settings.stage1TemplatePerReactionMicroliters,
+        },
+      ],
       ['B_inner_F', 'B_outer_R'],
     ),
     buildReactionRecipe(
@@ -427,12 +621,14 @@ export function buildProtocolPlan(
       [
         {
           label: 'PCR 1A product template',
-          perReactionVolumeUl: stageMixEntries[0].requiredVolumeUl / Math.max(fusionOverfilled, 1),
+          perReactionVolumeUl:
+            stageMixEntries[0].requiredVolumeUl / Math.max(fusionOverfilled, 1),
           note: `${stageMixEntries[0].targetPmol.toFixed(3)} pmol target across the fusion setup.`,
         },
         {
           label: 'PCR 1B product template',
-          perReactionVolumeUl: stageMixEntries[1].requiredVolumeUl / Math.max(fusionOverfilled, 1),
+          perReactionVolumeUl:
+            stageMixEntries[1].requiredVolumeUl / Math.max(fusionOverfilled, 1),
           note: `${stageMixEntries[1].targetPmol.toFixed(3)} pmol target across the fusion setup.`,
         },
       ],

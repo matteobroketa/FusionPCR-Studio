@@ -39,11 +39,7 @@ code,
 .sequence-preview,
 .inline-sequence-preview,
 .primer-sequence {
-  font-family:
-    "SFMono-Regular",
-    Consolas,
-    "Liberation Mono",
-    monospace;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 }
 
 .sr-only {
@@ -228,7 +224,10 @@ code,
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
 }
 
 .inline-link-button {
@@ -862,7 +861,7 @@ select.text-input,
 }
 
 .construct-overlap-button::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 50%;
   bottom: -14px;
@@ -1199,6 +1198,30 @@ select.text-input,
     padding: var(--space-3);
   }
 
+  .empty-state {
+    padding: var(--space-5);
+  }
+
+  .app-topbar {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .topbar-actions,
+  .topbar-status {
+    justify-content: flex-start;
+  }
+
+  .empty-state-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .empty-state-actions .button {
+    width: 100%;
+  }
+
   .field-grid,
   .workspace-two-column,
   .primer-grid,
@@ -1212,10 +1235,13 @@ select.text-input,
     grid-template-columns: 1fr;
   }
 
-  .notice-banner,
   .proposal-card {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .notice-banner {
+    grid-template-columns: 1fr;
   }
 
   .sidebar-header,

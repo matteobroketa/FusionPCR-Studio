@@ -5,9 +5,11 @@
 The repository currently verifies:
 
 - TypeScript/Vite application build via `npm run build`
+- ESLint and Prettier checks via `npm run lint` and `npm run format:check`
 - Vitest unit and integration coverage via `npm run test`
 - Playwright browser coverage against the production Vite build via `npm run test:e2e`
   Chromium functional flow, Chromium/Firefox/WebKit smoke projects, and Chromium axe checks across the public steps
+- Chromium visual-regression coverage via `npx playwright test --project=chromium-visual tests/e2e/visual.spec.ts`
 - GitHub Pages built-asset smoke checks via `npm run smoke:pages:dist`
 - Rust workspace compilation and tests via `cargo test --workspace`
 - Post-deployment Playwright smoke checks against the public Pages URL in Chromium, Firefox, and WebKit via [.github/workflows/deploy-pages.yml](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/.github/workflows/deploy-pages.yml)
@@ -20,6 +22,9 @@ The repository currently verifies:
 - OE-PCR reconstruction fixtures: `12`
   Source: [test-data/reference/product-reconstruction.json](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/test-data/reference/product-reconstruction.json)
   Coverage: exact fusion, linker insertion, insertion, deletion, substitution, circular selections, coding-frame preservation, approved coding-sequence edits, and blocking failures.
+- Visual baseline snapshots in the maintained alpha.3 set: `27`
+  Source: [tests/e2e/visual.spec.ts-snapshots](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/tests/e2e/visual.spec.ts-snapshots)
+  Coverage: 9 reviewed UI states across the maintained desktop, tablet, and phone baseline set, with the expected phone/tablet skips for unsupported editing states.
 
 ## Browser-test coverage
 
@@ -33,6 +38,9 @@ The Playwright suite currently covers:
   `project JSON`, `oligo-ordering CSV`, `primer FASTA`, `final-construct FASTA`, and `printable protocol`
 - deployed-pages smoke passes against the public GitHub Pages URL in Chromium, Firefox, and WebKit
 - axe-based checks for the empty state plus the four public workbench steps with zero serious or critical violations
+- visual-regression coverage for empty state, exact fusion, protein fusion, selected junction, primer results, selected primer, blocking issue, protocol review, worker failure, and phone review
+
+Manual visual baseline review was completed on `2026-07-13` across the maintained alpha.3 snapshot set in [tests/e2e/visual.spec.ts-snapshots](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/tests/e2e/visual.spec.ts-snapshots).
 
 The Playwright fixture fails the job on:
 

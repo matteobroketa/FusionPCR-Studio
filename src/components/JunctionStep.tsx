@@ -1,9 +1,15 @@
 import type { RefObject } from 'react';
 import { SequencePreview, SequenceRail } from './designPanels';
-import type { CanvasTracks, ComparisonSnapshot } from '../hooks/useProjectController';
+import type {
+  CanvasTracks,
+  ComparisonSnapshot,
+} from '../hooks/useProjectController';
 import { ADVANCED_ANALYSIS_ENABLED } from '../utils/feature-flags';
-import type { FusionDesign, PrimerDesign, ProteinValidation } from '../utils/fusion';
-import type { WorkflowStage } from '../utils/review';
+import type {
+  FusionDesign,
+  PrimerDesign,
+  ProteinValidation,
+} from '../utils/fusion';
 
 type CompareRow = {
   label: string;
@@ -28,14 +34,17 @@ type JunctionStepProps = {
   fragmentBLength: number;
   selectedStageLabel: string;
   canvasTracks: CanvasTracks;
-  inspectorFocus: 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction';
+  inspectorFocus:
+    'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction';
   visiblePrimers: PrimerDesign[];
   selectedPrimerName: string | null;
   stageSequencePreviews: Array<{ label: string; sequence: string }>;
   comparisonSnapshot: ComparisonSnapshot | null;
   compareRows: CompareRow[];
   headingRef?: RefObject<HTMLHeadingElement | null>;
-  onInspectorFocusChange: (focus: 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction') => void;
+  onInspectorFocusChange: (
+    focus: 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction',
+  ) => void;
   onSelectPrimer: (primerName: string) => void;
   onShowInspector: () => void;
   onToggleCanvasTrack: (track: keyof CanvasTracks) => void;
@@ -84,14 +93,34 @@ export function JunctionStep({
           </div>
           <div className="panel-actions">
             <span className="pill pill-muted">{selectedStageLabel}</span>
-            <span className={`pill ${design.finalProductVerified ? 'pill-success' : 'pill-watch'}`}>{design.finalProductVerified ? 'Sequence reconstruction verified.' : 'Calculation pending'}</span>
+            <span
+              className={`pill ${design.finalProductVerified ? 'pill-success' : 'pill-watch'}`}
+            >
+              {design.finalProductVerified
+                ? 'Sequence reconstruction verified.'
+                : 'Calculation pending'}
+            </span>
           </div>
         </div>
 
         {canvasTracks.sourceFragments ? (
           <div className="canvas-stack">
-            <SequenceRail label={projectNameA} sequenceLength={fragmentALength} start={design.project.fragmentA.start} end={design.project.fragmentA.end} topology={design.project.fragmentA.topology} accentClass="rail-a" />
-            <SequenceRail label={projectNameB} sequenceLength={fragmentBLength} start={design.project.fragmentB.start} end={design.project.fragmentB.end} topology={design.project.fragmentB.topology} accentClass="rail-b" />
+            <SequenceRail
+              label={projectNameA}
+              sequenceLength={fragmentALength}
+              start={design.project.fragmentA.start}
+              end={design.project.fragmentA.end}
+              topology={design.project.fragmentA.topology}
+              accentClass="rail-a"
+            />
+            <SequenceRail
+              label={projectNameB}
+              sequenceLength={fragmentBLength}
+              start={design.project.fragmentB.start}
+              end={design.project.fragmentB.end}
+              topology={design.project.fragmentB.topology}
+              accentClass="rail-b"
+            />
           </div>
         ) : null}
 
@@ -101,11 +130,19 @@ export function JunctionStep({
             <span>Fragment B</span>
           </div>
           <div className="construct-summary-row" aria-label="Construct summary">
-            <span className="pill pill-muted">Target construct {targetLength} bp</span>
+            <span className="pill pill-muted">
+              Target construct {targetLength} bp
+            </span>
             <span className="pill pill-muted">Overlap {overlapLength} bp</span>
-            {hasInsertBlock ? <span className="pill pill-muted">Inserted sequence {design.insertSequence.length} bp</span> : null}
+            {hasInsertBlock ? (
+              <span className="pill pill-muted">
+                Inserted sequence {design.insertSequence.length} bp
+              </span>
+            ) : null}
           </div>
-          <div className={`construct-strip ${hasInsertBlock ? 'construct-strip-inserted' : 'construct-strip-exact'}`}>
+          <div
+            className={`construct-strip ${hasInsertBlock ? 'construct-strip-inserted' : 'construct-strip-exact'}`}
+          >
             <button
               type="button"
               className={`construct-block block-a construct-button ${inspectorFocus === 'fragment-a' ? 'construct-active' : ''} ${hasInsertBlock ? '' : 'construct-exact-left'}`}
@@ -185,15 +222,23 @@ export function JunctionStep({
               }}
             >
               <strong>{primer.name}</strong>
-              <span>{primer.name.endsWith('_R') ? '← reverse' : 'forward →'}</span>
-              <span>Tail {primer.tail.length || 0} nt · Body {primer.bodyLength} nt</span>
+              <span>
+                {primer.name.endsWith('_R') ? '← reverse' : 'forward →'}
+              </span>
+              <span>
+                Tail {primer.tail.length || 0} nt · Body {primer.bodyLength} nt
+              </span>
             </button>
           ))}
         </div>
 
         <div className="workspace-two-column">
           {stageSequencePreviews.map((preview) => (
-            <SequencePreview key={preview.label} title={preview.label} sequence={preview.sequence} />
+            <SequencePreview
+              key={preview.label}
+              title={preview.label}
+              sequence={preview.sequence}
+            />
           ))}
         </div>
 
@@ -202,7 +247,9 @@ export function JunctionStep({
             <p className="status-title">Protein readout</p>
             <ul className="status-list">
               <li>{proteinValidation.frameMessage}</li>
-              <li>Junction window: {proteinValidation.junctionAminoAcids || 'n/a'}</li>
+              <li>
+                Junction window: {proteinValidation.junctionAminoAcids || 'n/a'}
+              </li>
               <li>Linker aa: {proteinValidation.linkerAminoAcids || 'none'}</li>
             </ul>
           </div>
@@ -212,31 +259,101 @@ export function JunctionStep({
       <details className="panel workspace-section advanced-disclosure">
         <summary>Advanced settings</summary>
         <div className="toggle-grid canvas-toggle-grid">
-          <label className="toggle-card"><input type="checkbox" checked={canvasTracks.sourceFragments} onChange={() => onToggleCanvasTrack('sourceFragments')} /><span>Source fragments</span></label>
-          <label className="toggle-card"><input type="checkbox" checked={canvasTracks.finalConstruct} onChange={() => onToggleCanvasTrack('finalConstruct')} /><span>Final construct</span></label>
-          <label className="toggle-card"><input type="checkbox" checked={canvasTracks.primerOverlays} onChange={() => onToggleCanvasTrack('primerOverlays')} /><span>Primer overlays</span></label>
-          <label className="toggle-card"><input type="checkbox" checked={canvasTracks.gcAndTm} onChange={() => onToggleCanvasTrack('gcAndTm')} /><span>GC and Tm</span></label>
-          <label className="toggle-card"><input type="checkbox" checked={canvasTracks.stageProducts} onChange={() => onToggleCanvasTrack('stageProducts')} /><span>Stage products</span></label>
-          <label className="toggle-card"><input type="checkbox" checked={canvasTracks.translation} onChange={() => onToggleCanvasTrack('translation')} /><span>Translation</span></label>
-          <label className="toggle-card"><input type="checkbox" checked={canvasTracks.features} onChange={() => onToggleCanvasTrack('features')} /><span>Feature track</span></label>
-          <label className="toggle-card"><input type="checkbox" checked={canvasTracks.riskSummary} onChange={() => onToggleCanvasTrack('riskSummary')} /><span>Risk summary</span></label>
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              checked={canvasTracks.sourceFragments}
+              onChange={() => onToggleCanvasTrack('sourceFragments')}
+            />
+            <span>Source fragments</span>
+          </label>
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              checked={canvasTracks.finalConstruct}
+              onChange={() => onToggleCanvasTrack('finalConstruct')}
+            />
+            <span>Final construct</span>
+          </label>
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              checked={canvasTracks.primerOverlays}
+              onChange={() => onToggleCanvasTrack('primerOverlays')}
+            />
+            <span>Primer overlays</span>
+          </label>
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              checked={canvasTracks.gcAndTm}
+              onChange={() => onToggleCanvasTrack('gcAndTm')}
+            />
+            <span>GC and Tm</span>
+          </label>
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              checked={canvasTracks.stageProducts}
+              onChange={() => onToggleCanvasTrack('stageProducts')}
+            />
+            <span>Stage products</span>
+          </label>
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              checked={canvasTracks.translation}
+              onChange={() => onToggleCanvasTrack('translation')}
+            />
+            <span>Translation</span>
+          </label>
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              checked={canvasTracks.features}
+              onChange={() => onToggleCanvasTrack('features')}
+            />
+            <span>Feature track</span>
+          </label>
+          <label className="toggle-card">
+            <input
+              type="checkbox"
+              checked={canvasTracks.riskSummary}
+              onChange={() => onToggleCanvasTrack('riskSummary')}
+            />
+            <span>Risk summary</span>
+          </label>
         </div>
 
         {ADVANCED_ANALYSIS_ENABLED ? (
           <>
             <div className="action-row">
-              <button type="button" className="button button-secondary" onClick={onCaptureComparisonSnapshot}>
-                {comparisonSnapshot ? 'Refresh pinned design' : 'Pin current design'}
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={onCaptureComparisonSnapshot}
+              >
+                {comparisonSnapshot
+                  ? 'Refresh pinned design'
+                  : 'Pin current design'}
               </button>
               {comparisonSnapshot ? (
-                <button type="button" className="button button-secondary" onClick={onClearComparisonSnapshot}>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={onClearComparisonSnapshot}
+                >
                   Clear compare
                 </button>
               ) : null}
             </div>
 
             {comparisonSnapshot ? (
-              <div className="compare-table" role="table" aria-label="Design comparison">
+              <div
+                className="compare-table"
+                role="table"
+                aria-label="Design comparison"
+              >
                 <div className="compare-row compare-header" role="row">
                   <span role="columnheader">Metric</span>
                   <strong role="columnheader">Current</strong>
@@ -251,7 +368,11 @@ export function JunctionStep({
                 ))}
               </div>
             ) : (
-              <p className="field-helper">Pin the current design to compare total oligo length, dimer severity, Tm spread, overlap Tm, and local off-target counts after each edit.</p>
+              <p className="field-helper">
+                Pin the current design to compare total oligo length, dimer
+                severity, Tm spread, overlap Tm, and local off-target counts
+                after each edit.
+              </p>
             )}
           </>
         ) : null}

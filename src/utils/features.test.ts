@@ -49,7 +49,11 @@ describe('feature location parsing', () => {
   });
 
   it('describes parsed feature selections for the UI', () => {
-    expect(describeFeatureSelection(feature('complement(22..41)'), 'linear')).toBe('22-41 complement strand');
-    expect(describeFeatureSelection(feature('join(10..12,1..6)'), 'circular')).toBe('10-6 wraparound');
+    expect(
+      describeFeatureSelection(feature('complement(22..41)'), 'linear'),
+    ).toBe('22-41 complement strand');
+    expect(
+      describeFeatureSelection(feature('join(10..12,1..6)'), 'circular'),
+    ).toBe('10-6 wraparound');
   });
 });

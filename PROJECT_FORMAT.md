@@ -17,7 +17,13 @@ type FusionProjectInput = {
   engineVersion: string;
   name: string;
   polymeraseId: 'q5' | 'phusion_plus';
-  mode: 'exact' | 'protein-fusion' | 'insertion' | 'deletion' | 'substitution' | 'domain-swap';
+  mode:
+    | 'exact'
+    | 'protein-fusion'
+    | 'insertion'
+    | 'deletion'
+    | 'substitution'
+    | 'domain-swap';
   insertSequence: string;
   notes: string;
   coding: CodingIntent;

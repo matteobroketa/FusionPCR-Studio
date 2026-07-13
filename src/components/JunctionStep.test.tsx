@@ -40,7 +40,9 @@ function makeFragment(
   };
 }
 
-function buildDesign(overrides: Partial<Parameters<typeof buildFusionDesign>[0]> = {}): FusionDesign {
+function buildDesign(
+  overrides: Partial<Parameters<typeof buildFusionDesign>[0]> = {},
+): FusionDesign {
   return buildFusionDesign({
     schemaVersion: PROJECT_SCHEMA_VERSION,
     engineVersion: ENGINE_VERSION,
@@ -59,8 +61,14 @@ function buildDesign(overrides: Partial<Parameters<typeof buildFusionDesign>[0]>
     editorLocks: defaultEditorLockConfig(),
     changeApprovals: defaultChangeApprovals(),
     genomicSpecificity: defaultGenomicSpecificitySettings(),
-    fragmentA: makeFragment('Fragment A', 'ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG'),
-    fragmentB: makeFragment('Fragment B', 'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG'),
+    fragmentA: makeFragment(
+      'Fragment A',
+      'ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG',
+    ),
+    fragmentB: makeFragment(
+      'Fragment B',
+      'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG',
+    ),
     ...overrides,
   });
 }
@@ -111,14 +119,31 @@ describe('JunctionStep construct rendering', () => {
       fragmentB: makeFragment('Fragment B', 'GGCAGTACCTTAGCGATCGTACCATGG'),
     });
 
-    const wrongDisplayedLength = design.selectedA.length + design.selectedB.length + design.overlapSequence.length;
+    const wrongDisplayedLength =
+      design.selectedA.length +
+      design.selectedB.length +
+      design.overlapSequence.length;
 
     renderJunctionStep(design);
 
-    expect(screen.queryByRole('button', { name: /Inserted sequence block at the junction/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: new RegExp(`Overlap span at the junction, ${design.overlapSequence.length} base pair overlap`) })).toBeVisible();
-    expect(screen.getByText(`Target construct ${design.targetSequence.length} bp`)).toBeVisible();
-    expect(screen.queryByText(`Target construct ${wrongDisplayedLength} bp`)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /Inserted sequence block at the junction/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: new RegExp(
+          `Overlap span at the junction, ${design.overlapSequence.length} base pair overlap`,
+        ),
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(`Target construct ${design.targetSequence.length} bp`),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(`Target construct ${wrongDisplayedLength} bp`),
+    ).not.toBeInTheDocument();
   });
 
   it('renders a linker fusion with a real centre insert block while preserving target-length accounting', () => {
@@ -131,9 +156,23 @@ describe('JunctionStep construct rendering', () => {
 
     renderJunctionStep(design);
 
-    expect(screen.getByRole('button', { name: /Inserted sequence block at the junction, 15 base pairs/i })).toBeVisible();
-    expect(screen.getByRole('button', { name: new RegExp(`Overlap span at the junction, ${design.overlapSequence.length} base pair overlap`) })).toBeVisible();
-    expect(screen.getByText(`Target construct ${design.targetSequence.length} bp`)).toBeVisible();
-    expect(screen.getByText(`Inserted sequence ${design.insertSequence.length} bp`)).toBeVisible();
+    expect(
+      screen.getByRole('button', {
+        name: /Inserted sequence block at the junction, 15 base pairs/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', {
+        name: new RegExp(
+          `Overlap span at the junction, ${design.overlapSequence.length} base pair overlap`,
+        ),
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(`Target construct ${design.targetSequence.length} bp`),
+    ).toBeVisible();
+    expect(
+      screen.getByText(`Inserted sequence ${design.insertSequence.length} bp`),
+    ).toBeVisible();
   });
 });

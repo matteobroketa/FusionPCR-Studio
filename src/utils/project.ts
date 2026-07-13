@@ -33,7 +33,9 @@ function stableSerialize(value: unknown): string {
     return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
   }
 
-  const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right));
+  const entries = Object.entries(value as Record<string, unknown>).sort(
+    ([left], [right]) => left.localeCompare(right),
+  );
   return `{${entries.map(([key, entryValue]) => `${JSON.stringify(key)}:${stableSerialize(entryValue)}`).join(',')}}`;
 }
 
@@ -74,10 +76,15 @@ export function stampProjectMetadata(
   modifiedAt = new Date().toISOString(),
 ): FusionProjectInput {
   const projectHash = buildProjectHash(project);
-  const previousHash = previousProject?.projectHash ?? (previousProject ? buildProjectHash(previousProject) : null);
+  const previousHash =
+    previousProject?.projectHash ??
+    (previousProject ? buildProjectHash(previousProject) : null);
   const revision =
     previousProject == null
-      ? Math.max(1, Number.isFinite(project.revision) ? Math.floor(project.revision) : 1)
+      ? Math.max(
+          1,
+          Number.isFinite(project.revision) ? Math.floor(project.revision) : 1,
+        )
       : projectHash === previousHash
         ? previousProject.revision
         : Math.max(1, previousProject.revision + 1);
@@ -137,7 +144,9 @@ function isCodingIntent(value: unknown): value is CodingIntent {
   );
 }
 
-function isThermodynamicConditions(value: unknown): value is ThermodynamicConditions {
+function isThermodynamicConditions(
+  value: unknown,
+): value is ThermodynamicConditions {
   if (!value || typeof value !== 'object') {
     return false;
   }
@@ -206,11 +215,15 @@ function isChangeApprovals(value: unknown): value is ChangeApprovals {
     typeof candidate.removeUpstreamStop === 'boolean' &&
     typeof candidate.removeDownstreamStart === 'boolean' &&
     Array.isArray(candidate.acceptedSynonymousChanges) &&
-    candidate.acceptedSynonymousChanges.every((item) => typeof item === 'string')
+    candidate.acceptedSynonymousChanges.every(
+      (item) => typeof item === 'string',
+    )
   );
 }
 
-function isGenomicSpecificitySettings(value: unknown): value is GenomicSpecificitySettings {
+function isGenomicSpecificitySettings(
+  value: unknown,
+): value is GenomicSpecificitySettings {
   if (!value || typeof value !== 'object') {
     return false;
   }
@@ -234,7 +247,9 @@ function clampFrame(value: unknown): 0 | 1 | 2 {
   return 2;
 }
 
-export function normalizeImportedProject(value: unknown): FusionProjectInput | null {
+export function normalizeImportedProject(
+  value: unknown,
+): FusionProjectInput | null {
   if (!isFusionProjectInput(value)) {
     return null;
   }
@@ -255,10 +270,15 @@ export function normalizeImportedProject(value: unknown): FusionProjectInput | n
         retainDownstreamStart: candidate.coding.retainDownstreamStart,
         linkerRequired: candidate.coding.linkerRequired,
         preserveProtein: candidate.coding.preserveProtein,
-        flexibleCodons: Math.max(0, Math.floor(candidate.coding.flexibleCodons)),
+        flexibleCodons: Math.max(
+          0,
+          Math.floor(candidate.coding.flexibleCodons),
+        ),
       }
     : codingDefaults;
-  const reactionConditions = isThermodynamicConditions(candidate.reactionConditions)
+  const reactionConditions = isThermodynamicConditions(
+    candidate.reactionConditions,
+  )
     ? normalizeReactionConditions(candidate.reactionConditions)
     : reactionDefaults;
   const protocolSettings = isProtocolSettings(candidate.protocolSettings)
@@ -270,18 +290,33 @@ export function normalizeImportedProject(value: unknown): FusionProjectInput | n
   const changeApprovals = isChangeApprovals(candidate.changeApprovals)
     ? normalizeChangeApprovals(candidate.changeApprovals)
     : changeApprovalDefaults;
-  const genomicSpecificity = isGenomicSpecificitySettings(candidate.genomicSpecificity)
+  const genomicSpecificity = isGenomicSpecificitySettings(
+    candidate.genomicSpecificity,
+  )
     ? normalizeGenomicSpecificitySettings(candidate.genomicSpecificity)
     : genomicSpecificityDefaults;
 
   return {
-    schemaVersion: typeof candidate.schemaVersion === 'string' ? candidate.schemaVersion : PROJECT_SCHEMA_VERSION,
-    engineVersion: typeof candidate.engineVersion === 'string' ? candidate.engineVersion : ENGINE_VERSION,
-    revision: typeof candidate.revision === 'number' && Number.isFinite(candidate.revision) ? Math.max(1, Math.floor(candidate.revision)) : 1,
-    projectHash: typeof candidate.projectHash === 'string' ? candidate.projectHash : '',
+    schemaVersion:
+      typeof candidate.schemaVersion === 'string'
+        ? candidate.schemaVersion
+        : PROJECT_SCHEMA_VERSION,
+    engineVersion:
+      typeof candidate.engineVersion === 'string'
+        ? candidate.engineVersion
+        : ENGINE_VERSION,
+    revision:
+      typeof candidate.revision === 'number' &&
+      Number.isFinite(candidate.revision)
+        ? Math.max(1, Math.floor(candidate.revision))
+        : 1,
+    projectHash:
+      typeof candidate.projectHash === 'string' ? candidate.projectHash : '',
     name: candidate.name as string,
     polymeraseId: candidate.polymeraseId as FusionProjectInput['polymeraseId'],
-    mode: (typeof candidate.mode === 'string' ? candidate.mode : 'exact') as DesignMode,
+    mode: (typeof candidate.mode === 'string'
+      ? candidate.mode
+      : 'exact') as DesignMode,
     insertSequence: candidate.insertSequence as string,
     notes: candidate.notes as string,
     coding,
@@ -290,14 +325,25 @@ export function normalizeImportedProject(value: unknown): FusionProjectInput | n
     editorLocks,
     changeApprovals,
     genomicSpecificity,
-    fragmentA: normalizeFragmentInput(candidate.fragmentA as Partial<FragmentInput>, 'Fragment A'),
-    fragmentB: normalizeFragmentInput(candidate.fragmentB as Partial<FragmentInput>, 'Fragment B'),
-    createdAt: typeof candidate.createdAt === 'string' ? candidate.createdAt : now,
-    modifiedAt: typeof candidate.modifiedAt === 'string' ? candidate.modifiedAt : now,
+    fragmentA: normalizeFragmentInput(
+      candidate.fragmentA as Partial<FragmentInput>,
+      'Fragment A',
+    ),
+    fragmentB: normalizeFragmentInput(
+      candidate.fragmentB as Partial<FragmentInput>,
+      'Fragment B',
+    ),
+    createdAt:
+      typeof candidate.createdAt === 'string' ? candidate.createdAt : now,
+    modifiedAt:
+      typeof candidate.modifiedAt === 'string' ? candidate.modifiedAt : now,
   };
 }
 
-export function loadInitialProject(storageKey: string, fallbackProject: FusionProjectInput): FusionProjectInput {
+export function loadInitialProject(
+  storageKey: string,
+  fallbackProject: FusionProjectInput,
+): FusionProjectInput {
   if (typeof window === 'undefined') {
     return fallbackProject;
   }
@@ -310,13 +356,19 @@ export function loadInitialProject(storageKey: string, fallbackProject: FusionPr
   try {
     const parsed = JSON.parse(stored) as unknown;
     const normalized = normalizeImportedProject(parsed);
-    return normalized ? stampProjectMetadata(normalized, undefined, normalized.modifiedAt) : fallbackProject;
+    return normalized
+      ? stampProjectMetadata(normalized, undefined, normalized.modifiedAt)
+      : fallbackProject;
   } catch {
     return fallbackProject;
   }
 }
 
-export function downloadText(filename: string, content: string, mimeType: string) {
+export function downloadText(
+  filename: string,
+  content: string,
+  mimeType: string,
+) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');

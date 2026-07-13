@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { buildFusionDesign, createPlaceholderFusionDesign, type FusionDesign, type FusionProjectInput } from '../utils/fusion';
+import {
+  createPlaceholderFusionDesign,
+  type FusionDesign,
+  type FusionProjectInput,
+} from '../utils/fusion';
 
 type DesignWorkerRequest = {
   requestId: number;
@@ -33,7 +37,6 @@ type DesignCalculationResult = {
 type UseFusionDesignResult = {
   design: FusionDesign;
   calculationState: CalculationState;
-  isDesignPending: boolean;
   isDesignCurrent: boolean;
   workerError: string | null;
   retry: () => void;
@@ -41,14 +44,26 @@ type UseFusionDesignResult = {
 
 const CALCULATION_DEBOUNCE_MS = 200;
 
-function isCurrentResult(result: DesignCalculationResult | null, project: FusionProjectInput) {
-  return result?.revision === project.revision && result.projectHash === project.projectHash;
+function isCurrentResult(
+  result: DesignCalculationResult | null,
+  project: FusionProjectInput,
+) {
+  return (
+    result?.revision === project.revision &&
+    result.projectHash === project.projectHash
+  );
 }
 
-export function useFusionDesign(project: FusionProjectInput): UseFusionDesignResult {
-  const placeholderDesign = useMemo(() => createPlaceholderFusionDesign(project), [project]);
+export function useFusionDesign(
+  project: FusionProjectInput,
+): UseFusionDesignResult {
+  const placeholderDesign = useMemo(
+    () => createPlaceholderFusionDesign(project),
+    [project],
+  );
   const [result, setResult] = useState<DesignCalculationResult | null>(null);
-  const [calculationState, setCalculationState] = useState<CalculationState>('idle');
+  const [calculationState, setCalculationState] =
+    useState<CalculationState>('idle');
   const [workerError, setWorkerError] = useState<string | null>(null);
   const [retryToken, setRetryToken] = useState(0);
   const requestIdRef = useRef(0);
@@ -69,12 +84,9 @@ export function useFusionDesign(project: FusionProjectInput): UseFusionDesignRes
       return () => undefined;
     }
 
-    setCalculationState((current) => {
-      if (current === 'error' && workerError) {
-        return 'error';
-      }
-      return result && !isCurrentResult(result, project) ? 'stale' : 'pending';
-    });
+    setCalculationState(
+      result && !isCurrentResult(result, project) ? 'stale' : 'pending',
+    );
     setWorkerError(null);
 
     const requestId = requestIdRef.current + 1;
@@ -88,28 +100,18 @@ export function useFusionDesign(project: FusionProjectInput): UseFusionDesignRes
 
     const debounceHandle = window.setTimeout(() => {
       if (typeof Worker === 'undefined') {
-        window.setTimeout(() => {
-          try {
-            const design = buildFusionDesign(project);
-            const nextResult: DesignCalculationResult = {
-              revision: request.revision,
-              projectHash: request.projectHash,
-              design,
-            };
-            cacheRef.current.set(request.projectHash, nextResult);
-            setResult(nextResult);
-            setCalculationState(isCurrentResult(nextResult, project) ? 'complete' : 'stale');
-            setWorkerError(null);
-          } catch (error) {
-            setCalculationState('error');
-            setWorkerError(error instanceof Error ? error.message : 'Scientific calculation failed.');
-          }
-        }, 0);
+        setCalculationState('error');
+        setWorkerError(
+          'Design worker could not start in this browser. Review the project and use Retry to calculate again.',
+        );
         return;
       }
 
       activeWorkerRef.current?.terminate();
-      const worker = new Worker(new URL('../workers/design.worker.ts', import.meta.url), { type: 'module' });
+      const worker = new Worker(
+        new URL('../workers/design.worker.ts', import.meta.url),
+        { type: 'module' },
+      );
       activeWorkerRef.current = worker;
 
       const handleMessage = (event: MessageEvent<DesignWorkerResponse>) => {
@@ -126,7 +128,9 @@ export function useFusionDesign(project: FusionProjectInput): UseFusionDesignRes
           };
           cacheRef.current.set(payload.projectHash, nextResult);
           setResult(nextResult);
-          setCalculationState(isCurrentResult(nextResult, project) ? 'complete' : 'stale');
+          setCalculationState(
+            isCurrentResult(nextResult, project) ? 'complete' : 'stale',
+          );
           setWorkerError(null);
         } else {
           setCalculationState('error');
@@ -144,7 +148,9 @@ export function useFusionDesign(project: FusionProjectInput): UseFusionDesignRes
           return;
         }
         setCalculationState('error');
-        setWorkerError('Design worker failed. Review the project and use Retry to calculate again.');
+        setWorkerError(
+          'Design worker failed. Review the project and use Retry to calculate again.',
+        );
         worker.terminate();
         if (activeWorkerRef.current === worker) {
           activeWorkerRef.current = null;
@@ -161,7 +167,7 @@ export function useFusionDesign(project: FusionProjectInput): UseFusionDesignRes
       activeWorkerRef.current?.terminate();
       activeWorkerRef.current = null;
     };
-  }, [project, retryToken]);
+  }, [project, result, retryToken]);
 
   useEffect(
     () => () => {
@@ -176,7 +182,6 @@ export function useFusionDesign(project: FusionProjectInput): UseFusionDesignRes
   return {
     design: result?.design ?? placeholderDesign,
     calculationState,
-    isDesignPending: calculationState === 'pending',
     isDesignCurrent,
     workerError,
     retry,

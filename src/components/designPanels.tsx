@@ -18,7 +18,8 @@ export function SequenceRail({
   accentClass: string;
 }) {
   const safeLength = Math.max(sequenceLength, 1);
-  const wrapsOrigin = topology === 'circular' && sequenceLength > 0 && start > end;
+  const wrapsOrigin =
+    topology === 'circular' && sequenceLength > 0 && start > end;
   const selectionSegments = wrapsOrigin
     ? [
         {
@@ -70,14 +71,19 @@ export function SequencePreview({
   return (
     <div className="preview-block">
       <span className="preview-label">{title}</span>
-      <code className="sequence-preview">{sequence || 'No sequence available for the current state.'}</code>
+      <code className="sequence-preview">
+        {sequence || 'No sequence available for the current state.'}
+      </code>
     </div>
   );
 }
 
 type PrimerStatusTone = 'success' | 'watch' | 'alert';
 
-export function summarizePrimerStatus(primer: PrimerDesign, reviewItems: ReviewItem[] = []): { label: string; tone: PrimerStatusTone } {
+export function summarizePrimerStatus(
+  primer: PrimerDesign,
+  reviewItems: ReviewItem[] = [],
+): { label: string; tone: PrimerStatusTone } {
   if (reviewItems.length) {
     return summarizePrimerReviewStatus(primer, reviewItems);
   }
@@ -107,13 +113,18 @@ function summarizeStructureFindings(primer: PrimerDesign): string[] {
       `Homodimer ${primer.structure.homodimer.risk.toLowerCase()}: dG ${primer.structure.homodimer.deltaG} kcal/mol, stem ${primer.structure.homodimer.longestContiguousStem}.`,
     );
   }
-  if (primer.structure.threePrimeHomodimer && primer.structure.threePrimeHomodimer.risk !== 'Low') {
+  if (
+    primer.structure.threePrimeHomodimer &&
+    primer.structure.threePrimeHomodimer.risk !== 'Low'
+  ) {
     findings.push(
       `3 prime homodimer ${primer.structure.threePrimeHomodimer.risk.toLowerCase()}: dG ${primer.structure.threePrimeHomodimer.deltaG} kcal/mol, ${primer.structure.threePrimeHomodimer.threePrimePairedBasesA} paired 3 prime bases.`,
     );
   }
 
-  return findings.length ? findings : ['No watch/high findings in the approximate structure model.'];
+  return findings.length
+    ? findings
+    : ['No watch/high findings in the approximate structure model.'];
 }
 
 function summarizeSpecificityFindings(primer: PrimerDesign): string[] {
@@ -124,7 +135,11 @@ function summarizeSpecificityFindings(primer: PrimerDesign): string[] {
         `${site.templateName} ${site.start}-${site.end}: ${site.risk} risk, ${site.mismatchCount} mismatch(es), 3 prime match ${site.threePrimeMatchedBases} nt.`,
     );
 
-  return findings.length ? findings : ['No elevated local specificity findings beyond the intended template site.'];
+  return findings.length
+    ? findings
+    : [
+        'No elevated local specificity findings beyond the intended template site.',
+      ];
 }
 
 export function PrimerDetailPanel({
@@ -141,30 +156,42 @@ export function PrimerDetailPanel({
   const status = summarizePrimerStatus(primer, reviewItems);
   const structureFindings = summarizeStructureFindings(primer);
   const specificityFindings = summarizeSpecificityFindings(primer);
-  const actionableReviewItems = reviewItems.filter((item) => item.severity !== 'information');
+  const actionableReviewItems = reviewItems.filter(
+    (item) => item.severity !== 'information',
+  );
 
   return (
-    <article className={`primer-detail-panel ${selected ? 'object-selected' : ''}`}>
+    <article
+      className={`primer-detail-panel ${selected ? 'object-selected' : ''}`}
+    >
       <div className="primer-card-header">
         <div>
           <h3>{primer.name}</h3>
           <p>{primer.role}</p>
         </div>
-        <span className={`pill ${status.tone === 'alert' ? 'pill-alert' : status.tone === 'watch' ? 'pill-watch' : 'pill-success'}`}>
+        <span
+          className={`pill ${status.tone === 'alert' ? 'pill-alert' : status.tone === 'watch' ? 'pill-watch' : 'pill-success'}`}
+        >
           {status.label}
         </span>
       </div>
 
       {onCopy ? (
         <div className="action-row">
-          <button type="button" className="button button-secondary" onClick={onCopy}>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={onCopy}
+          >
             Copy primer
           </button>
         </div>
       ) : null}
 
       <code className="primer-sequence">
-        {primer.tail ? <span className="primer-tail">{primer.tail}</span> : null}
+        {primer.tail ? (
+          <span className="primer-tail">{primer.tail}</span>
+        ) : null}
         <span className="primer-body">{primer.body}</span>
       </code>
 
@@ -242,7 +269,12 @@ export function ReactionCard({
           <h3>{reaction.primerNames.join(' + ')}</h3>
         </div>
         {onSelect ? (
-          <button type="button" className="object-select-button" onClick={onSelect} aria-pressed={selected}>
+          <button
+            type="button"
+            className="object-select-button"
+            onClick={onSelect}
+            aria-pressed={selected}
+          >
             Inspect stage
           </button>
         ) : null}

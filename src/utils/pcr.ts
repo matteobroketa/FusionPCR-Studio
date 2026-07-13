@@ -52,7 +52,9 @@ export function calculateGcPercentage(input: string): number {
     return 0;
   }
 
-  const gcCount = sequence.split('').filter((base) => base === 'G' || base === 'C').length;
+  const gcCount = sequence
+    .split('')
+    .filter((base) => base === 'G' || base === 'C').length;
   return Number(((gcCount / sequence.length) * 100).toFixed(1));
 }
 
@@ -66,7 +68,10 @@ export function calculateWallaceTm(input: string): number {
     {} as Record<string, number>,
   );
 
-  return 2 * ((baseCounts.A ?? 0) + (baseCounts.T ?? 0)) + 4 * ((baseCounts.G ?? 0) + (baseCounts.C ?? 0));
+  return (
+    2 * ((baseCounts.A ?? 0) + (baseCounts.T ?? 0)) +
+    4 * ((baseCounts.G ?? 0) + (baseCounts.C ?? 0))
+  );
 }
 
 export function analyzePrimer(input: string): PrimerMetrics {
@@ -84,7 +89,10 @@ export function analyzePrimer(input: string): PrimerMetrics {
   };
 }
 
-export function findBindingSites(templateInput: string, queryInput: string): number[] {
+export function findBindingSites(
+  templateInput: string,
+  queryInput: string,
+): number[] {
   const template = normalizeSequence(templateInput);
   const query = normalizeSequence(queryInput);
 

@@ -48,7 +48,10 @@ function comparePrimerBinding(
 } {
   const primerBody = normalizeSequence(primerBodyInput);
   const matchedTemplateSlice = normalizeSequence(matchedTemplateSliceInput);
-  const primerOrientedSequence = direction === 'forward' ? matchedTemplateSlice : reverseComplement(matchedTemplateSlice);
+  const primerOrientedSequence =
+    direction === 'forward'
+      ? matchedTemplateSlice
+      : reverseComplement(matchedTemplateSlice);
   const mismatches: number[] = [];
   let weightedMismatchPenalty = 0;
   let threePrimeMatchedBases = 0;
@@ -89,9 +92,13 @@ export function findPrimerSpecificitySites(
     return [];
   }
 
-  const bindingSequence = direction === 'forward' ? primerBody : reverseComplement(primerBody);
+  const bindingSequence =
+    direction === 'forward' ? primerBody : reverseComplement(primerBody);
   const effectiveSeedLength = Math.min(seedLength, bindingSequence.length);
-  const seed = direction === 'forward' ? bindingSequence.slice(-effectiveSeedLength) : bindingSequence.slice(0, effectiveSeedLength);
+  const seed =
+    direction === 'forward'
+      ? bindingSequence.slice(-effectiveSeedLength)
+      : bindingSequence.slice(0, effectiveSeedLength);
   const sites: SpecificitySite[] = [];
 
   for (const template of templates) {
@@ -100,23 +107,41 @@ export function findPrimerSpecificitySites(
       continue;
     }
 
-    for (let index = 0; index <= templateSequence.length - effectiveSeedLength; index += 1) {
+    for (
+      let index = 0;
+      index <= templateSequence.length - effectiveSeedLength;
+      index += 1
+    ) {
       if (templateSequence.slice(index, index + effectiveSeedLength) !== seed) {
         continue;
       }
 
-      const candidateStart = direction === 'forward' ? index - (bindingSequence.length - effectiveSeedLength) : index;
-      if (candidateStart < 0 || candidateStart + bindingSequence.length > templateSequence.length) {
+      const candidateStart =
+        direction === 'forward'
+          ? index - (bindingSequence.length - effectiveSeedLength)
+          : index;
+      if (
+        candidateStart < 0 ||
+        candidateStart + bindingSequence.length > templateSequence.length
+      ) {
         continue;
       }
 
-      const matchedSequence = templateSequence.slice(candidateStart, candidateStart + bindingSequence.length);
-      const comparison = comparePrimerBinding(primerBody, matchedSequence, direction);
+      const matchedSequence = templateSequence.slice(
+        candidateStart,
+        candidateStart + bindingSequence.length,
+      );
+      const comparison = comparePrimerBinding(
+        primerBody,
+        matchedSequence,
+        direction,
+      );
       const mismatchCount = comparison.mismatches.length;
       const risk =
         mismatchCount === 0 || comparison.threePrimeMatchedBases >= 7
           ? 'high'
-          : comparison.threePrimeMatchedBases >= 5 || comparison.weightedMismatchPenalty <= 2.5
+          : comparison.threePrimeMatchedBases >= 5 ||
+              comparison.weightedMismatchPenalty <= 2.5
             ? 'watch'
             : 'low';
 
@@ -128,7 +153,9 @@ export function findPrimerSpecificitySites(
         end: candidateStart + bindingSequence.length,
         mismatches: comparison.mismatches,
         mismatchCount,
-        weightedMismatchPenalty: Number(comparison.weightedMismatchPenalty.toFixed(2)),
+        weightedMismatchPenalty: Number(
+          comparison.weightedMismatchPenalty.toFixed(2),
+        ),
         threePrimeMatchedBases: comparison.threePrimeMatchedBases,
         matchedSequence,
         primerOrientedSequence: comparison.primerOrientedSequence,
@@ -157,8 +184,12 @@ export function predictOffTargetAmplicons(
 ): OffTargetAmplicon[] {
   const templateSequence = normalizeSequence(template.sequence);
   const amplicons: OffTargetAmplicon[] = [];
-  const forwardTemplateSites = forwardSites.filter((site) => site.templateId === template.id && site.risk !== 'low');
-  const reverseTemplateSites = reverseSites.filter((site) => site.templateId === template.id && site.risk !== 'low');
+  const forwardTemplateSites = forwardSites.filter(
+    (site) => site.templateId === template.id && site.risk !== 'low',
+  );
+  const reverseTemplateSites = reverseSites.filter(
+    (site) => site.templateId === template.id && site.risk !== 'low',
+  );
 
   for (const forwardSite of forwardTemplateSites) {
     for (const reverseSite of reverseTemplateSites) {
@@ -172,10 +203,16 @@ export function predictOffTargetAmplicons(
       }
 
       const risk =
-        forwardSite.risk === 'high' && reverseSite.risk === 'high' && forwardSite.mismatchCount === 0 && reverseSite.mismatchCount === 0
+        forwardSite.risk === 'high' &&
+        reverseSite.risk === 'high' &&
+        forwardSite.mismatchCount === 0 &&
+        reverseSite.mismatchCount === 0
           ? 'high'
           : 'watch';
-      const sequencePreview = templateSequence.slice(forwardSite.start - 1, Math.min(reverseSite.end, forwardSite.start - 1 + 120));
+      const sequencePreview = templateSequence.slice(
+        forwardSite.start - 1,
+        Math.min(reverseSite.end, forwardSite.start - 1 + 120),
+      );
 
       amplicons.push({
         templateId: template.id,

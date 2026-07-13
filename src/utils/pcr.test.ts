@@ -53,7 +53,9 @@ describe('PCR utilities', () => {
     expect(amplicon?.end).toBe(32);
     expect(amplicon?.length).toBe(32);
     expect(amplicon?.sequence.startsWith(forwardPrimer)).toBe(true);
-    expect(amplicon?.sequence.endsWith(amplicon!.reverseBindingSequence)).toBe(true);
+    expect(amplicon?.sequence.endsWith(amplicon!.reverseBindingSequence)).toBe(
+      true,
+    );
   });
 
   it('returns null when primers do not amplify in a valid orientation', () => {

@@ -45,7 +45,7 @@
     ui-sans-serif,
     system-ui,
     -apple-system,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
   color: var(--text);
   background: var(--background);

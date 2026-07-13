@@ -1,7 +1,12 @@
-import { checksumSequence, createEmptyFragment, type FragmentInput } from './fusion';
+import {
+  checksumSequence,
+  createEmptyFragment,
+  type FragmentInput,
+} from './fusion';
 import { findInvalidBases, normalizeSequence } from './pcr';
 
-export type MutationPlannerMode = 'insertion' | 'deletion' | 'substitution' | 'domain-swap';
+export type MutationPlannerMode =
+  'insertion' | 'deletion' | 'substitution' | 'domain-swap';
 
 export type MutationPlan = {
   mode: MutationPlannerMode;
@@ -17,8 +22,15 @@ function clampCoordinate(length: number, coordinate: number): number {
   return Math.max(1, Math.min(Math.floor(coordinate), Math.max(length + 1, 1)));
 }
 
-function clampRange(length: number, start: number, end: number): { start: number; end: number } {
-  const safeStart = Math.max(1, Math.min(Math.floor(start), Math.max(length, 1)));
+function clampRange(
+  length: number,
+  start: number,
+  end: number,
+): { start: number; end: number } {
+  const safeStart = Math.max(
+    1,
+    Math.min(Math.floor(start), Math.max(length, 1)),
+  );
   const safeEnd = Math.max(1, Math.min(Math.floor(end), Math.max(length, 1)));
   return {
     start: Math.min(safeStart, safeEnd),
@@ -30,7 +42,9 @@ function normalizePayload(payloadInput: string): string {
   const payload = normalizeSequence(payloadInput);
   const invalid = findInvalidBases(payload, true);
   if (invalid.length) {
-    throw new Error(`Payload contains unsupported bases: ${invalid.join(', ')}`);
+    throw new Error(
+      `Payload contains unsupported bases: ${invalid.join(', ')}`,
+    );
   }
   return payload;
 }
@@ -54,7 +68,11 @@ export function selectedFragmentSequence(fragment: FragmentInput): string {
   if (!sequence.length) {
     return '';
   }
-  const { start, end } = clampRange(sequence.length, fragment.start, fragment.end);
+  const { start, end } = clampRange(
+    sequence.length,
+    fragment.start,
+    fragment.end,
+  );
   return sequence.slice(start - 1, end);
 }
 
@@ -80,13 +98,19 @@ export function buildMutationPlan(input: {
       throw new Error('Insertion mode requires a non-empty payload.');
     }
 
-    const coordinate = clampCoordinate(sequence.length, input.coordinate ?? input.start ?? 1);
+    const coordinate = clampCoordinate(
+      sequence.length,
+      input.coordinate ?? input.start ?? 1,
+    );
     const left = sequence.slice(0, coordinate - 1);
     const right = sequence.slice(coordinate - 1);
     return {
       mode: input.mode,
       leftFragment: makePlannerFragment(`${recipientLabel} left flank`, left),
-      rightFragment: makePlannerFragment(`${recipientLabel} right flank`, right),
+      rightFragment: makePlannerFragment(
+        `${recipientLabel} right flank`,
+        right,
+      ),
       insertSequence: payload,
       removedSequence: '',
       targetSequence: `${left}${payload}${right}`,
@@ -94,14 +118,24 @@ export function buildMutationPlan(input: {
     };
   }
 
-  const { start, end } = clampRange(sequence.length, input.start ?? 1, input.end ?? Math.max(1, input.start ?? 1));
+  const { start, end } = clampRange(
+    sequence.length,
+    input.start ?? 1,
+    input.end ?? Math.max(1, input.start ?? 1),
+  );
   const left = sequence.slice(0, start - 1);
   const removedSequence = sequence.slice(start - 1, end);
   const right = sequence.slice(end);
-  const payload = input.mode === 'deletion' ? '' : normalizePayload(input.payloadInput ?? '');
+  const payload =
+    input.mode === 'deletion' ? '' : normalizePayload(input.payloadInput ?? '');
 
-  if ((input.mode === 'substitution' || input.mode === 'domain-swap') && !payload.length) {
-    throw new Error(`${input.mode === 'domain-swap' ? 'Domain swap' : 'Substitution'} mode requires a non-empty payload.`);
+  if (
+    (input.mode === 'substitution' || input.mode === 'domain-swap') &&
+    !payload.length
+  ) {
+    throw new Error(
+      `${input.mode === 'domain-swap' ? 'Domain swap' : 'Substitution'} mode requires a non-empty payload.`,
+    );
   }
 
   return {

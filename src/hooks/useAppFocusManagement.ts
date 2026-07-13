@@ -39,7 +39,10 @@ export function useAppFocusManagement({
   const confirmationTriggerRef = useRef<HTMLElement | null>(null);
   const previousShowInspectorRef = useRef(showInspector);
   const previousIssueCountRef = useRef(0);
-  const previousCalculationRef = useRef<{ state: 'idle' | 'pending' | 'complete' | 'stale' | 'error'; isCurrent: boolean }>({
+  const previousCalculationRef = useRef<{
+    state: 'idle' | 'pending' | 'complete' | 'stale' | 'error';
+    isCurrent: boolean;
+  }>({
     state: 'idle',
     isCurrent: false,
   });
@@ -61,12 +64,19 @@ export function useAppFocusManagement({
     }
 
     previousShowInspectorRef.current = showInspector;
-  }, [inspectorHeadingRef, retryCalculationButtonRef, showInspector, workerError]);
+  }, [
+    inspectorHeadingRef,
+    retryCalculationButtonRef,
+    showInspector,
+    workerError,
+  ]);
 
   useEffect(() => {
     if (confirmationState && !confirmationTriggerRef.current) {
       confirmationTriggerRef.current = getActiveFocusableElement();
-      window.requestAnimationFrame(() => confirmationCancelButtonRef.current?.focus());
+      window.requestAnimationFrame(() =>
+        confirmationCancelButtonRef.current?.focus(),
+      );
       return;
     }
 
@@ -78,9 +88,12 @@ export function useAppFocusManagement({
 
   useEffect(() => {
     const activeElement = getActiveFocusableElement();
-    const becameBlocking = previousIssueCountRef.current === 0 && issueCount > 0;
+    const becameBlocking =
+      previousIssueCountRef.current === 0 && issueCount > 0;
     if (becameBlocking && showWorkbench && !isEditableElement(activeElement)) {
-      window.requestAnimationFrame(() => issueDrawerHeadingRef.current?.focus());
+      window.requestAnimationFrame(() =>
+        issueDrawerHeadingRef.current?.focus(),
+      );
     }
     previousIssueCountRef.current = issueCount;
   }, [issueCount, issueDrawerHeadingRef, showWorkbench]);
@@ -103,7 +116,13 @@ export function useAppFocusManagement({
       state: calculationState,
       isCurrent: isDesignCurrent,
     };
-  }, [calculationState, isDesignCurrent, issueCount, showWorkbench, workspaceHeadingRef]);
+  }, [
+    calculationState,
+    isDesignCurrent,
+    issueCount,
+    showWorkbench,
+    workspaceHeadingRef,
+  ]);
 
   return {
     inspectorTriggerRef,

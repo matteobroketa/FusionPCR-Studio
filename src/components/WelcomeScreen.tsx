@@ -15,20 +15,41 @@ export function WelcomeScreen({
     <section className="empty-state panel">
       <div className="empty-state-copy">
         <p className="eyebrow">FusionPCR Studio</p>
-        <h1>Design primers and protocols for two-fragment overlap-extension PCR.</h1>
-        <p className="hero-text">Load two sequences or start from a built-in example to enter the workbench.</p>
+        <h1>
+          Design primers and protocols for two-fragment overlap-extension PCR.
+        </h1>
+        <p className="hero-text">
+          Load two sequences or start from a built-in example to enter the
+          workbench.
+        </p>
       </div>
       <div className="empty-state-actions">
-        <button type="button" className="button button-primary" onClick={onImportSequences}>
+        <button
+          type="button"
+          className="button button-primary"
+          onClick={onImportSequences}
+        >
           Import sequences
         </button>
-        <button type="button" className="button button-secondary" onClick={onLoadExactExample}>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={onLoadExactExample}
+        >
           Load exact fusion example
         </button>
-        <button type="button" className="button button-secondary" onClick={onLoadProteinExample}>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={onLoadProteinExample}
+        >
           Load protein fusion example
         </button>
-        <button type="button" className="button button-secondary" onClick={onOpenProject}>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={onOpenProject}
+        >
           Open project
         </button>
       </div>

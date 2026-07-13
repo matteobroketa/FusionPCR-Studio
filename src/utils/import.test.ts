@@ -20,11 +20,14 @@ describe('sequence import parser', () => {
   });
 
   it('rejects duplicate fasta names', () => {
-    expect(() => parseSequenceImport('>dup\nATGC\n>dup\nGGTT')).toThrow(/Duplicate sequence names/);
+    expect(() => parseSequenceImport('>dup\nATGC\n>dup\nGGTT')).toThrow(
+      /Duplicate sequence names/,
+    );
   });
 
   it('parses a GenBank record with topology and features', () => {
-    const result = parseSequenceImport(`LOCUS       TESTSEQ         12 bp    DNA     circular SYN 01-JAN-2000
+    const result =
+      parseSequenceImport(`LOCUS       TESTSEQ         12 bp    DNA     circular SYN 01-JAN-2000
 FEATURES             Location/Qualifiers
      CDS             join(10..12,1..6)
                      /gene="orfA"
@@ -36,7 +39,9 @@ ORIGIN
     expect(result.format).toBe('genbank');
     expect(result.records[0].topology).toBe('circular');
     expect(result.records[0].features[0].label).toBe('orfA');
-    expect(result.warnings.some((warning) => warning.includes('Circular topology'))).toBe(true);
+    expect(
+      result.warnings.some((warning) => warning.includes('Circular topology')),
+    ).toBe(true);
   });
 
   it('flags protein-like imports', () => {

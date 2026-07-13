@@ -1,11 +1,21 @@
-import { useEffect, useRef, useState, useTransition, type ChangeEvent } from 'react';
-import { emptyProject, exampleProject, exampleProjects, type ExampleProjectId } from '../data/example';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ChangeEvent,
+} from 'react';
+import {
+  emptyProject,
+  exampleProject,
+  exampleProjects,
+  type ExampleProjectId,
+} from '../data/example';
 import {
   checksumSequence,
   defaultChangeApprovals,
   type ChangeApprovals,
   type CodingIntent,
-  type DesignMode,
   type FragmentInput,
   type FusionProjectInput,
   type GenomicSpecificitySettings,
@@ -21,16 +31,29 @@ import {
   type EditorLocks,
 } from '../utils/editor';
 import { parseFeatureSelection } from '../utils/features';
-import { flipImportedSource, parseSequenceImport, type ImportParseResult, type ImportedSource } from '../utils/import';
-import { buildMutationPlan, selectedFragmentSequence, type MutationPlannerMode } from '../utils/mutation';
+import {
+  parseSequenceImport,
+  type ImportParseResult,
+  type ImportedSource,
+} from '../utils/import';
+import {
+  buildMutationPlan,
+  selectedFragmentSequence,
+  type MutationPlannerMode,
+} from '../utils/mutation';
 import { reverseComplement } from '../utils/pcr';
 import type { ProtocolSettings } from '../utils/protocol';
 import type { DesignComparisonSummary } from '../utils/review';
 import type { ThermodynamicConditions } from '../utils/thermodynamics';
-import { loadInitialProject, normalizeImportedProject, stampProjectMetadata } from '../utils/project';
+import {
+  loadInitialProject,
+  normalizeImportedProject,
+  stampProjectMetadata,
+} from '../utils/project';
 
 const STORAGE_KEY = 'fusionpcr-studio-project';
-const EXPERIMENTAL_NOTICE_STORAGE_KEY = 'fusionpcr-studio-experimental-notice-dismissed';
+const EXPERIMENTAL_NOTICE_STORAGE_KEY =
+  'fusionpcr-studio-experimental-notice-dismissed';
 
 export type ActiveFragmentKey = 'fragmentA' | 'fragmentB';
 
@@ -68,44 +91,61 @@ function loadExperimentalNoticeVisibility() {
     return true;
   }
 
-  return window.localStorage.getItem(EXPERIMENTAL_NOTICE_STORAGE_KEY) !== 'dismissed';
+  return (
+    window.localStorage.getItem(EXPERIMENTAL_NOTICE_STORAGE_KEY) !== 'dismissed'
+  );
 }
 
 function hasProjectSequenceContent(project: FusionProjectInput) {
-  return Boolean(project.fragmentA.sequence.trim() || project.fragmentB.sequence.trim());
+  return Boolean(
+    project.fragmentA.sequence.trim() || project.fragmentB.sequence.trim(),
+  );
 }
 
 function isProjectNonEmpty(project: FusionProjectInput) {
   return Boolean(
     project.fragmentA.sequence.trim() ||
-      project.fragmentB.sequence.trim() ||
-      project.insertSequence.trim() ||
-      project.notes.trim(),
+    project.fragmentB.sequence.trim() ||
+    project.insertSequence.trim() ||
+    project.notes.trim(),
   );
 }
 
 export function useProjectController() {
-  const [project, setProject] = useState<FusionProjectInput>(() => loadInitialControllerProject());
+  const [project, setProject] = useState<FusionProjectInput>(() =>
+    loadInitialControllerProject(),
+  );
   const [pastProjects, setPastProjects] = useState<FusionProjectInput[]>([]);
-  const [futureProjects, setFutureProjects] = useState<FusionProjectInput[]>([]);
+  const [futureProjects, setFutureProjects] = useState<FusionProjectInput[]>(
+    [],
+  );
   const [, startTransition] = useTransition();
   const [importError, setImportError] = useState('');
   const [sequenceImportText, setSequenceImportText] = useState('');
   const [sequenceImportError, setSequenceImportError] = useState('');
-  const [sequenceImportResult, setSequenceImportResult] = useState<ImportParseResult | null>(null);
+  const [sequenceImportResult, setSequenceImportResult] =
+    useState<ImportParseResult | null>(null);
   const [featureSelectionMessage, setFeatureSelectionMessage] = useState('');
-  const [activeFragmentKey, setActiveFragmentKey] = useState<ActiveFragmentKey>('fragmentA');
+  const [activeFragmentKey, setActiveFragmentKey] =
+    useState<ActiveFragmentKey>('fragmentA');
   const [editPayload, setEditPayload] = useState('');
   const [editPosition, setEditPosition] = useState(1);
   const [trimAmount, setTrimAmount] = useState(1);
-  const [showExperimentalNotice, setShowExperimentalNotice] = useState(() => loadExperimentalNoticeVisibility());
-  const [showWorkbench, setShowWorkbench] = useState(() => hasProjectSequenceContent(loadInitialControllerProject()));
+  const [showExperimentalNotice, setShowExperimentalNotice] = useState(() =>
+    loadExperimentalNoticeVisibility(),
+  );
+  const [showWorkbench, setShowWorkbench] = useState(() =>
+    hasProjectSequenceContent(loadInitialControllerProject()),
+  );
   const [showSidebar, setShowSidebar] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [confirmationState, setConfirmationState] = useState<ConfirmationState>(null);
-  const [recoverableProjectSnapshot, setRecoverableProjectSnapshot] = useState<FusionProjectInput | null>(null);
-  const [comparisonSnapshot, setComparisonSnapshot] = useState<ComparisonSnapshot | null>(null);
+  const [confirmationState, setConfirmationState] =
+    useState<ConfirmationState>(null);
+  const [recoverableProjectSnapshot, setRecoverableProjectSnapshot] =
+    useState<FusionProjectInput | null>(null);
+  const [comparisonSnapshot, setComparisonSnapshot] =
+    useState<ComparisonSnapshot | null>(null);
   const [canvasTracks, setCanvasTracks] = useState<CanvasTracks>({
     sourceFragments: true,
     finalConstruct: true,
@@ -116,22 +156,20 @@ export function useProjectController() {
     features: true,
     riskSummary: true,
   });
-  const [mutationRecipientKey, setMutationRecipientKey] = useState<ActiveFragmentKey>('fragmentA');
-  const [mutationDonorKey, setMutationDonorKey] = useState<ActiveFragmentKey>('fragmentB');
+  const [mutationRecipientKey, setMutationRecipientKey] =
+    useState<ActiveFragmentKey>('fragmentA');
+  const [mutationDonorKey, setMutationDonorKey] =
+    useState<ActiveFragmentKey>('fragmentB');
   const [mutationStart, setMutationStart] = useState(1);
   const [mutationEnd, setMutationEnd] = useState(1);
   const [mutationCoordinate, setMutationCoordinate] = useState(1);
-  const [mutationPayloadSource, setMutationPayloadSource] = useState<MutationPayloadSource>('manual');
+  const [mutationPayloadSource, setMutationPayloadSource] =
+    useState<MutationPayloadSource>('manual');
   const [mutationPayloadInput, setMutationPayloadInput] = useState('');
-  const [selectedExampleId, setSelectedExampleId] = useState<ExampleProjectId>('protein-fusion');
+  const [selectedExampleId, setSelectedExampleId] =
+    useState<ExampleProjectId>('protein-fusion');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const sequenceFileInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (hasProjectSequenceContent(project)) {
-      setShowWorkbench(true);
-    }
-  }, [project]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -147,7 +185,9 @@ export function useProjectController() {
   }, [showExperimentalNotice]);
 
   const commitProject = (
-    updater: FusionProjectInput | ((current: FusionProjectInput) => FusionProjectInput),
+    updater:
+      | FusionProjectInput
+      | ((current: FusionProjectInput) => FusionProjectInput),
     options?: { recordHistory?: boolean },
   ) => {
     setProject((current) => {
@@ -184,15 +224,26 @@ export function useProjectController() {
     setProject(next);
   };
 
-  const updateProject = <K extends keyof FusionProjectInput>(field: K, value: FusionProjectInput[K]) => {
+  const updateProject = <K extends keyof FusionProjectInput>(
+    field: K,
+    value: FusionProjectInput[K],
+  ) => {
     commitProject((current) => {
       if (field === 'insertSequence' && current.editorLocks.insertSequence) {
         return current;
       }
-      if ((field === 'polymeraseId' || field === 'reactionConditions' || field === 'protocolSettings') && current.editorLocks.polymeraseSettings) {
+      if (
+        (field === 'polymeraseId' ||
+          field === 'reactionConditions' ||
+          field === 'protocolSettings') &&
+        current.editorLocks.polymeraseSettings
+      ) {
         return current;
       }
-      if ((field === 'fragmentA' && current.editorLocks.fragmentA) || (field === 'fragmentB' && current.editorLocks.fragmentB)) {
+      if (
+        (field === 'fragmentA' && current.editorLocks.fragmentA) ||
+        (field === 'fragmentB' && current.editorLocks.fragmentB)
+      ) {
         return current;
       }
       return {
@@ -209,10 +260,15 @@ export function useProjectController() {
     value: string | number,
   ) => {
     commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
+      const fragmentLocked =
+        fragmentKey === 'fragmentA'
+          ? current.editorLocks.fragmentA
+          : current.editorLocks.fragmentB;
       const boundaryLocked =
-        (fragmentKey === 'fragmentA' && current.editorLocks.fragmentABoundaries) ||
-        (fragmentKey === 'fragmentB' && current.editorLocks.fragmentBBoundaries);
+        (fragmentKey === 'fragmentA' &&
+          current.editorLocks.fragmentABoundaries) ||
+        (fragmentKey === 'fragmentB' &&
+          current.editorLocks.fragmentBBoundaries);
       if (fragmentLocked) {
         return current;
       }
@@ -230,14 +286,22 @@ export function useProjectController() {
     });
   };
 
-  const updateFragmentSequence = (fragmentKey: ActiveFragmentKey, value: string) => {
+  const updateFragmentSequence = (
+    fragmentKey: ActiveFragmentKey,
+    value: string,
+  ) => {
     commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
+      const fragmentLocked =
+        fragmentKey === 'fragmentA'
+          ? current.editorLocks.fragmentA
+          : current.editorLocks.fragmentB;
       if (fragmentLocked) {
         return current;
       }
       const normalizedLength = value.toUpperCase().replace(/\s+/g, '').length;
-      const previousLength = current[fragmentKey].sequence.toUpperCase().replace(/\s+/g, '').length;
+      const previousLength = current[fragmentKey].sequence
+        .toUpperCase()
+        .replace(/\s+/g, '').length;
       const currentFragment = current[fragmentKey];
       const nextEnd =
         normalizedLength === 0
@@ -245,7 +309,8 @@ export function useProjectController() {
           : previousLength === 0 || currentFragment.end > previousLength
             ? normalizedLength
             : Math.min(currentFragment.end, normalizedLength);
-      const nextStart = normalizedLength === 0 ? 1 : Math.min(currentFragment.start, nextEnd);
+      const nextStart =
+        normalizedLength === 0 ? 1 : Math.min(currentFragment.start, nextEnd);
       return {
         ...current,
         [fragmentKey]: {
@@ -255,7 +320,9 @@ export function useProjectController() {
           start: nextStart,
           sourceFormat: 'manual',
           checksum: checksumSequence(value),
-          ambiguousBases: Array.from(new Set(value.toUpperCase().match(/N/g) ?? [])),
+          ambiguousBases: Array.from(
+            new Set(value.toUpperCase().match(/N/g) ?? []),
+          ),
           features: [],
           reverseComplemented: false,
         },
@@ -264,7 +331,10 @@ export function useProjectController() {
     });
   };
 
-  const updateCoding = <K extends keyof CodingIntent>(field: K, value: CodingIntent[K]) => {
+  const updateCoding = <K extends keyof CodingIntent>(
+    field: K,
+    value: CodingIntent[K],
+  ) => {
     commitProject((current) => ({
       ...current,
       coding: {
@@ -294,7 +364,10 @@ export function useProjectController() {
     });
   };
 
-  const updateProtocolSetting = <K extends keyof ProtocolSettings>(field: K, value: ProtocolSettings[K]) => {
+  const updateProtocolSetting = <K extends keyof ProtocolSettings>(
+    field: K,
+    value: ProtocolSettings[K],
+  ) => {
     commitProject((current) => {
       if (current.editorLocks.polymeraseSettings) {
         return current;
@@ -332,7 +405,9 @@ export function useProjectController() {
     setRecoverableProjectSnapshot(current);
   };
 
-  const requestProjectReplacement = (action: NonNullable<ConfirmationState>) => {
+  const requestProjectReplacement = (
+    action: NonNullable<ConfirmationState>,
+  ) => {
     if (!isProjectNonEmpty(project)) {
       action.onConfirm();
       return;
@@ -357,7 +432,8 @@ export function useProjectController() {
 
     requestProjectReplacement({
       title: 'Replace current project?',
-      message: 'Loading a built-in example will replace the current project in the editor. The current project will remain available as a recoverable snapshot.',
+      message:
+        'Loading a built-in example will replace the current project in the editor. The current project will remain available as a recoverable snapshot.',
       confirmLabel: 'Load built-in example',
       onConfirm: runLoad,
     });
@@ -366,7 +442,8 @@ export function useProjectController() {
   const resetProject = () => {
     requestProjectReplacement({
       title: 'Clear current project?',
-      message: 'This removes the current project from the active editor. The previous project will remain available as a recoverable snapshot until another replacement occurs.',
+      message:
+        'This removes the current project from the active editor. The previous project will remain available as a recoverable snapshot until another replacement occurs.',
       confirmLabel: 'Clear project',
       onConfirm: () => {
         startTransition(() => {
@@ -412,13 +489,21 @@ export function useProjectController() {
       setFeatureSelectionMessage('');
     } catch (error) {
       setSequenceImportResult(null);
-      setSequenceImportError(error instanceof Error ? error.message : 'Sequence import failed.');
+      setSequenceImportError(
+        error instanceof Error ? error.message : 'Sequence import failed.',
+      );
     }
   };
 
-  const applyImportedSource = (fragmentKey: ActiveFragmentKey, source: ImportedSource) => {
+  const applyImportedSource = (
+    fragmentKey: ActiveFragmentKey,
+    source: ImportedSource,
+  ) => {
     commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
+      const fragmentLocked =
+        fragmentKey === 'fragmentA'
+          ? current.editorLocks.fragmentA
+          : current.editorLocks.fragmentB;
       if (fragmentLocked) {
         return current;
       }
@@ -503,7 +588,10 @@ export function useProjectController() {
 
   const reverseComplementFragment = (fragmentKey: ActiveFragmentKey) => {
     commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
+      const fragmentLocked =
+        fragmentKey === 'fragmentA'
+          ? current.editorLocks.fragmentA
+          : current.editorLocks.fragmentB;
       if (fragmentLocked) {
         return current;
       }
@@ -516,7 +604,8 @@ export function useProjectController() {
           sequence,
           checksum: checksumSequence(sequence),
           reverseComplemented: !fragment.reverseComplemented,
-          sourceFormat: fragment.sourceFormat === 'project' ? 'project' : 'manual',
+          sourceFormat:
+            fragment.sourceFormat === 'project' ? 'project' : 'manual',
           features: [],
         },
         modifiedAt: new Date().toISOString(),
@@ -524,12 +613,20 @@ export function useProjectController() {
     });
   };
 
-  const applyFeatureSelection = (fragmentKey: ActiveFragmentKey, featureIndex: number) => {
+  const applyFeatureSelection = (
+    fragmentKey: ActiveFragmentKey,
+    featureIndex: number,
+  ) => {
     commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
+      const fragmentLocked =
+        fragmentKey === 'fragmentA'
+          ? current.editorLocks.fragmentA
+          : current.editorLocks.fragmentB;
       const boundaryLocked =
-        (fragmentKey === 'fragmentA' && current.editorLocks.fragmentABoundaries) ||
-        (fragmentKey === 'fragmentB' && current.editorLocks.fragmentBBoundaries);
+        (fragmentKey === 'fragmentA' &&
+          current.editorLocks.fragmentABoundaries) ||
+        (fragmentKey === 'fragmentB' &&
+          current.editorLocks.fragmentBBoundaries);
       if (fragmentLocked || boundaryLocked) {
         return current;
       }
@@ -586,7 +683,9 @@ export function useProjectController() {
     }));
   };
 
-  const toggleChangeApproval = (field: Exclude<keyof ChangeApprovals, 'acceptedSynonymousChanges'>) => {
+  const toggleChangeApproval = (
+    field: Exclude<keyof ChangeApprovals, 'acceptedSynonymousChanges'>,
+  ) => {
     commitProject((current) => ({
       ...current,
       changeApprovals: {
@@ -599,9 +698,12 @@ export function useProjectController() {
 
   const toggleSynonymousChangeApproval = (changeId: string) => {
     commitProject((current) => {
-      const accepted = current.changeApprovals.acceptedSynonymousChanges.includes(changeId)
-        ? current.changeApprovals.acceptedSynonymousChanges.filter((item) => item !== changeId)
-        : [...current.changeApprovals.acceptedSynonymousChanges, changeId];
+      const accepted =
+        current.changeApprovals.acceptedSynonymousChanges.includes(changeId)
+          ? current.changeApprovals.acceptedSynonymousChanges.filter(
+              (item) => item !== changeId,
+            )
+          : [...current.changeApprovals.acceptedSynonymousChanges, changeId];
 
       return {
         ...current,
@@ -629,7 +731,10 @@ export function useProjectController() {
     commitProject((current) => {
       const recipient = current[mutationRecipientKey];
       const donor = current[mutationDonorKey];
-      const payload = mutationPayloadSource === 'donor-selection' ? selectedFragmentSequence(donor) : mutationPayloadInput;
+      const payload =
+        mutationPayloadSource === 'donor-selection'
+          ? selectedFragmentSequence(donor)
+          : mutationPayloadInput;
       const plan = buildMutationPlan({
         mode: mutationMode,
         recipient,
@@ -646,7 +751,8 @@ export function useProjectController() {
         fragmentB: plan.rightFragment,
         insertSequence: plan.insertSequence,
         changeApprovals: defaultChangeApprovals(),
-        notes: `${current.notes ? `${current.notes}\n` : ''}${plan.summary}`.trim(),
+        notes:
+          `${current.notes ? `${current.notes}\n` : ''}${plan.summary}`.trim(),
         modifiedAt: new Date().toISOString(),
       };
     });
@@ -659,7 +765,10 @@ export function useProjectController() {
     operation: (fragment: FragmentInput) => FragmentInput,
   ) => {
     commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
+      const fragmentLocked =
+        fragmentKey === 'fragmentA'
+          ? current.editorLocks.fragmentA
+          : current.editorLocks.fragmentB;
       if (fragmentLocked) {
         return current;
       }
@@ -672,7 +781,9 @@ export function useProjectController() {
   };
 
   const handleTrim = (side: 'left' | 'right') => {
-    applyFragmentEdit(activeFragmentKey, (fragment) => trimFragment(fragment, side, trimAmount));
+    applyFragmentEdit(activeFragmentKey, (fragment) =>
+      trimFragment(fragment, side, trimAmount),
+    );
   };
 
   const handleExtractSelection = () => {
@@ -688,21 +799,36 @@ export function useProjectController() {
   };
 
   const handleReplaceSelection = () => {
-    applyFragmentEdit(activeFragmentKey, (fragment) => replaceSelectedRange(fragment, editPayload));
+    applyFragmentEdit(activeFragmentKey, (fragment) =>
+      replaceSelectedRange(fragment, editPayload),
+    );
   };
 
   const handleInsertPayload = () => {
-    applyFragmentEdit(activeFragmentKey, (fragment) => insertAtPosition(fragment, editPosition, editPayload));
+    applyFragmentEdit(activeFragmentKey, (fragment) =>
+      insertAtPosition(fragment, editPosition, editPayload),
+    );
   };
 
   const handleSplitActiveFragment = () => {
     commitProject((current) => {
-      const activeLocked = activeFragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
-      const counterpartLocked = activeFragmentKey === 'fragmentA' ? current.editorLocks.fragmentB : current.editorLocks.fragmentA;
+      const activeLocked =
+        activeFragmentKey === 'fragmentA'
+          ? current.editorLocks.fragmentA
+          : current.editorLocks.fragmentB;
+      const counterpartLocked =
+        activeFragmentKey === 'fragmentA'
+          ? current.editorLocks.fragmentB
+          : current.editorLocks.fragmentA;
       if (activeLocked || counterpartLocked) {
         return current;
       }
-      const [left, right] = splitFragment(current[activeFragmentKey], editPosition, `${current[activeFragmentKey].label} left`, `${current[activeFragmentKey].label} right`);
+      const [left, right] = splitFragment(
+        current[activeFragmentKey],
+        editPosition,
+        `${current[activeFragmentKey].label} left`,
+        `${current[activeFragmentKey].label} right`,
+      );
       return {
         ...current,
         fragmentA: left,
@@ -742,7 +868,9 @@ export function useProjectController() {
       const normalized = normalizeImportedProject(parsed);
 
       if (!normalized) {
-        throw new Error('The selected file is not a FusionPCR Studio project JSON document.');
+        throw new Error(
+          'The selected file is not a FusionPCR Studio project JSON document.',
+        );
       }
 
       const applyImportedProject = () => {
@@ -758,7 +886,8 @@ export function useProjectController() {
       if (isProjectNonEmpty(project)) {
         setConfirmationState({
           title: 'Replace current project?',
-          message: 'Importing a project JSON will replace the current project in the editor. The current project will remain available as a recoverable snapshot.',
+          message:
+            'Importing a project JSON will replace the current project in the editor. The current project will remain available as a recoverable snapshot.',
           confirmLabel: 'Import project',
           onConfirm: applyImportedProject,
         });
@@ -766,13 +895,17 @@ export function useProjectController() {
         applyImportedProject();
       }
     } catch (error) {
-      setImportError(error instanceof Error ? error.message : 'Project import failed.');
+      setImportError(
+        error instanceof Error ? error.message : 'Project import failed.',
+      );
     } finally {
       event.target.value = '';
     }
   };
 
-  const handleSequenceFileImport = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleSequenceFileImport = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
@@ -783,7 +916,9 @@ export function useProjectController() {
       setSequenceImportText(raw);
       parseSequenceImportText(raw);
     } catch (error) {
-      setSequenceImportError(error instanceof Error ? error.message : 'Sequence file import failed.');
+      setSequenceImportError(
+        error instanceof Error ? error.message : 'Sequence file import failed.',
+      );
       setSequenceImportResult(null);
     } finally {
       event.target.value = '';

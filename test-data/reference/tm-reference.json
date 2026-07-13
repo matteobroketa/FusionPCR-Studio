@@ -10,10 +10,7 @@
     {
       "name": "balanced-8mer-default",
       "sequence": "ATGCATGC",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -40,10 +37,7 @@
     {
       "name": "at-rich-8mer-default",
       "sequence": "AATTATTA",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -70,11 +64,7 @@
     {
       "name": "gc-rich-8mer-default",
       "sequence": "GCGCGCGC",
-      "coverageTags": [
-        "composition",
-        "length",
-        "symmetry"
-      ],
+      "coverageTags": ["composition", "length", "symmetry"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -101,10 +91,7 @@
     {
       "name": "mixed-10mer-default",
       "sequence": "GATCGATCGA",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -131,10 +118,7 @@
     {
       "name": "balanced-12mer-default",
       "sequence": "ATGCGTACGTAG",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -161,10 +145,7 @@
     {
       "name": "at-rich-12mer-default",
       "sequence": "AATTAATTTAAT",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -191,10 +172,7 @@
     {
       "name": "gc-rich-12mer-default",
       "sequence": "GCGCGGCCGCGC",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -221,9 +199,7 @@
     {
       "name": "short-2mer-default",
       "sequence": "AT",
-      "coverageTags": [
-        "length"
-      ],
+      "coverageTags": ["length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -250,9 +226,7 @@
     {
       "name": "short-4mer-default",
       "sequence": "ATGC",
-      "coverageTags": [
-        "length"
-      ],
+      "coverageTags": ["length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -279,10 +253,7 @@
     {
       "name": "mixed-16mer-default",
       "sequence": "ATGACTGACCGTACGT",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -309,10 +280,7 @@
     {
       "name": "mixed-20mer-default",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -339,10 +307,7 @@
     {
       "name": "balanced-24mer-default",
       "sequence": "ATGGCCATTGTAATGGGCCGCTGA",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -369,10 +334,7 @@
     {
       "name": "at-rich-30mer-default",
       "sequence": "AATAATAATTATAATTAATAATAATTATAA",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -399,10 +361,7 @@
     {
       "name": "gc-rich-30mer-default",
       "sequence": "GCGCGCGGCCGCGCGGCCGCGCGGCCGCGC",
-      "coverageTags": [
-        "composition",
-        "length"
-      ],
+      "coverageTags": ["composition", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -429,9 +388,7 @@
     {
       "name": "default-sequence-low-monovalent-10mM",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "monovalent-salt"
-      ],
+      "coverageTags": ["monovalent-salt"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -458,9 +415,7 @@
     {
       "name": "default-sequence-high-monovalent-200mM",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "monovalent-salt"
-      ],
+      "coverageTags": ["monovalent-salt"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -487,9 +442,7 @@
     {
       "name": "default-sequence-very-low-monovalent-1mM",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "monovalent-salt"
-      ],
+      "coverageTags": ["monovalent-salt"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -516,9 +469,7 @@
     {
       "name": "default-sequence-zero-magnesium",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "magnesium"
-      ],
+      "coverageTags": ["magnesium"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -545,9 +496,7 @@
     {
       "name": "default-sequence-high-magnesium",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "magnesium"
-      ],
+      "coverageTags": ["magnesium"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -574,10 +523,7 @@
     {
       "name": "default-sequence-high-dntp-chelation",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "magnesium",
-        "dntp"
-      ],
+      "coverageTags": ["magnesium", "dntp"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -604,10 +550,7 @@
     {
       "name": "default-sequence-excess-dntp",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "magnesium",
-        "dntp"
-      ],
+      "coverageTags": ["magnesium", "dntp"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -634,9 +577,7 @@
     {
       "name": "default-sequence-dmso-5pct",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "dmso"
-      ],
+      "coverageTags": ["dmso"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -663,9 +604,7 @@
     {
       "name": "default-sequence-dmso-10pct",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "dmso"
-      ],
+      "coverageTags": ["dmso"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -692,9 +631,7 @@
     {
       "name": "default-sequence-low-dna-conc",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "concentration"
-      ],
+      "coverageTags": ["concentration"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -721,9 +658,7 @@
     {
       "name": "default-sequence-high-dna-conc",
       "sequence": "GATCGATCGATCGATCGATC",
-      "coverageTags": [
-        "concentration"
-      ],
+      "coverageTags": ["concentration"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -750,10 +685,7 @@
     {
       "name": "self-complementary-6mer",
       "sequence": "ATCGAT",
-      "coverageTags": [
-        "symmetry",
-        "length"
-      ],
+      "coverageTags": ["symmetry", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -780,10 +712,7 @@
     {
       "name": "self-complementary-12mer",
       "sequence": "AGCTAGCTAGCT",
-      "coverageTags": [
-        "symmetry",
-        "length"
-      ],
+      "coverageTags": ["symmetry", "length"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -810,9 +739,7 @@
     {
       "name": "terminal-gc-bias",
       "sequence": "GCGTATATATGC",
-      "coverageTags": [
-        "composition"
-      ],
+      "coverageTags": ["composition"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -906,9 +833,7 @@
     {
       "name": "ambiguous-base-rejection",
       "sequence": "NNNNNN",
-      "coverageTags": [
-        "rejection"
-      ],
+      "coverageTags": ["rejection"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",
@@ -936,9 +861,7 @@
     {
       "name": "unsupported-base-rejection",
       "sequence": "ATGB",
-      "coverageTags": [
-        "rejection"
-      ],
+      "coverageTags": ["rejection"],
       "referenceTool": {
         "name": "primer3-py",
         "version": "2.3.0",

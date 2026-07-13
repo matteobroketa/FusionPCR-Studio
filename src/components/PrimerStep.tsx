@@ -5,7 +5,8 @@ import { ADVANCED_ANALYSIS_ENABLED } from '../utils/feature-flags';
 import type { FusionDesign, PrimerDesign } from '../utils/fusion';
 import { getPrimerReviewItems } from '../utils/review-items';
 
-export type PrimerResultTab = 'overview' | 'sequences' | 'structures' | 'specificity' | 'alternatives';
+export type PrimerResultTab =
+  'overview' | 'sequences' | 'structures' | 'specificity' | 'alternatives';
 
 type CompareRow = {
   label: string;
@@ -31,7 +32,9 @@ const primerTabs: Array<[PrimerResultTab, string]> = [
   ['sequences', 'Primer sequences'],
   ['structures', 'Structures'],
   ['specificity', 'Specificity'],
-  ...(ADVANCED_ANALYSIS_ENABLED ? ([['alternatives', 'Alternatives']] as Array<[PrimerResultTab, string]>) : []),
+  ...(ADVANCED_ANALYSIS_ENABLED
+    ? ([['alternatives', 'Alternatives']] as Array<[PrimerResultTab, string]>)
+    : []),
 ];
 
 export function PrimerStep({
@@ -80,7 +83,9 @@ export function PrimerStep({
   };
 
   const handleCopyAllPrimers = async () => {
-    const fasta = visiblePrimers.map((primer) => `>${primer.name}\n${primer.sequence}`).join('\n');
+    const fasta = visiblePrimers
+      .map((primer) => `>${primer.name}\n${primer.sequence}`)
+      .join('\n');
     await writeClipboard(fasta);
     setCopyStatus(`Copied all ${visiblePrimers.length} primer sequence(s).`);
   };
@@ -96,7 +101,9 @@ export function PrimerStep({
                 Primer review
               </h2>
             </div>
-            <span className="pill pill-muted">{visiblePrimers.length} primer(s)</span>
+            <span className="pill pill-muted">
+              {visiblePrimers.length} primer(s)
+            </span>
           </div>
 
           <div className="metric-grid">
@@ -114,12 +121,19 @@ export function PrimerStep({
             </div>
             <div className="metric">
               <span>Sequence reconstruction</span>
-              <strong>{design.finalProductVerified ? 'Pass' : 'Pending'}</strong>
+              <strong>
+                {design.finalProductVerified ? 'Pass' : 'Pending'}
+              </strong>
             </div>
           </div>
 
           <div className="action-row">
-            <button type="button" className="button button-secondary" onClick={() => void handleCopyAllPrimers()} disabled={!visiblePrimers.length}>
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => void handleCopyAllPrimers()}
+              disabled={!visiblePrimers.length}
+            >
               Copy all primers
             </button>
           </div>
@@ -130,7 +144,11 @@ export function PrimerStep({
             </p>
           ) : null}
 
-          <div className="phone-primer-selector" role="tablist" aria-label="Primer selector">
+          <div
+            className="phone-primer-selector"
+            role="tablist"
+            aria-label="Primer selector"
+          >
             {visiblePrimers.map((primer) => (
               <button
                 key={primer.name}
@@ -156,7 +174,9 @@ export function PrimerStep({
           ) : (
             <div className="status-block">
               <p className="status-title">No primer set</p>
-              <p>No primer details are available for the current review state.</p>
+              <p>
+                No primer details are available for the current review state.
+              </p>
             </div>
           )}
         </section>
@@ -174,7 +194,9 @@ export function PrimerStep({
               Primer review
             </h2>
           </div>
-          <span className="pill pill-muted">{visiblePrimers.length} primer(s)</span>
+          <span className="pill pill-muted">
+            {visiblePrimers.length} primer(s)
+          </span>
         </div>
 
         <div className="result-tabs">
@@ -207,12 +229,19 @@ export function PrimerStep({
               </div>
               <div className="metric">
                 <span>Sequence reconstruction</span>
-                <strong>{design.finalProductVerified ? 'Pass' : 'Pending'}</strong>
+                <strong>
+                  {design.finalProductVerified ? 'Pass' : 'Pending'}
+                </strong>
               </div>
             </div>
 
             <div className="action-row">
-              <button type="button" className="button button-secondary" onClick={() => void handleCopyAllPrimers()} disabled={!visiblePrimers.length}>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => void handleCopyAllPrimers()}
+                disabled={!visiblePrimers.length}
+              >
                 Copy all primers
               </button>
             </div>
@@ -225,7 +254,10 @@ export function PrimerStep({
 
             <div className="primer-review-layout">
               <div className="primer-review-table-wrap">
-                <table className="primer-review-table" aria-label="Primer review table">
+                <table
+                  className="primer-review-table"
+                  aria-label="Primer review table"
+                >
                   <thead>
                     <tr>
                       <th scope="col">Primer</th>
@@ -237,10 +269,23 @@ export function PrimerStep({
                   </thead>
                   <tbody>
                     {visiblePrimers.map((primer) => {
-                      const primerReviewItems = getPrimerReviewItems(design, primer.name);
-                      const status = summarizePrimerStatus(primer, primerReviewItems);
+                      const primerReviewItems = getPrimerReviewItems(
+                        design,
+                        primer.name,
+                      );
+                      const status = summarizePrimerStatus(
+                        primer,
+                        primerReviewItems,
+                      );
                       return (
-                        <tr key={primer.name} className={selectedPrimerName === primer.name ? 'primer-review-row-selected' : ''}>
+                        <tr
+                          key={primer.name}
+                          className={
+                            selectedPrimerName === primer.name
+                              ? 'primer-review-row-selected'
+                              : ''
+                          }
+                        >
                           <th scope="row">
                             <button
                               type="button"
@@ -255,7 +300,9 @@ export function PrimerStep({
                           <td>{primer.fullLength} nt</td>
                           <td>{primer.bodyTm.toFixed(1)} C</td>
                           <td>
-                            <span className={`pill ${status.tone === 'alert' ? 'pill-alert' : status.tone === 'watch' ? 'pill-watch' : 'pill-success'}`}>
+                            <span
+                              className={`pill ${status.tone === 'alert' ? 'pill-alert' : status.tone === 'watch' ? 'pill-watch' : 'pill-success'}`}
+                            >
                               {status.label}
                             </span>
                           </td>
@@ -271,7 +318,10 @@ export function PrimerStep({
                   primer={selectedPrimer}
                   selected
                   onCopy={() => void handleCopyPrimer(selectedPrimer)}
-                  reviewItems={getPrimerReviewItems(design, selectedPrimer.name)}
+                  reviewItems={getPrimerReviewItems(
+                    design,
+                    selectedPrimer.name,
+                  )}
                 />
               ) : (
                 <div className="status-block">
@@ -290,10 +340,16 @@ export function PrimerStep({
               <ul className="status-list">
                 {visiblePrimers.map((primer) => (
                   <li key={`${primer.name}-sequence-tab`}>
-                    <button type="button" className="inline-link-button" onClick={() => onSelectPrimer(primer.name)}>
+                    <button
+                      type="button"
+                      className="inline-link-button"
+                      onClick={() => onSelectPrimer(primer.name)}
+                    >
                       {primer.name}
                     </button>{' '}
-                    {primer.tail.length ? `${primer.tail.length} nt tail + ` : ''}
+                    {primer.tail.length
+                      ? `${primer.tail.length} nt tail + `
+                      : ''}
                     {primer.bodyLength} nt annealing body
                   </li>
                 ))}
@@ -317,9 +373,17 @@ export function PrimerStep({
               <ul className="status-list">
                 {visiblePrimers.map((primer) => (
                   <li key={`${primer.name}-structure`}>
-                    {primer.name}: hairpin {primer.structure.hairpin ? `${primer.structure.hairpin.deltaG} kcal/mol` : 'none'},
-                    homodimer {primer.structure.homodimer ? `${primer.structure.homodimer.deltaG} kcal/mol` : 'none'}, 3
-                    prime {primer.structure.threePrimeHomodimer?.threePrimePairedBasesA ?? 0}
+                    {primer.name}: hairpin{' '}
+                    {primer.structure.hairpin
+                      ? `${primer.structure.hairpin.deltaG} kcal/mol`
+                      : 'none'}
+                    , homodimer{' '}
+                    {primer.structure.homodimer
+                      ? `${primer.structure.homodimer.deltaG} kcal/mol`
+                      : 'none'}
+                    , 3 prime{' '}
+                    {primer.structure.threePrimeHomodimer
+                      ?.threePrimePairedBasesA ?? 0}
                   </li>
                 ))}
               </ul>
@@ -331,7 +395,9 @@ export function PrimerStep({
                   design.primerPairInteractions.slice(0, 8).map((pair) => (
                     <li key={`${pair.primerAName}-${pair.primerBName}`}>
                       {pair.primerAName}/{pair.primerBName}:{' '}
-                      {pair.interaction ? `${pair.interaction.risk}, dG ${pair.interaction.deltaG} kcal/mol` : 'none'}
+                      {pair.interaction
+                        ? `${pair.interaction.risk}, dG ${pair.interaction.deltaG} kcal/mol`
+                        : 'none'}
                       {pair.intended ? ' (intended overlap pair)' : ''}
                     </li>
                   ))
@@ -361,12 +427,16 @@ export function PrimerStep({
                     <li
                       key={`intended-${amplicon.templateId}-${amplicon.forwardPrimerName}-${amplicon.reversePrimerName}-${amplicon.start}`}
                     >
-                      Intended: {amplicon.templateName} {amplicon.forwardPrimerName}/{amplicon.reversePrimerName} predicts{' '}
-                      {amplicon.length} bp
+                      Intended: {amplicon.templateName}{' '}
+                      {amplicon.forwardPrimerName}/{amplicon.reversePrimerName}{' '}
+                      predicts {amplicon.length} bp
                     </li>
                   ))
                 ) : (
-                  <li>No intended amplicon models were classified for the current design.</li>
+                  <li>
+                    No intended amplicon models were classified for the current
+                    design.
+                  </li>
                 )}
               </ul>
             </div>
@@ -378,12 +448,15 @@ export function PrimerStep({
                     <li
                       key={`${amplicon.templateId}-${amplicon.forwardPrimerName}-${amplicon.reversePrimerName}-${amplicon.start}`}
                     >
-                      {amplicon.templateName}: {amplicon.forwardPrimerName}/{amplicon.reversePrimerName} predicts{' '}
-                      {amplicon.length} bp ({amplicon.risk})
+                      {amplicon.templateName}: {amplicon.forwardPrimerName}/
+                      {amplicon.reversePrimerName} predicts {amplicon.length} bp
+                      ({amplicon.risk})
                     </li>
                   ))
                 ) : (
-                  <li>No unintended amplicons detected by the current local scan.</li>
+                  <li>
+                    No unintended amplicons detected by the current local scan.
+                  </li>
                 )}
               </ul>
             </div>
@@ -401,7 +474,11 @@ export function PrimerStep({
         {primerResultTab === 'alternatives' ? (
           <>
             {comparisonSnapshot ? (
-              <div className="compare-table" role="table" aria-label="Design comparison">
+              <div
+                className="compare-table"
+                role="table"
+                aria-label="Design comparison"
+              >
                 <div className="compare-row compare-header" role="row">
                   <span role="columnheader">Metric</span>
                   <strong role="columnheader">Current</strong>
@@ -425,7 +502,9 @@ export function PrimerStep({
                         <h3>{candidate.label}</h3>
                         <p className="field-helper">{candidate.priority}</p>
                       </div>
-                      <span className="pill pill-muted">{candidate.qualityScore.toFixed(3)}</span>
+                      <span className="pill pill-muted">
+                        {candidate.qualityScore.toFixed(3)}
+                      </span>
                     </div>
                     <ul className="status-list">
                       <li>Total oligo nt: {candidate.totalOligoLength}</li>
@@ -437,14 +516,19 @@ export function PrimerStep({
                           ? `${candidate.worstNonIntendedDimerDeltaG.toFixed(1)} kcal/mol`
                           : 'n/a'}
                       </li>
-                      <li>High-risk off-targets: {candidate.highRiskOffTargets}</li>
+                      <li>
+                        High-risk off-targets: {candidate.highRiskOffTargets}
+                      </li>
                     </ul>
                   </article>
                 ))
               ) : (
                 <div className="status-block">
                   <p className="status-title">No alternatives</p>
-                  <p>No ranked alternatives were generated for the current search space.</p>
+                  <p>
+                    No ranked alternatives were generated for the current search
+                    space.
+                  </p>
                 </div>
               )}
             </div>

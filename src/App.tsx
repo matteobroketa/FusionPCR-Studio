@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { ContextInspector } from './components/ContextInspector';
 import { ExperimentalNotice } from './components/ExperimentalNotice';
 import { IssueDrawer } from './components/IssueDrawer';
 import { JunctionStep } from './components/JunctionStep';
 import { PrimerStep, type PrimerResultTab } from './components/PrimerStep';
-import { ProtocolExportStep, type ProtocolResultTab } from './components/ProtocolExportStep';
+import {
+  ProtocolExportStep,
+  type ProtocolResultTab,
+} from './components/ProtocolExportStep';
 import { ProjectToolbar } from './components/ProjectToolbar';
 import { ReactionTimeline } from './components/ReactionTimeline';
 import { SequenceStep } from './components/SequenceStep';
@@ -17,10 +20,23 @@ import { useAppFocusManagement } from './hooks/useAppFocusManagement';
 import { useProjectController } from './hooks/useProjectController';
 import { useProjectPersistence } from './hooks/useProjectPersistence';
 import { useViewportMode } from './hooks/useViewportMode';
-import { buildCompareRows, buildStepStatuses, focusInspectorPanel, formatStepStatus, getActiveFocusableElement, isEditableElement } from './utils/app-ui';
-import { countPrimerScopedReviewItems, filterActionableReviewItems } from './utils/review-items';
+import {
+  buildCompareRows,
+  buildStepStatuses,
+  focusInspectorPanel,
+  formatStepStatus,
+  getActiveFocusableElement,
+} from './utils/app-ui';
+import {
+  countPrimerScopedReviewItems,
+  filterActionableReviewItems,
+} from './utils/review-items';
 import { summarizeSequenceMetrics } from './utils/fusion';
-import { buildMutationPlan, selectedFragmentSequence, type MutationPlannerMode } from './utils/mutation';
+import {
+  buildMutationPlan,
+  selectedFragmentSequence,
+  type MutationPlannerMode,
+} from './utils/mutation';
 import {
   buildJunctionSummary,
   getStagePrimerNames,
@@ -32,12 +48,14 @@ import {
 
 const STORAGE_KEY = 'fusionpcr-studio-project';
 
-type InspectorFocus = 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction';
+type InspectorFocus =
+  'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction';
 type WorkbenchStep = 'sequences' | 'construct' | 'primers' | 'protocol';
 
 function App() {
   const [selectedStage, setSelectedStage] = useState<WorkflowStage>('overview');
-  const [inspectorFocus, setInspectorFocus] = useState<InspectorFocus>('junction');
+  const [inspectorFocus, setInspectorFocus] =
+    useState<InspectorFocus>('junction');
   const projectController = useProjectController();
   const {
     project,
@@ -62,10 +80,16 @@ function App() {
     fileInputRef,
     sequenceFileInputRef,
   } = projectController;
-  const [activeStep, setActiveStep] = useState<WorkbenchStep>(() => (showWorkbench ? 'construct' : 'sequences'));
-  const [primerResultTab, setPrimerResultTab] = useState<PrimerResultTab>('overview');
-  const [protocolResultTab, setProtocolResultTab] = useState<ProtocolResultTab>('overview');
-  const [selectedPrimerName, setSelectedPrimerName] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState<WorkbenchStep>(() =>
+    showWorkbench ? 'construct' : 'sequences',
+  );
+  const [primerResultTab, setPrimerResultTab] =
+    useState<PrimerResultTab>('overview');
+  const [protocolResultTab, setProtocolResultTab] =
+    useState<ProtocolResultTab>('overview');
+  const [selectedPrimerName, setSelectedPrimerName] = useState<string | null>(
+    null,
+  );
   const workspaceHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const issueDrawerHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const inspectorHeadingRef = useRef<HTMLHeadingElement | null>(null);
@@ -73,9 +97,11 @@ function App() {
   const mobileInspectorToggleRef = useRef<HTMLButtonElement | null>(null);
   const confirmationCancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const viewportMode = useViewportMode();
-  const { design, calculationState, isDesignPending, isDesignCurrent, workerError, retry } = useFusionDesign(project);
-  const { persistenceState, persistenceError, retryPersistence } = useProjectPersistence(STORAGE_KEY, project);
-  const { inspectorTriggerRef, confirmationTriggerRef } = useAppFocusManagement({
+  const { design, calculationState, isDesignCurrent, workerError, retry } =
+    useFusionDesign(project);
+  const { persistenceState, persistenceError, retryPersistence } =
+    useProjectPersistence(STORAGE_KEY, project);
+  const { inspectorTriggerRef } = useAppFocusManagement({
     showInspector,
     workerError,
     confirmationState,
@@ -93,13 +119,18 @@ function App() {
   const fragmentBMetrics = summarizeSequenceMetrics(project.fragmentB.sequence);
   const isPhoneViewport = viewportMode === 'phone';
   const isCompactViewport = viewportMode !== 'desktop';
-  const activeFragment = project[projectController.activeFragmentKey];
   const isFragmentALocked = project.editorLocks.fragmentA;
   const isFragmentBLocked = project.editorLocks.fragmentB;
   const isInsertLocked = project.editorLocks.insertSequence;
   const isPolymeraseLocked = project.editorLocks.polymeraseSettings;
-  const activeFragmentLocked = projectController.activeFragmentKey === 'fragmentA' ? isFragmentALocked : isFragmentBLocked;
-  const counterpartFragmentLocked = projectController.activeFragmentKey === 'fragmentA' ? isFragmentBLocked : isFragmentALocked;
+  const activeFragmentLocked =
+    projectController.activeFragmentKey === 'fragmentA'
+      ? isFragmentALocked
+      : isFragmentBLocked;
+  const counterpartFragmentLocked =
+    projectController.activeFragmentKey === 'fragmentA'
+      ? isFragmentBLocked
+      : isFragmentALocked;
   const hasCurrentValidDesign =
     isDesignCurrent &&
     calculationState === 'complete' &&
@@ -113,7 +144,10 @@ function App() {
   const junctionSummary = buildJunctionSummary(design);
   const comparisonMetrics = summarizeDesignComparison(design);
   const mutationMode: MutationPlannerMode | null =
-    project.mode === 'insertion' || project.mode === 'deletion' || project.mode === 'substitution' || project.mode === 'domain-swap'
+    project.mode === 'insertion' ||
+    project.mode === 'deletion' ||
+    project.mode === 'substitution' ||
+    project.mode === 'domain-swap'
       ? project.mode
       : null;
   const mutationRecipient = project[projectController.mutationRecipientKey];
@@ -143,7 +177,9 @@ function App() {
   const visiblePrimers =
     selectedStage === 'overview' || selectedStage === 'verification'
       ? design.primers
-      : design.primers.filter((primer) => stagePrimerNames.includes(primer.name));
+      : design.primers.filter((primer) =>
+          stagePrimerNames.includes(primer.name),
+        );
   const selectedPrimer =
     visiblePrimers.find((primer) => primer.name === selectedPrimerName) ??
     visiblePrimers[0] ??
@@ -151,10 +187,14 @@ function App() {
   const selectedReaction =
     selectedStage === 'overview' || selectedStage === 'verification'
       ? null
-      : design.reactions.find((reaction) => reaction.name === getWorkflowStageLabel(selectedStage));
+      : design.reactions.find(
+          (reaction) => reaction.name === getWorkflowStageLabel(selectedStage),
+        );
   const activeReaction = selectedReaction ?? design.reactions[0] ?? null;
   const actionableReviewItems = filterActionableReviewItems(design.reviewItems);
-  const blockingReviewCount = design.reviewItems.filter((item) => item.severity === 'blocking').length;
+  const blockingReviewCount = design.reviewItems.filter(
+    (item) => item.severity === 'blocking',
+  ).length;
   const primerScopedReviewCount = countPrimerScopedReviewItems(design);
   const saveStateLabel =
     persistenceState === 'saving'
@@ -164,13 +204,28 @@ function App() {
         : persistenceState === 'failed'
           ? 'Local save failed'
           : 'Autosave pending';
-  const calculationStateLabel =
-    workerError ? 'Calculation failed' : calculationState === 'complete' && isDesignCurrent ? 'Calculation complete' : 'Calculating';
-  const calculationStateTone: 'success' | 'watch' | 'alert' =
-    workerError ? 'alert' : calculationState === 'complete' && isDesignCurrent ? 'success' : 'watch';
-  const publicExampleOptions = exampleProjectOptions.filter((option) => option.id === 'protein-fusion' || option.id === 'exact-fusion');
-  const selectedPublicExampleDescription = publicExampleOptions.find((option) => option.id === selectedExampleId)?.description ?? 'Built-in example';
-  const { sequenceStepStatus, constructStepStatus, primerStepStatus, protocolStepStatus } = buildStepStatuses({
+  const calculationStateLabel = workerError
+    ? 'Calculation failed'
+    : calculationState === 'complete' && isDesignCurrent
+      ? 'Calculation complete'
+      : 'Calculating';
+  const calculationStateTone: 'success' | 'watch' | 'alert' = workerError
+    ? 'alert'
+    : calculationState === 'complete' && isDesignCurrent
+      ? 'success'
+      : 'watch';
+  const publicExampleOptions = exampleProjectOptions.filter(
+    (option) => option.id === 'protein-fusion' || option.id === 'exact-fusion',
+  );
+  const selectedPublicExampleDescription =
+    publicExampleOptions.find((option) => option.id === selectedExampleId)
+      ?.description ?? 'Built-in example';
+  const {
+    sequenceStepStatus,
+    constructStepStatus,
+    primerStepStatus,
+    protocolStepStatus,
+  } = buildStepStatuses({
     project,
     design,
     blockingReviewCount,
@@ -178,15 +233,6 @@ function App() {
     primerScopedReviewCount,
   });
   const compareRows = buildCompareRows(comparisonMetrics, comparisonSnapshot);
-
-  useEffect(() => {
-    if (!visiblePrimers.length) {
-      setSelectedPrimerName(null);
-      return;
-    }
-
-    setSelectedPrimerName((current) => (current && visiblePrimers.some((primer) => primer.name === current) ? current : visiblePrimers[0].name));
-  }, [visiblePrimers]);
 
   const openInspector = () => {
     inspectorTriggerRef.current = getActiveFocusableElement();
@@ -234,7 +280,9 @@ function App() {
     setActiveStep('construct');
   };
 
-  const handleProjectFileChange = (event: Parameters<typeof projectController.handleImportFile>[0]) => {
+  const handleProjectFileChange = (
+    event: Parameters<typeof projectController.handleImportFile>[0],
+  ) => {
     void projectController.handleImportFile(event);
     setActiveStep('construct');
     setInspectorFocus('junction');
@@ -255,7 +303,9 @@ function App() {
           canRedo={projectController.canRedo}
           showMenu={showMenu}
           hasRecoverableProject={recoverableProjectSnapshot !== null}
-          onProjectNameChange={(value) => projectController.updateProject('name', value)}
+          onProjectNameChange={(value) =>
+            projectController.updateProject('name', value)
+          }
           onUndo={projectController.undoProject}
           onRedo={projectController.redoProject}
           onOpenProject={projectController.handleImportClick}
@@ -266,9 +316,19 @@ function App() {
           onClearProject={handleResetProject}
         />
 
-        {showExperimentalNotice ? <ExperimentalNotice onDismiss={() => setShowExperimentalNotice(false)} /> : null}
+        {showExperimentalNotice ? (
+          <ExperimentalNotice
+            onDismiss={() => setShowExperimentalNotice(false)}
+          />
+        ) : null}
 
-        <input ref={fileInputRef} type="file" accept="application/json" hidden onChange={handleProjectFileChange} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json"
+          hidden
+          onChange={handleProjectFileChange}
+        />
         <input
           ref={sequenceFileInputRef}
           type="file"
@@ -299,10 +359,13 @@ function App() {
                     setShowInspector(false);
                     return;
                   }
-                  inspectorTriggerRef.current = getActiveFocusableElement() ?? mobileInspectorToggleRef.current;
+                  inspectorTriggerRef.current =
+                    getActiveFocusableElement() ??
+                    mobileInspectorToggleRef.current;
                   setShowInspector(true);
                   window.setTimeout(() => {
-                    const heading = document.querySelector('.inspector-pane h2');
+                    const heading =
+                      document.querySelector('.inspector-pane h2');
                     if (heading instanceof HTMLElement) {
                       heading.focus();
                     }
@@ -315,7 +378,10 @@ function App() {
 
             <section className="workbench-layout">
               <StepNavigation
-                activeStep={activeStep as 'sequences' | 'construct' | 'primers' | 'protocol'}
+                activeStep={
+                  activeStep as
+                    'sequences' | 'construct' | 'primers' | 'protocol'
+                }
                 showSidebar={isCompactViewport ? true : showSidebar}
                 targetLength={design.targetSequence.length}
                 exactVerification={design.finalProductVerified}
@@ -334,13 +400,18 @@ function App() {
               />
 
               <section className="workspace-pane">
-                <IssueDrawer reviewItems={design.reviewItems} headingRef={issueDrawerHeadingRef} />
+                <IssueDrawer
+                  reviewItems={design.reviewItems}
+                  headingRef={issueDrawerHeadingRef}
+                />
 
                 {activeStep === 'sequences' ? (
                   <SequenceStep
                     controller={projectController}
                     design={design}
-                    selectedPublicExampleDescription={selectedPublicExampleDescription}
+                    selectedPublicExampleDescription={
+                      selectedPublicExampleDescription
+                    }
                     phoneReviewMode={isPhoneViewport}
                     fragmentAMetrics={fragmentAMetrics}
                     fragmentBMetrics={fragmentBMetrics}
@@ -355,7 +426,9 @@ function App() {
                     counterpartFragmentLocked={counterpartFragmentLocked}
                     headingRef={workspaceHeadingRef}
                     onApplyImportedSource={handleImportedSourceSelection}
-                    onApplyFirstTwoImportedSources={handleApplyFirstTwoImportedSources}
+                    onApplyFirstTwoImportedSources={
+                      handleApplyFirstTwoImportedSources
+                    }
                     onApplyMutationWorkflow={handleApplyMutationWorkflow}
                   />
                 ) : null}
@@ -383,8 +456,14 @@ function App() {
                     }}
                     onShowInspector={openInspector}
                     onToggleCanvasTrack={projectController.toggleCanvasTrack}
-                    onCaptureComparisonSnapshot={() => projectController.captureComparisonSnapshot(comparisonMetrics)}
-                    onClearComparisonSnapshot={() => setComparisonSnapshot(null)}
+                    onCaptureComparisonSnapshot={() =>
+                      projectController.captureComparisonSnapshot(
+                        comparisonMetrics,
+                      )
+                    }
+                    onClearComparisonSnapshot={() =>
+                      setComparisonSnapshot(null)
+                    }
                   />
                 ) : null}
 
@@ -421,7 +500,13 @@ function App() {
                     headingRef={workspaceHeadingRef}
                     onProtocolResultTabChange={setProtocolResultTab}
                     onSelectOverviewReaction={(reactionName) => {
-                      setSelectedStage(reactionName === 'PCR 1A' ? 'pcr1a' : reactionName === 'PCR 1B' ? 'pcr1b' : 'fusion');
+                      setSelectedStage(
+                        reactionName === 'PCR 1A'
+                          ? 'pcr1a'
+                          : reactionName === 'PCR 1B'
+                            ? 'pcr1b'
+                            : 'fusion',
+                      );
                       setInspectorFocus('reaction');
                       openInspector();
                     }}
@@ -443,11 +528,18 @@ function App() {
                   insertSequence: junctionSummary.insertSequence,
                   finalJunction: junctionSummary.finalJunction,
                   upstreamAnnealRegion: junctionSummary.upstreamAnnealRegion,
-                  downstreamAnnealRegion: junctionSummary.downstreamAnnealRegion,
-                  aInnerTailContribution: junctionSummary.aInnerTailContribution,
-                  bInnerTailContribution: junctionSummary.bInnerTailContribution,
+                  downstreamAnnealRegion:
+                    junctionSummary.downstreamAnnealRegion,
+                  aInnerTailContribution:
+                    junctionSummary.aInnerTailContribution,
+                  bInnerTailContribution:
+                    junctionSummary.bInnerTailContribution,
                 }}
-                overlapTmLabel={comparisonMetrics.overlapTm !== null ? `${comparisonMetrics.overlapTm.toFixed(1)} C` : 'n/a'}
+                overlapTmLabel={
+                  comparisonMetrics.overlapTm !== null
+                    ? `${comparisonMetrics.overlapTm.toFixed(1)} C`
+                    : 'n/a'
+                }
                 workerError={workerError}
                 persistenceError={persistenceError}
                 importError={importError}
@@ -463,7 +555,11 @@ function App() {
               selectedStage={selectedStage}
               onSelectStage={(stage) => {
                 setSelectedStage(stage);
-                setInspectorFocus(stage === 'overview' || stage === 'verification' ? 'junction' : 'reaction');
+                setInspectorFocus(
+                  stage === 'overview' || stage === 'verification'
+                    ? 'junction'
+                    : 'reaction',
+                );
               }}
             />
           </>

@@ -9,7 +9,12 @@ export type NormalizedRange = {
   wrapsOrigin: boolean;
 };
 
-export function clampRange(length: number, topology: SequenceTopology, start: number, end: number): NormalizedRange {
+export function clampRange(
+  length: number,
+  topology: SequenceTopology,
+  start: number,
+  end: number,
+): NormalizedRange {
   if (length <= 0) {
     return { start: 1, end: 0, clamped: true, wrapsOrigin: false };
   }
@@ -18,7 +23,8 @@ export function clampRange(length: number, topology: SequenceTopology, start: nu
   const safeEnd = Number.isFinite(end) ? Math.floor(end) : length;
   const normalizedStart = Math.max(1, Math.min(length, safeStart));
   const normalizedEnd = Math.max(1, Math.min(length, safeEnd));
-  const wrapsOrigin = topology === 'circular' && normalizedStart > normalizedEnd;
+  const wrapsOrigin =
+    topology === 'circular' && normalizedStart > normalizedEnd;
 
   if (topology === 'circular') {
     return {
@@ -32,12 +38,18 @@ export function clampRange(length: number, topology: SequenceTopology, start: nu
   return {
     start: Math.min(normalizedStart, normalizedEnd),
     end: Math.max(normalizedStart, normalizedEnd),
-    clamped: normalizedStart !== safeStart || normalizedEnd !== safeEnd || safeStart > safeEnd,
+    clamped:
+      normalizedStart !== safeStart ||
+      normalizedEnd !== safeEnd ||
+      safeStart > safeEnd,
     wrapsOrigin: false,
   };
 }
 
-export function selectRange(sequenceInput: string, range: NormalizedRange): string {
+export function selectRange(
+  sequenceInput: string,
+  range: NormalizedRange,
+): string {
   const sequence = normalizeSequence(sequenceInput);
   if (!sequence.length || range.end <= 0) {
     return '';
@@ -72,7 +84,9 @@ export function longestHomopolymerRun(sequenceInput: string): number {
   return best;
 }
 
-export function isFiniteThermodynamicResult(result: ThermodynamicResult): boolean {
+export function isFiniteThermodynamicResult(
+  result: ThermodynamicResult,
+): boolean {
   return (
     Number.isFinite(result.deltaHKcalPerMol) &&
     Number.isFinite(result.deltaSCalPerMolK) &&

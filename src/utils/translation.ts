@@ -10,25 +10,75 @@ export type TranslationResult = {
 };
 
 const CODON_TABLE: Record<string, string> = {
-  TTT: 'F', TTC: 'F', TTA: 'L', TTG: 'L',
-  TCT: 'S', TCC: 'S', TCA: 'S', TCG: 'S',
-  TAT: 'Y', TAC: 'Y', TAA: '*', TAG: '*',
-  TGT: 'C', TGC: 'C', TGA: '*', TGG: 'W',
-  CTT: 'L', CTC: 'L', CTA: 'L', CTG: 'L',
-  CCT: 'P', CCC: 'P', CCA: 'P', CCG: 'P',
-  CAT: 'H', CAC: 'H', CAA: 'Q', CAG: 'Q',
-  CGT: 'R', CGC: 'R', CGA: 'R', CGG: 'R',
-  ATT: 'I', ATC: 'I', ATA: 'I', ATG: 'M',
-  ACT: 'T', ACC: 'T', ACA: 'T', ACG: 'T',
-  AAT: 'N', AAC: 'N', AAA: 'K', AAG: 'K',
-  AGT: 'S', AGC: 'S', AGA: 'R', AGG: 'R',
-  GTT: 'V', GTC: 'V', GTA: 'V', GTG: 'V',
-  GCT: 'A', GCC: 'A', GCA: 'A', GCG: 'A',
-  GAT: 'D', GAC: 'D', GAA: 'E', GAG: 'E',
-  GGT: 'G', GGC: 'G', GGA: 'G', GGG: 'G',
+  TTT: 'F',
+  TTC: 'F',
+  TTA: 'L',
+  TTG: 'L',
+  TCT: 'S',
+  TCC: 'S',
+  TCA: 'S',
+  TCG: 'S',
+  TAT: 'Y',
+  TAC: 'Y',
+  TAA: '*',
+  TAG: '*',
+  TGT: 'C',
+  TGC: 'C',
+  TGA: '*',
+  TGG: 'W',
+  CTT: 'L',
+  CTC: 'L',
+  CTA: 'L',
+  CTG: 'L',
+  CCT: 'P',
+  CCC: 'P',
+  CCA: 'P',
+  CCG: 'P',
+  CAT: 'H',
+  CAC: 'H',
+  CAA: 'Q',
+  CAG: 'Q',
+  CGT: 'R',
+  CGC: 'R',
+  CGA: 'R',
+  CGG: 'R',
+  ATT: 'I',
+  ATC: 'I',
+  ATA: 'I',
+  ATG: 'M',
+  ACT: 'T',
+  ACC: 'T',
+  ACA: 'T',
+  ACG: 'T',
+  AAT: 'N',
+  AAC: 'N',
+  AAA: 'K',
+  AAG: 'K',
+  AGT: 'S',
+  AGC: 'S',
+  AGA: 'R',
+  AGG: 'R',
+  GTT: 'V',
+  GTC: 'V',
+  GTA: 'V',
+  GTG: 'V',
+  GCT: 'A',
+  GCC: 'A',
+  GCA: 'A',
+  GCG: 'A',
+  GAT: 'D',
+  GAC: 'D',
+  GAA: 'E',
+  GAG: 'E',
+  GGT: 'G',
+  GGC: 'G',
+  GGA: 'G',
+  GGG: 'G',
 };
 
-const AMINO_ACID_TO_CODONS = Object.entries(CODON_TABLE).reduce<Record<string, string[]>>((mapping, [codon, aminoAcid]) => {
+const AMINO_ACID_TO_CODONS = Object.entries(CODON_TABLE).reduce<
+  Record<string, string[]>
+>((mapping, [codon, aminoAcid]) => {
   if (!mapping[aminoAcid]) {
     mapping[aminoAcid] = [];
   }
@@ -36,7 +86,10 @@ const AMINO_ACID_TO_CODONS = Object.entries(CODON_TABLE).reduce<Record<string, s
   return mapping;
 }, {});
 
-export function translateSequence(sequenceInput: string, frame = 0): TranslationResult {
+export function translateSequence(
+  sequenceInput: string,
+  frame = 0,
+): TranslationResult {
   const sequence = normalizeSequence(sequenceInput);
   const safeFrame = Math.max(0, Math.min(2, Math.floor(frame)));
   const codingSequence = sequence.slice(safeFrame);
@@ -66,7 +119,11 @@ export function translateSequence(sequenceInput: string, frame = 0): Translation
   };
 }
 
-export function codonAt(sequenceInput: string, frame: number, codonIndex: number): string {
+export function codonAt(
+  sequenceInput: string,
+  frame: number,
+  codonIndex: number,
+): string {
   const translation = translateSequence(sequenceInput, frame);
   return translation.codons[codonIndex] ?? '';
 }
@@ -88,10 +145,17 @@ export function synonymousCodonsForCodon(codonInput: string): string[] {
     return codon ? [codon] : [];
   }
 
-  return [codon, ...codonsForAminoAcid(aminoAcid).filter((candidate) => candidate !== codon)];
+  return [
+    codon,
+    ...codonsForAminoAcid(aminoAcid).filter((candidate) => candidate !== codon),
+  ];
 }
 
-export function formatAminoAcidWindow(aminoAcids: string, centerIndex: number, radius = 5): string {
+export function formatAminoAcidWindow(
+  aminoAcids: string,
+  centerIndex: number,
+  radius = 5,
+): string {
   if (!aminoAcids.length) {
     return '';
   }

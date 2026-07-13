@@ -1,4 +1,10 @@
-import { analyzeHairpin, analyzeHeterodimer, analyzeHomodimer, analyzePrimerStructure, analyzeThreePrimeDimer } from './structure';
+import {
+  analyzeHairpin,
+  analyzeHeterodimer,
+  analyzeHomodimer,
+  analyzePrimerStructure,
+  analyzeThreePrimeDimer,
+} from './structure';
 
 describe('secondary structure analysis', () => {
   it('detects a hairpin-like internal complementarity', () => {
@@ -18,10 +24,18 @@ describe('secondary structure analysis', () => {
   });
 
   it('detects a 3 prime anchored heterodimer interaction', () => {
-    const result = analyzeThreePrimeDimer('GACTGACCTGATCGTACG', 'CGTACGATCAGGTCAGTC');
+    const result = analyzeThreePrimeDimer(
+      'GACTGACCTGATCGTACG',
+      'CGTACGATCAGGTCAGTC',
+    );
 
     expect(result).not.toBeNull();
-    expect(Math.max(result?.threePrimePairedBasesA ?? 0, result?.threePrimePairedBasesB ?? 0)).toBeGreaterThan(3);
+    expect(
+      Math.max(
+        result?.threePrimePairedBasesA ?? 0,
+        result?.threePrimePairedBasesB ?? 0,
+      ),
+    ).toBeGreaterThan(3);
   });
 
   it('produces a heterodimer result for complementary inner-primer pairs', () => {
@@ -35,7 +49,13 @@ describe('secondary structure analysis', () => {
   it('summarizes overall primer structure risk', () => {
     const result = analyzePrimerStructure('CGGTAAGCCTAGCTACGTAGCTAGGCTTACCG');
 
-    expect(result.risk === 'High' || result.risk === 'Watch' || result.risk === 'Low').toBe(true);
-    expect(result.homodimer || result.hairpin || result.threePrimeHomodimer).not.toBeNull();
+    expect(
+      result.risk === 'High' ||
+        result.risk === 'Watch' ||
+        result.risk === 'Low',
+    ).toBe(true);
+    expect(
+      result.homodimer || result.hairpin || result.threePrimeHomodimer,
+    ).not.toBeNull();
   });
 });

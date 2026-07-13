@@ -7,57 +7,89 @@ type BrowserAudit = {
 };
 
 async function assertNoDisplayedNonFiniteValues(page: Page) {
-  const bodyText = await page.locator('body').innerText().catch(() => '');
+  const bodyText = await page
+    .locator('body')
+    .innerText()
+    .catch(() => '');
   expect(bodyText).not.toMatch(/\b(?:NaN|-?Infinity)\b/);
 }
 
 export const test = base.extend<{ browserAudit: BrowserAudit }>({
-  browserAudit: [async ({ page }, use) => {
-    const audit: BrowserAudit = {
-      consoleErrors: [],
-      pageErrors: [],
-      requestFailures: [],
-    };
+  browserAudit: [
+    async ({ page }, use) => {
+      const audit: BrowserAudit = {
+        consoleErrors: [],
+        pageErrors: [],
+        requestFailures: [],
+      };
 
-    page.on('console', (message) => {
-      if (message.type() === 'error') {
-        audit.consoleErrors.push(message.text());
-      }
-    });
+      page.on('console', (message) => {
+        if (message.type() === 'error') {
+          audit.consoleErrors.push(message.text());
+        }
+      });
 
-    page.on('pageerror', (error) => {
-      audit.pageErrors.push(error.message);
-    });
+      page.on('pageerror', (error) => {
+        audit.pageErrors.push(error.message);
+      });
 
-    page.on('requestfailed', (request) => {
-      const resourceType = request.resourceType();
-      if (resourceType === 'document' || resourceType === 'script' || request.url().includes('worker')) {
-        audit.requestFailures.push(`${resourceType}: ${request.url()} (${request.failure()?.errorText ?? 'unknown failure'})`);
-      }
-    });
+      page.on('requestfailed', (request) => {
+        const resourceType = request.resourceType();
+        if (
+          resourceType === 'document' ||
+          resourceType === 'script' ||
+          request.url().includes('worker')
+        ) {
+          audit.requestFailures.push(
+            `${resourceType}: ${request.url()} (${request.failure()?.errorText ?? 'unknown failure'})`,
+          );
+        }
+      });
 
-    await use(audit);
+      await use(audit);
 
-    await assertNoDisplayedNonFiniteValues(page);
-    expect(audit.consoleErrors, `Browser console errors:\n${audit.consoleErrors.join('\n')}`).toEqual([]);
-    expect(audit.pageErrors, `Uncaught browser exceptions:\n${audit.pageErrors.join('\n')}`).toEqual([]);
-    expect(audit.requestFailures, `Failed critical browser requests:\n${audit.requestFailures.join('\n')}`).toEqual([]);
-  }, { auto: true }],
+      await assertNoDisplayedNonFiniteValues(page);
+      expect(
+        audit.consoleErrors,
+        `Browser console errors:\n${audit.consoleErrors.join('\n')}`,
+      ).toEqual([]);
+      expect(
+        audit.pageErrors,
+        `Uncaught browser exceptions:\n${audit.pageErrors.join('\n')}`,
+      ).toEqual([]);
+      expect(
+        audit.requestFailures,
+        `Failed critical browser requests:\n${audit.requestFailures.join('\n')}`,
+      ).toEqual([]);
+    },
+    { auto: true },
+  ],
 });
 
 export { expect };
 
 export async function waitForDesignReady(page: Page) {
-  await expect(page.getByText('Sequence reconstruction verified.')).toBeVisible();
-  await expect(page.getByText('Experimental alpha — independently review primers and protocols.')).toBeVisible();
+  await expect(
+    page.getByText('Sequence reconstruction verified.'),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Experimental alpha — independently review primers and protocols.',
+    ),
+  ).toBeVisible();
 }
 
 export async function loadRunnableExample(page: Page) {
-  await page.getByRole('button', { name: 'Load protein fusion example' }).click();
+  await page
+    .getByRole('button', { name: 'Load protein fusion example' })
+    .click();
   await waitForDesignReady(page);
 }
 
-export async function openWorkbenchStep(page: Page, label: 'Sequences' | 'Junction' | 'Primers' | 'Protocol & Export') {
+export async function openWorkbenchStep(
+  page: Page,
+  label: 'Sequences' | 'Junction' | 'Primers' | 'Protocol & Export',
+) {
   const stepButton = page.getByRole('button', { name: `${label} step` });
   if (!(await stepButton.isVisible().catch(() => false))) {
     const toggle = page.getByRole('button', { name: 'Show steps' });

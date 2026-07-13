@@ -71,24 +71,36 @@ function buildTestDesign() {
       database: 'RefSeq representative genomes',
       notes: 'Check the final PCR pair against the human genome.',
     },
-    fragmentA: makeFragment('A', 'ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG', 1, 39, [
-      {
-        key: 'CDS',
-        location: '4..18',
-        label: 'Fragment A CDS',
-        qualifiers: { gene: 'fusA' },
-        crossesOrigin: false,
-      },
-    ]),
-    fragmentB: makeFragment('B', 'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG', 1, 42, [
-      {
-        key: 'misc_feature',
-        location: '7..16',
-        label: 'Fragment B marker',
-        qualifiers: { note: 'donor region' },
-        crossesOrigin: false,
-      },
-    ]),
+    fragmentA: makeFragment(
+      'A',
+      'ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG',
+      1,
+      39,
+      [
+        {
+          key: 'CDS',
+          location: '4..18',
+          label: 'Fragment A CDS',
+          qualifiers: { gene: 'fusA' },
+          crossesOrigin: false,
+        },
+      ],
+    ),
+    fragmentB: makeFragment(
+      'B',
+      'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG',
+      1,
+      42,
+      [
+        {
+          key: 'misc_feature',
+          location: '7..16',
+          label: 'Fragment B marker',
+          qualifiers: { note: 'donor region' },
+          crossesOrigin: false,
+        },
+      ],
+    ),
   });
 }
 
@@ -101,7 +113,9 @@ describe('export helpers', () => {
     expect(handoff).toContain('Primer-BLAST URL');
     expect(handoff).toContain('Fusion PCR');
     expect(handoff).toContain('Forward primer:');
-    expect(handoff).toContain('Submitting these primers or targets to Primer-BLAST will send sequence information outside this local-first application.');
+    expect(handoff).toContain(
+      'Submitting these primers or targets to Primer-BLAST will send sequence information outside this local-first application.',
+    );
   });
 
   it('builds the expanded export artifacts', () => {
@@ -147,7 +161,9 @@ describe('export helpers', () => {
       validation: { exactFusionVerified: boolean };
     };
     expect(manifest.project.mode).toBe('exact');
-    expect(manifest.methods.genbankAnnotationPolicy).toContain('Selected source features are mapped only');
+    expect(manifest.methods.genbankAnnotationPolicy).toContain(
+      'Selected source features are mapped only',
+    );
     expect(manifest.validation.exactFusionVerified).toBe(true);
   });
 });

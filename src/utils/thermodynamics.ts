@@ -81,7 +81,10 @@ export function isSelfComplementary(sequenceInput: string): boolean {
   return sequence.length > 0 && reverseComplement(sequence) === sequence;
 }
 
-export function divalentToMonovalentEquivalent(divalentMillimolar: number, dntpMillimolar: number): number {
+export function divalentToMonovalentEquivalent(
+  divalentMillimolar: number,
+  dntpMillimolar: number,
+): number {
   const safeDivalent = Math.max(0, divalentMillimolar);
   const safeDntp = Math.max(0, dntpMillimolar);
   const effectiveDivalent = Math.max(safeDivalent, safeDntp);
@@ -103,7 +106,10 @@ function countGcFraction(sequence: string): number {
   return gcCount / sequence.length;
 }
 
-function sumNearestNeighbor(sequence: string): { deltaH: number; deltaS: number } {
+function sumNearestNeighbor(sequence: string): {
+  deltaH: number;
+  deltaS: number;
+} {
   let deltaH = 0;
   let deltaS = 0;
 
@@ -139,56 +145,82 @@ function sumNearestNeighbor(sequence: string): { deltaH: number; deltaS: number 
   return { deltaH, deltaS };
 }
 
-function calculateRawTmKelvin(sequence: string, deltaH: number, deltaS: number, oligoNanomolar: number): number {
+function calculateRawTmKelvin(
+  sequence: string,
+  deltaH: number,
+  deltaS: number,
+  oligoNanomolar: number,
+): number {
   const concentration = Math.max(oligoNanomolar, 1e-6);
-  const concentrationMolar = concentration / 1_000_000_000;
-  const symmetryDivisor = isSelfComplementary(sequence) ? 1_000_000_000 : 4_000_000_000;
-  return (deltaH * 1000) / (deltaS + GAS_CONSTANT * Math.log(concentration / symmetryDivisor));
+  const symmetryDivisor = isSelfComplementary(sequence)
+    ? 1_000_000_000
+    : 4_000_000_000;
+  return (
+    (deltaH * 1000) /
+    (deltaS + GAS_CONSTANT * Math.log(concentration / symmetryDivisor))
+  );
 }
 
-function calculateOwczarzySaltCorrection(sequence: string, conditions: ThermodynamicConditions): {
+function calculateOwczarzySaltCorrection(
+  sequence: string,
+  conditions: ThermodynamicConditions,
+): {
   correction: number;
   freeMagnesiumMolar: number;
   divalentToMonovalentRatio: number;
 } {
-  const monovalentMolar = Math.max(conditions.monovalentMillimolar, 0.000001) / 1000;
+  const monovalentMolar =
+    Math.max(conditions.monovalentMillimolar, 0.000001) / 1000;
   const gcFraction = countGcFraction(sequence);
   const freeMagnesiumMolar =
     conditions.dntpMillimolar >= conditions.magnesiumMillimolar
       ? 1e-11
-      : Math.max(conditions.magnesiumMillimolar - conditions.dntpMillimolar, 1e-8) / 1000;
+      : Math.max(
+          conditions.magnesiumMillimolar - conditions.dntpMillimolar,
+          1e-8,
+        ) / 1000;
   const divalentToMonovalentRatio =
     conditions.monovalentMillimolar <= 0
       ? 6
       : Math.sqrt(freeMagnesiumMolar) / monovalentMolar;
-  let correction = 0;
 
   if (divalentToMonovalentRatio < CROSSOVER_POINT) {
     const logMonovalent = Math.log(monovalentMolar);
-    correction = (((4.29 * gcFraction) - 3.95) * 1e-5 * logMonovalent) + (9.4e-6 * Math.pow(logMonovalent, 2));
-  } else {
-    const logFreeMagnesium = Math.log(freeMagnesiumMolar);
-    const logMonovalent = Math.log(monovalentMolar);
-    let a = 3.92e-5;
-    const b = -9.11e-6;
-    const c = 6.26e-5;
-    let d = 1.42e-5;
-    const e = -4.82e-4;
-    const f = 5.25e-4;
-    let g = 8.31e-5;
-
-    if (divalentToMonovalentRatio < 6) {
-      a = 3.92e-5 * (0.843 - (0.352 * Math.sqrt(monovalentMolar) * logMonovalent));
-      d = 1.42e-5 * (1.279 - 4.03e-3 * logMonovalent - 8.03e-3 * Math.pow(logMonovalent, 2));
-      g = 8.31e-5 * (0.486 - 0.258 * logMonovalent + 5.25e-3 * Math.pow(logMonovalent, 3));
-    }
-
-    correction =
-      a +
-      (b * logFreeMagnesium) +
-      gcFraction * (c + (d * logFreeMagnesium)) +
-      (1 / (2 * (sequence.length - 1))) * (e + (f * logFreeMagnesium) + g * Math.pow(logFreeMagnesium, 2));
+    return {
+      correction:
+        (4.29 * gcFraction - 3.95) * 1e-5 * logMonovalent +
+        9.4e-6 * Math.pow(logMonovalent, 2),
+      freeMagnesiumMolar,
+      divalentToMonovalentRatio,
+    };
   }
+
+  const logFreeMagnesium = Math.log(freeMagnesiumMolar);
+  const logMonovalent = Math.log(monovalentMolar);
+  let a = 3.92e-5;
+  const b = -9.11e-6;
+  const c = 6.26e-5;
+  let d = 1.42e-5;
+  const e = -4.82e-4;
+  const f = 5.25e-4;
+  let g = 8.31e-5;
+
+  if (divalentToMonovalentRatio < 6) {
+    a = 3.92e-5 * (0.843 - 0.352 * Math.sqrt(monovalentMolar) * logMonovalent);
+    d =
+      1.42e-5 *
+      (1.279 - 4.03e-3 * logMonovalent - 8.03e-3 * Math.pow(logMonovalent, 2));
+    g =
+      8.31e-5 *
+      (0.486 - 0.258 * logMonovalent + 5.25e-3 * Math.pow(logMonovalent, 3));
+  }
+
+  const correction =
+    a +
+    b * logFreeMagnesium +
+    gcFraction * (c + d * logFreeMagnesium) +
+    (1 / (2 * (sequence.length - 1))) *
+      (e + f * logFreeMagnesium + g * Math.pow(logFreeMagnesium, 2));
 
   return {
     correction,
@@ -228,11 +260,19 @@ export function calculateNearestNeighborTm(
   }
 
   if (findInvalidBases(sequence, false).length) {
-    return buildInvalidThermodynamicResult(sequence, countGcFraction(sequence), 'invalid-bases');
+    return buildInvalidThermodynamicResult(
+      sequence,
+      countGcFraction(sequence),
+      'invalid-bases',
+    );
   }
 
   if (sequence.length < 2) {
-    return buildInvalidThermodynamicResult(sequence, countGcFraction(sequence), 'too-short');
+    return buildInvalidThermodynamicResult(
+      sequence,
+      countGcFraction(sequence),
+      'too-short',
+    );
   }
 
   const conditions: ThermodynamicConditions = {
@@ -245,10 +285,18 @@ export function calculateNearestNeighborTm(
   };
 
   const { deltaH, deltaS } = sumNearestNeighbor(sequence);
-  const rawTmKelvin = calculateRawTmKelvin(sequence, deltaH, deltaS, conditions.oligoNanomolar);
+  const rawTmKelvin = calculateRawTmKelvin(
+    sequence,
+    deltaH,
+    deltaS,
+    conditions.oligoNanomolar,
+  );
   const rawTmCelsius = rawTmKelvin - KELVIN_OFFSET;
   const salt = calculateOwczarzySaltCorrection(sequence, conditions);
-  const correctedTmCelsius = (1 / ((1 / rawTmKelvin) + salt.correction)) - KELVIN_OFFSET - (conditions.dmsoPercent * conditions.dmsoFactor);
+  const correctedTmCelsius =
+    1 / (1 / rawTmKelvin + salt.correction) -
+    KELVIN_OFFSET -
+    conditions.dmsoPercent * conditions.dmsoFactor;
 
   return {
     sequence,

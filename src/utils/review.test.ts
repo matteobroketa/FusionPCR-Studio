@@ -11,9 +11,19 @@ import {
   PROJECT_SCHEMA_VERSION,
   type FragmentInput,
 } from './fusion';
-import { buildJunctionSummary, getStagePrimerNames, getStageSequencePreviews, summarizeDesignComparison } from './review';
+import {
+  buildJunctionSummary,
+  getStagePrimerNames,
+  getStageSequencePreviews,
+  summarizeDesignComparison,
+} from './review';
 
-function makeFragment(label: string, sequence: string, start = 1, end = sequence.length): FragmentInput {
+function makeFragment(
+  label: string,
+  sequence: string,
+  start = 1,
+  end = sequence.length,
+): FragmentInput {
   return {
     label,
     sequence,
@@ -65,10 +75,18 @@ describe('review helpers', () => {
   });
 
   it('returns stage-specific primer names and previews', () => {
-    expect(getStagePrimerNames(design, 'pcr1a')).toEqual(['A_outer_F', 'A_inner_R']);
-    expect(getStagePrimerNames(design, 'fusion')).toEqual(['A_outer_F', 'B_outer_R']);
+    expect(getStagePrimerNames(design, 'pcr1a')).toEqual([
+      'A_outer_F',
+      'A_inner_R',
+    ]);
+    expect(getStagePrimerNames(design, 'fusion')).toEqual([
+      'A_outer_F',
+      'B_outer_R',
+    ]);
     expect(getStageSequencePreviews(design, 'verification')).toHaveLength(2);
-    expect(getStageSequencePreviews(design, 'verification')[0]?.label).toContain('Requested');
+    expect(
+      getStageSequencePreviews(design, 'verification')[0]?.label,
+    ).toContain('Requested');
   });
 
   it('builds a junction-oriented summary', () => {

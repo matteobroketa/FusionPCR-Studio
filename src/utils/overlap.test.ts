@@ -13,7 +13,10 @@ describe('overlap criteria', () => {
 
   it('fails noncompliant overlaps by the specific documented criterion', () => {
     const tooShort = evaluateOverlapCriteria('ATGCATGCATGCATGCATGCATG', 64);
-    const lowTm = evaluateOverlapCriteria('ATGCATGCATGCATGCATGCATGC', OVERLAP_CRITERIA.minTmC - 1);
+    const lowTm = evaluateOverlapCriteria(
+      'ATGCATGCATGCATGCATGCATGC',
+      OVERLAP_CRITERIA.minTmC - 1,
+    );
     const gcExtreme = evaluateOverlapCriteria('GCGCGCGCGCGCGCGCGCGCGCGC', 64);
     const homopolymer = evaluateOverlapCriteria('AAAAATGCATGCATGCATGCATGC', 64);
 

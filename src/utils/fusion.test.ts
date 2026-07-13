@@ -58,10 +58,22 @@ type ProductReconstructionFixture = {
 };
 
 const productReconstructionFixtures = JSON.parse(
-  readFileSync(path.resolve(process.cwd(), 'test-data/reference/product-reconstruction.json'), 'utf8'),
+  readFileSync(
+    path.resolve(
+      process.cwd(),
+      'test-data/reference/product-reconstruction.json',
+    ),
+    'utf8',
+  ),
 ) as ProductReconstructionFixture;
 
-function makeFragment(label: string, sequence: string, start = 1, end = sequence.length, topology: FragmentInput['topology'] = 'linear'): FragmentInput {
+function makeFragment(
+  label: string,
+  sequence: string,
+  start = 1,
+  end = sequence.length,
+  topology: FragmentInput['topology'] = 'linear',
+): FragmentInput {
   return {
     label,
     sequence,
@@ -110,9 +122,13 @@ describe('fusion design engine', () => {
     expect(design.stageAProduct.endsWith(design.overlapSequence)).toBe(true);
     expect(design.stageBProduct.startsWith(design.overlapSequence)).toBe(true);
     expect(design.finalProductVerified).toBe(true);
-    expect(design.finalProduct).toBe(`${design.selectedA}${design.insertSequence}${design.selectedB}`);
+    expect(design.finalProduct).toBe(
+      `${design.selectedA}${design.insertSequence}${design.selectedB}`,
+    );
     expect(design.reactions).toHaveLength(3);
-    expect(design.primerPairInteractions.some((pair) => pair.intended)).toBe(true);
+    expect(design.primerPairInteractions.some((pair) => pair.intended)).toBe(
+      true,
+    );
     expect(design.qualityScore).toBeGreaterThan(0);
     expect(design.alternativeDesigns.length).toBeGreaterThan(0);
   });
@@ -140,14 +156,28 @@ describe('fusion design engine', () => {
       polymeraseId: 'q5',
       insertSequence: 'TTAA',
       notes: '',
-      fragmentA: makeFragment('Circular A', 'ATGCCGTTAACCGGTTACCGGATGCCGTTA', 13, 6, 'circular'),
-      fragmentB: makeFragment('Circular B', 'GGTACCATGGAACCGGTACCGGTACCATGG', 12, 5, 'circular'),
+      fragmentA: makeFragment(
+        'Circular A',
+        'ATGCCGTTAACCGGTTACCGGATGCCGTTA',
+        13,
+        6,
+        'circular',
+      ),
+      fragmentB: makeFragment(
+        'Circular B',
+        'GGTACCATGGAACCGGTACCGGTACCATGG',
+        12,
+        5,
+        'circular',
+      ),
     });
 
     expect(design.issues).toEqual([]);
     expect(design.selectedA).toBe('GGTTACCGGATGCCGTTAATGCCG');
     expect(design.selectedB).toBe('ACCGGTACCGGTACCATGGGGTAC');
-    expect(design.finalProduct).toBe('GGTTACCGGATGCCGTTAATGCCGTTAAACCGGTACCGGTACCATGGGGTAC');
+    expect(design.finalProduct).toBe(
+      'GGTTACCGGATGCCGTTAATGCCGTTAAACCGGTACCGGTACCATGGGGTAC',
+    );
     expect(design.finalProductVerified).toBe(true);
     expect(design.project.fragmentA.start).toBe(13);
     expect(design.project.fragmentA.end).toBe(6);
@@ -157,7 +187,9 @@ describe('fusion design engine', () => {
 
   it('matches the product-reconstruction reference fixtures', () => {
     expect(productReconstructionFixtures.fixtureFormatVersion).toBe(1);
-    expect(productReconstructionFixtures.cases.length).toBeGreaterThanOrEqual(12);
+    expect(productReconstructionFixtures.cases.length).toBeGreaterThanOrEqual(
+      12,
+    );
 
     for (const fixture of productReconstructionFixtures.cases) {
       const design = buildFusionDesign({
@@ -191,31 +223,52 @@ describe('fusion design engine', () => {
         expect(design.issues, fixture.name).toEqual([]);
         expect(design.primers.length, fixture.name).toBeGreaterThan(0);
         if (fixture.expected.selectedA !== undefined) {
-          expect(design.selectedA, fixture.name).toBe(fixture.expected.selectedA);
+          expect(design.selectedA, fixture.name).toBe(
+            fixture.expected.selectedA,
+          );
         }
         if (fixture.expected.selectedB !== undefined) {
-          expect(design.selectedB, fixture.name).toBe(fixture.expected.selectedB);
+          expect(design.selectedB, fixture.name).toBe(
+            fixture.expected.selectedB,
+          );
         }
         if (fixture.expected.effectiveSelectedA !== undefined) {
-          expect(design.effectiveSelectedA, fixture.name).toBe(fixture.expected.effectiveSelectedA);
+          expect(design.effectiveSelectedA, fixture.name).toBe(
+            fixture.expected.effectiveSelectedA,
+          );
         }
         if (fixture.expected.effectiveSelectedB !== undefined) {
-          expect(design.effectiveSelectedB, fixture.name).toBe(fixture.expected.effectiveSelectedB);
+          expect(design.effectiveSelectedB, fixture.name).toBe(
+            fixture.expected.effectiveSelectedB,
+          );
         }
         if (fixture.expected.finalProduct !== undefined) {
-          expect(design.finalProduct, fixture.name).toBe(fixture.expected.finalProduct);
+          expect(design.finalProduct, fixture.name).toBe(
+            fixture.expected.finalProduct,
+          );
         }
         if (fixture.expected.finalProductVerified !== undefined) {
-          expect(design.finalProductVerified, fixture.name).toBe(fixture.expected.finalProductVerified);
+          expect(design.finalProductVerified, fixture.name).toBe(
+            fixture.expected.finalProductVerified,
+          );
         }
         if (fixture.expected.proteinFramePreserved !== undefined) {
-          expect(design.proteinValidation?.framePreserved, fixture.name).toBe(fixture.expected.proteinFramePreserved);
+          expect(design.proteinValidation?.framePreserved, fixture.name).toBe(
+            fixture.expected.proteinFramePreserved,
+          );
         }
       } else {
-        expect(design.primers.length, fixture.name).toBe(fixture.expected.primers ?? 0);
-        expect(design.reactions.length, fixture.name).toBe(fixture.expected.reactions ?? 0);
+        expect(design.primers.length, fixture.name).toBe(
+          fixture.expected.primers ?? 0,
+        );
+        expect(design.reactions.length, fixture.name).toBe(
+          fixture.expected.reactions ?? 0,
+        );
         for (const issueFragment of fixture.expected.issuesContain ?? []) {
-          expect(design.issues.some((issue) => issue.includes(issueFragment)), fixture.name).toBe(true);
+          expect(
+            design.issues.some((issue) => issue.includes(issueFragment)),
+            fixture.name,
+          ).toBe(true);
         }
       }
     }
@@ -247,7 +300,11 @@ describe('fusion design engine', () => {
       fragmentB: makeFragment('B', 'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG'),
     });
 
-    expect(oneBaseDesign.issues.some((issue) => issue.includes('minimum primer-body length'))).toBe(true);
+    expect(
+      oneBaseDesign.issues.some((issue) =>
+        issue.includes('minimum primer-body length'),
+      ),
+    ).toBe(true);
     expect(oneBaseDesign.primers).toEqual([]);
     expect(oneBaseDesign.reactions).toEqual([]);
     expect(oneBaseDesign.protocolPlan.reactionRecipes).toEqual([]);
@@ -262,7 +319,11 @@ describe('fusion design engine', () => {
       fragmentB: makeFragment('B', 'GGCAGCGGCGGATCCGATGGTGAGCAAGGGCGAGGAGCTG'),
     });
 
-    expect(shortDesign.issues.some((issue) => issue.includes('minimum primer-body length'))).toBe(true);
+    expect(
+      shortDesign.issues.some((issue) =>
+        issue.includes('minimum primer-body length'),
+      ),
+    ).toBe(true);
     expect(shortDesign.protocolPlan.reactionRecipes).toEqual([]);
   });
 
@@ -287,8 +348,13 @@ describe('fusion design engine', () => {
     expect(design.proteinValidation).not.toBeNull();
     expect(design.effectiveSelectedA.endsWith('TAA')).toBe(true);
     expect(design.effectiveSelectedB.startsWith('ATG')).toBe(true);
-    expect(design.sequenceChangeProposals.map((proposal) => proposal.id)).toEqual(
-      expect.arrayContaining(['remove-upstream-stop', 'remove-downstream-start']),
+    expect(
+      design.sequenceChangeProposals.map((proposal) => proposal.id),
+    ).toEqual(
+      expect.arrayContaining([
+        'remove-upstream-stop',
+        'remove-downstream-start',
+      ]),
     );
 
     const approvedDesign = buildFusionDesign({
@@ -333,7 +399,9 @@ describe('fusion design engine', () => {
     });
 
     expect(design.proteinValidation?.framePreserved).toBe(false);
-    expect(design.warnings.some((warning) => warning.includes('Frameshift'))).toBe(true);
+    expect(
+      design.warnings.some((warning) => warning.includes('Frameshift')),
+    ).toBe(true);
   });
 
   it('can synonymously optimize the junction while preserving the encoded protein', () => {
@@ -356,11 +424,16 @@ describe('fusion design engine', () => {
     });
 
     expect(design.proteinValidation?.synonymousOptimization).not.toBeNull();
-    expect(design.proteinValidation?.synonymousOptimization?.changes.length).toBeGreaterThanOrEqual(0);
+    expect(
+      design.proteinValidation?.synonymousOptimization?.changes.length,
+    ).toBeGreaterThanOrEqual(0);
     expect(design.effectiveSelectedA).toBe(design.selectedA);
     expect(design.effectiveSelectedB).toBe(design.selectedB);
 
-    const acceptedChangeIds = design.proteinValidation?.synonymousOptimization?.changes.slice(0, 1).map((change) => change.id) ?? [];
+    const acceptedChangeIds =
+      design.proteinValidation?.synonymousOptimization?.changes
+        .slice(0, 1)
+        .map((change) => change.id) ?? [];
     const approvedDesign = buildFusionDesign({
       ...baseProject,
       mode: 'protein-fusion',
@@ -383,9 +456,17 @@ describe('fusion design engine', () => {
       fragmentB: makeFragment('B', 'ATGGCTGCTGCTGGTGGTGGTGGTGCTGCT'),
     });
 
-    expect(approvedDesign.proteinValidation?.synonymousOptimization?.changes.some((change) => change.accepted)).toBe(acceptedChangeIds.length > 0);
-    expect(translateSequence(approvedDesign.selectedA, 0).aminoAcids).toBe(translateSequence(approvedDesign.effectiveSelectedA, 0).aminoAcids);
-    expect(translateSequence(approvedDesign.selectedB, 0).aminoAcids).toBe(translateSequence(approvedDesign.effectiveSelectedB, 0).aminoAcids);
+    expect(
+      approvedDesign.proteinValidation?.synonymousOptimization?.changes.some(
+        (change) => change.accepted,
+      ),
+    ).toBe(acceptedChangeIds.length > 0);
+    expect(translateSequence(approvedDesign.selectedA, 0).aminoAcids).toBe(
+      translateSequence(approvedDesign.effectiveSelectedA, 0).aminoAcids,
+    );
+    expect(translateSequence(approvedDesign.selectedB, 0).aminoAcids).toBe(
+      translateSequence(approvedDesign.effectiveSelectedB, 0).aminoAcids,
+    );
   });
 
   it('separates intended amplicons from unintended specificity penalties', () => {
@@ -400,10 +481,28 @@ describe('fusion design engine', () => {
     });
 
     expect(design.intendedAmplicons.length).toBeGreaterThan(0);
-    expect(design.intendedAmplicons.some((amplicon) => amplicon.templateId === 'fragment-a')).toBe(true);
-    expect(design.intendedAmplicons.some((amplicon) => amplicon.templateId === 'fragment-b')).toBe(true);
-    expect(design.intendedAmplicons.some((amplicon) => amplicon.templateId === 'final-product')).toBe(true);
-    expect(design.offTargetAmplicons.every((amplicon) => amplicon.templateId !== 'final-product' || amplicon.length !== design.finalProduct.length)).toBe(true);
+    expect(
+      design.intendedAmplicons.some(
+        (amplicon) => amplicon.templateId === 'fragment-a',
+      ),
+    ).toBe(true);
+    expect(
+      design.intendedAmplicons.some(
+        (amplicon) => amplicon.templateId === 'fragment-b',
+      ),
+    ).toBe(true);
+    expect(
+      design.intendedAmplicons.some(
+        (amplicon) => amplicon.templateId === 'final-product',
+      ),
+    ).toBe(true);
+    expect(
+      design.offTargetAmplicons.every(
+        (amplicon) =>
+          amplicon.templateId !== 'final-product' ||
+          amplicon.length !== design.finalProduct.length,
+      ),
+    ).toBe(true);
   });
 
   it('emits structured review items with the required metadata fields', () => {
@@ -424,16 +523,29 @@ describe('fusion design engine', () => {
       expect(item.title.length).toBeGreaterThan(0);
       expect(item.explanation.length).toBeGreaterThan(0);
       expect(item.recommendedAction.length).toBeGreaterThan(0);
-      expect(['information', 'review', 'warning', 'blocking']).toContain(item.severity);
-      expect(['design', 'sequence', 'junction', 'primer', 'protein', 'protocol']).toContain(item.scope);
+      expect(['information', 'review', 'warning', 'blocking']).toContain(
+        item.severity,
+      );
+      expect([
+        'design',
+        'sequence',
+        'junction',
+        'primer',
+        'protein',
+        'protocol',
+      ]).toContain(item.scope);
     }
   });
 
   it('keeps the supported built-in exact and protein examples within the current review-item limits', () => {
     for (const exampleId of ['exact-fusion', 'protein-fusion'] as const) {
       const design = buildFusionDesign(exampleProjects[exampleId]);
-      const blockingItems = design.reviewItems.filter((item) => item.severity === 'blocking');
-      const actionableItems = design.reviewItems.filter((item) => item.severity === 'review' || item.severity === 'warning');
+      const blockingItems = design.reviewItems.filter(
+        (item) => item.severity === 'blocking',
+      );
+      const actionableItems = design.reviewItems.filter(
+        (item) => item.severity === 'review' || item.severity === 'warning',
+      );
 
       expect(blockingItems, exampleId).toHaveLength(0);
       expect(actionableItems.length, exampleId).toBeLessThanOrEqual(2);

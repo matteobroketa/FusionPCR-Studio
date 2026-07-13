@@ -61,7 +61,8 @@ export function parseFeatureSelection(
       complement,
       wrapsOrigin: false,
       supported: false,
-      reason: 'Only simple interval and two-part circular origin joins are currently selectable.',
+      reason:
+        'Only simple interval and two-part circular origin joins are currently selectable.',
     };
   }
 
@@ -84,7 +85,8 @@ export function parseFeatureSelection(
       complement,
       wrapsOrigin: false,
       supported: false,
-      reason: 'Join locations are currently selectable only on circular templates that cross the origin.',
+      reason:
+        'Join locations are currently selectable only on circular templates that cross the origin.',
     };
   }
 
@@ -108,7 +110,10 @@ export function parseFeatureSelection(
   };
 }
 
-export function describeFeatureSelection(feature: SequenceFeature, topology: SequenceTopology): string {
+export function describeFeatureSelection(
+  feature: SequenceFeature,
+  topology: SequenceTopology,
+): string {
   const parsed = parseFeatureSelection(feature.location, topology);
   if (!parsed) {
     return 'Unsupported feature location.';

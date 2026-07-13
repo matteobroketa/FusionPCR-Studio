@@ -43,14 +43,22 @@ function longestHomopolymerRun(sequence: string): number {
   return best;
 }
 
-export function evaluateOverlapCriteria(sequence: string, tmCelsius: number): OverlapAssessment {
+export function evaluateOverlapCriteria(
+  sequence: string,
+  tmCelsius: number,
+): OverlapAssessment {
   const gcPercent = calculateGcPercentage(sequence);
   const homopolymerRun = longestHomopolymerRun(sequence);
   const finiteTm = Number.isFinite(tmCelsius);
   const criteria = {
-    tm: finiteTm && tmCelsius >= OVERLAP_CRITERIA.minTmC && tmCelsius <= OVERLAP_CRITERIA.maxTmC,
+    tm:
+      finiteTm &&
+      tmCelsius >= OVERLAP_CRITERIA.minTmC &&
+      tmCelsius <= OVERLAP_CRITERIA.maxTmC,
     length: sequence.length >= OVERLAP_CRITERIA.minLengthNt,
-    gc: gcPercent >= OVERLAP_CRITERIA.minGcPercent && gcPercent <= OVERLAP_CRITERIA.maxGcPercent,
+    gc:
+      gcPercent >= OVERLAP_CRITERIA.minGcPercent &&
+      gcPercent <= OVERLAP_CRITERIA.maxGcPercent,
     homopolymer: homopolymerRun <= OVERLAP_CRITERIA.maxHomopolymerRun,
   };
   const passedCount = Object.values(criteria).filter(Boolean).length;

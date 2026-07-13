@@ -1,71 +1,27 @@
 import type { RefObject } from 'react';
 import { SequencePreview } from './designPanels';
 import type { useProjectController } from '../hooks/useProjectController';
-import { CODING_OPTIMIZATION_UI_ENABLED, EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED } from '../utils/feature-flags';
-import { describeFeatureSelection, parseFeatureSelection } from '../utils/features';
-import { createEmptyFragment, polymeraseProfiles, type DesignMode, type FusionDesign, type FusionProjectInput } from '../utils/fusion';
+import {
+  CODING_OPTIMIZATION_UI_ENABLED,
+  EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED,
+} from '../utils/feature-flags';
+import {
+  describeFeatureSelection,
+  parseFeatureSelection,
+} from '../utils/features';
+import {
+  createEmptyFragment,
+  polymeraseProfiles,
+  type DesignMode,
+  type FusionDesign,
+  type FusionProjectInput,
+} from '../utils/fusion';
 import { flipImportedSource, type ImportedSource } from '../utils/import';
 import type { MutationPlan, MutationPlannerMode } from '../utils/mutation';
 
 const PUBLIC_DESIGN_MODES: DesignMode[] = ['exact', 'protein-fusion'];
 
 type ProjectController = ReturnType<typeof useProjectController>;
-type SequenceStepController = Pick<
-  ProjectController,
-  | 'project'
-  | 'sequenceImportText'
-  | 'setSequenceImportText'
-  | 'sequenceImportError'
-  | 'setSequenceImportError'
-  | 'sequenceImportResult'
-  | 'setSequenceImportResult'
-  | 'featureSelectionMessage'
-  | 'activeFragmentKey'
-  | 'setActiveFragmentKey'
-  | 'editPayload'
-  | 'setEditPayload'
-  | 'editPosition'
-  | 'setEditPosition'
-  | 'trimAmount'
-  | 'setTrimAmount'
-  | 'mutationRecipientKey'
-  | 'setMutationRecipientKey'
-  | 'mutationDonorKey'
-  | 'setMutationDonorKey'
-  | 'mutationStart'
-  | 'setMutationStart'
-  | 'mutationEnd'
-  | 'setMutationEnd'
-  | 'mutationCoordinate'
-  | 'setMutationCoordinate'
-  | 'mutationPayloadSource'
-  | 'setMutationPayloadSource'
-  | 'mutationPayloadInput'
-  | 'setMutationPayloadInput'
-  | 'canUndo'
-  | 'canRedo'
-  | 'updateProject'
-  | 'updateFragment'
-  | 'updateFragmentSequence'
-  | 'updateCoding'
-  | 'updateReactionCondition'
-  | 'updateGenomicSpecificity'
-  | 'handleSequenceImportClick'
-  | 'applyFeatureSelection'
-  | 'toggleEditorLock'
-  | 'toggleChangeApproval'
-  | 'toggleSynonymousChangeApproval'
-  | 'reverseComplementFragment'
-  | 'handleTrim'
-  | 'handleExtractSelection'
-  | 'handleDeleteSelection'
-  | 'handleDuplicateSelection'
-  | 'handleReplaceSelection'
-  | 'handleInsertPayload'
-  | 'handleSplitActiveFragment'
-  | 'handleDuplicateSelectionToInsert'
-  | 'parseSequenceImportText'
->;
 
 type SequenceMetrics = {
   length: number;
@@ -90,7 +46,10 @@ type SequenceStepProps = {
   activeFragmentLocked: boolean;
   counterpartFragmentLocked: boolean;
   headingRef?: RefObject<HTMLHeadingElement | null>;
-  onApplyImportedSource: (fragmentKey: 'fragmentA' | 'fragmentB', source: ImportedSource) => void;
+  onApplyImportedSource: (
+    fragmentKey: 'fragmentA' | 'fragmentB',
+    source: ImportedSource,
+  ) => void;
   onApplyFirstTwoImportedSources: () => void;
   onApplyMutationWorkflow: () => void;
 };
@@ -136,7 +95,9 @@ export function SequenceStep({
             <span className="pill pill-watch">Phone review mode</span>
           </div>
 
-          <p className="status-note status-note-alert">Use a tablet or desktop to edit sequence designs.</p>
+          <p className="status-note status-note-alert">
+            Use a tablet or desktop to edit sequence designs.
+          </p>
 
           <div className="metric-grid">
             <div className="metric">
@@ -162,7 +123,10 @@ export function SequenceStep({
               <p className="status-title">Fragment A</p>
               <ul className="status-list">
                 <li>{project.fragmentA.label}</li>
-                <li>Selected range: {project.fragmentA.start}-{project.fragmentA.end}</li>
+                <li>
+                  Selected range: {project.fragmentA.start}-
+                  {project.fragmentA.end}
+                </li>
                 <li>Full length: {fragmentAMetrics.length} bp</li>
                 <li>Selected contribution: {design.selectedA.length} bp</li>
               </ul>
@@ -171,7 +135,10 @@ export function SequenceStep({
               <p className="status-title">Fragment B</p>
               <ul className="status-list">
                 <li>{project.fragmentB.label}</li>
-                <li>Selected range: {project.fragmentB.start}-{project.fragmentB.end}</li>
+                <li>
+                  Selected range: {project.fragmentB.start}-
+                  {project.fragmentB.end}
+                </li>
                 <li>Full length: {fragmentBMetrics.length} bp</li>
                 <li>Selected contribution: {design.selectedB.length} bp</li>
               </ul>
@@ -179,8 +146,14 @@ export function SequenceStep({
           </div>
 
           <div className="workspace-two-column">
-            <SequencePreview title={`${project.fragmentA.label} selected slice`} sequence={design.selectedA} />
-            <SequencePreview title={`${project.fragmentB.label} selected slice`} sequence={design.selectedB} />
+            <SequencePreview
+              title={`${project.fragmentA.label} selected slice`}
+              sequence={design.selectedA}
+            />
+            <SequencePreview
+              title={`${project.fragmentB.label} selected slice`}
+              sequence={design.selectedB}
+            />
           </div>
         </section>
       </div>
@@ -197,7 +170,9 @@ export function SequenceStep({
               Sequences and construct definition
             </h2>
           </div>
-          <span className="pill pill-muted">{selectedPublicExampleDescription}</span>
+          <span className="pill pill-muted">
+            {selectedPublicExampleDescription}
+          </span>
         </div>
 
         <div className="field-grid">
@@ -207,7 +182,12 @@ export function SequenceStep({
               className="text-input"
               value={project.polymeraseId}
               disabled={isPolymeraseLocked}
-              onChange={(event) => controller.updateProject('polymeraseId', event.target.value as FusionProjectInput['polymeraseId'])}
+              onChange={(event) =>
+                controller.updateProject(
+                  'polymeraseId',
+                  event.target.value as FusionProjectInput['polymeraseId'],
+                )
+              }
             >
               {Object.values(polymeraseProfiles).map((profile) => (
                 <option key={profile.id} value={profile.id}>
@@ -255,11 +235,15 @@ export function SequenceStep({
             className="sequence-input short-input"
             value={project.insertSequence}
             disabled={isInsertLocked}
-            onChange={(event) => controller.updateProject('insertSequence', event.target.value)}
+            onChange={(event) =>
+              controller.updateProject('insertSequence', event.target.value)
+            }
             placeholder="Optional inserted sequence between the selected fragment ranges"
             spellCheck={false}
           />
-          <span className="field-helper">Leave empty for an exact fusion. Use DNA sequence only.</span>
+          <span className="field-helper">
+            Leave empty for an exact fusion. Use DNA sequence only.
+          </span>
         </label>
 
         <label className="field-card">
@@ -268,7 +252,9 @@ export function SequenceStep({
             aria-label="Project notes"
             className="sequence-input short-input"
             value={project.notes}
-            onChange={(event) => controller.updateProject('notes', event.target.value)}
+            onChange={(event) =>
+              controller.updateProject('notes', event.target.value)
+            }
             placeholder="Optional wet-lab notes, template source, or cloning context"
           />
         </label>
@@ -288,7 +274,9 @@ export function SequenceStep({
             aria-label="Import text"
             className="sequence-input"
             value={controller.sequenceImportText}
-            onChange={(event) => controller.setSequenceImportText(event.target.value)}
+            onChange={(event) =>
+              controller.setSequenceImportText(event.target.value)
+            }
             placeholder="Paste plain DNA, FASTA, or a GenBank record here"
             spellCheck={false}
           />
@@ -298,18 +286,27 @@ export function SequenceStep({
           <button
             type="button"
             className="button button-primary"
-            onClick={() => controller.parseSequenceImportText(controller.sequenceImportText)}
+            onClick={() =>
+              controller.parseSequenceImportText(controller.sequenceImportText)
+            }
           >
             Parse import text
           </button>
-          <button type="button" className="button button-secondary" onClick={controller.handleSequenceImportClick}>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={controller.handleSequenceImportClick}
+          >
             Load sequence file
           </button>
           <button
             type="button"
             className="button button-secondary"
             onClick={onApplyFirstTwoImportedSources}
-            disabled={!controller.sequenceImportResult?.records.length || (isFragmentALocked && isFragmentBLocked)}
+            disabled={
+              !controller.sequenceImportResult?.records.length ||
+              (isFragmentALocked && isFragmentBLocked)
+            }
           >
             Apply first two records
           </button>
@@ -326,11 +323,16 @@ export function SequenceStep({
           </button>
         </div>
 
-        {controller.sequenceImportError ? <p className="status-note status-note-alert">{controller.sequenceImportError}</p> : null}
+        {controller.sequenceImportError ? (
+          <p className="status-note status-note-alert">
+            {controller.sequenceImportError}
+          </p>
+        ) : null}
         {controller.sequenceImportResult ? (
           <div className="import-result-stack">
             <p className="status-note status-note-success">
-              Parsed {controller.sequenceImportResult.records.length} record(s) as {controller.sequenceImportResult.format}.
+              Parsed {controller.sequenceImportResult.records.length} record(s)
+              as {controller.sequenceImportResult.format}.
             </p>
             {controller.sequenceImportResult.warnings.length ? (
               <div className="status-block">
@@ -344,12 +346,16 @@ export function SequenceStep({
             ) : null}
             <div className="import-record-grid">
               {controller.sequenceImportResult.records.map((record) => (
-                <article key={`${record.name}-${record.checksum}`} className="primer-card">
+                <article
+                  key={`${record.name}-${record.checksum}`}
+                  className="primer-card"
+                >
                   <div className="panel-header">
                     <div>
                       <h3>{record.name}</h3>
                       <p>
-                        {record.format} | {record.topology} | {record.sequence.length} bp
+                        {record.format} | {record.topology} |{' '}
+                        {record.sequence.length} bp
                       </p>
                     </div>
                     <span className="pill pill-muted">{record.checksum}</span>
@@ -357,14 +363,18 @@ export function SequenceStep({
                   <div className="metric-grid compact-grid">
                     <div className="metric">
                       <span>Ambiguous bases</span>
-                      <strong>{record.ambiguousBases.join(', ') || 'None'}</strong>
+                      <strong>
+                        {record.ambiguousBases.join(', ') || 'None'}
+                      </strong>
                     </div>
                     <div className="metric">
                       <span>Features</span>
                       <strong>{record.features.length}</strong>
                     </div>
                   </div>
-                  <code className="sequence-preview compact-preview">{record.sequence}</code>
+                  <code className="sequence-preview compact-preview">
+                    {record.sequence}
+                  </code>
                   <div className="action-row">
                     <button
                       type="button"
@@ -390,7 +400,11 @@ export function SequenceStep({
                           current
                             ? {
                                 ...current,
-                                records: current.records.map((item) => (item.checksum === record.checksum ? flipImportedSource(item) : item)),
+                                records: current.records.map((item) =>
+                                  item.checksum === record.checksum
+                                    ? flipImportedSource(item)
+                                    : item,
+                                ),
                               }
                             : current,
                         )
@@ -406,7 +420,9 @@ export function SequenceStep({
         ) : null}
       </section>
 
-      {EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED && mutationMode && !isPublicDesignMode(project.mode) ? (
+      {EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED &&
+      mutationMode &&
+      !isPublicDesignMode(project.mode) ? (
         <section className="panel workspace-section mutation-panel">
           <div className="panel-header">
             <div>
@@ -423,10 +439,13 @@ export function SequenceStep({
                 className="text-input"
                 value={controller.mutationRecipientKey}
                 onChange={(event) => {
-                  const nextRecipient = event.target.value as 'fragmentA' | 'fragmentB';
+                  const nextRecipient = event.target.value as
+                    'fragmentA' | 'fragmentB';
                   controller.setMutationRecipientKey(nextRecipient);
                   if (nextRecipient === controller.mutationDonorKey) {
-                    controller.setMutationDonorKey(nextRecipient === 'fragmentA' ? 'fragmentB' : 'fragmentA');
+                    controller.setMutationDonorKey(
+                      nextRecipient === 'fragmentA' ? 'fragmentB' : 'fragmentA',
+                    );
                   }
                 }}
               >
@@ -441,7 +460,12 @@ export function SequenceStep({
                 className="text-input"
                 value={controller.mutationPayloadSource}
                 disabled={mutationMode === 'deletion'}
-                onChange={(event) => controller.setMutationPayloadSource(event.target.value as ProjectController['mutationPayloadSource'])}
+                onChange={(event) =>
+                  controller.setMutationPayloadSource(
+                    event.target
+                      .value as ProjectController['mutationPayloadSource'],
+                  )
+                }
               >
                 <option value="manual">Manual payload</option>
                 <option value="donor-selection">Donor selected range</option>
@@ -458,7 +482,11 @@ export function SequenceStep({
                   min={1}
                   step="1"
                   value={controller.mutationCoordinate}
-                  onChange={(event) => controller.setMutationCoordinate(Math.max(1, Number(event.target.value) || 1))}
+                  onChange={(event) =>
+                    controller.setMutationCoordinate(
+                      Math.max(1, Number(event.target.value) || 1),
+                    )
+                  }
                 />
               </label>
             ) : (
@@ -471,7 +499,11 @@ export function SequenceStep({
                     min={1}
                     step="1"
                     value={controller.mutationStart}
-                    onChange={(event) => controller.setMutationStart(Math.max(1, Number(event.target.value) || 1))}
+                    onChange={(event) =>
+                      controller.setMutationStart(
+                        Math.max(1, Number(event.target.value) || 1),
+                      )
+                    }
                   />
                 </label>
                 <label className="field-card">
@@ -482,46 +514,74 @@ export function SequenceStep({
                     min={1}
                     step="1"
                     value={controller.mutationEnd}
-                    onChange={(event) => controller.setMutationEnd(Math.max(1, Number(event.target.value) || 1))}
+                    onChange={(event) =>
+                      controller.setMutationEnd(
+                        Math.max(1, Number(event.target.value) || 1),
+                      )
+                    }
                   />
                 </label>
               </>
             )}
           </div>
 
-          {controller.mutationPayloadSource === 'donor-selection' && mutationMode !== 'deletion' ? (
+          {controller.mutationPayloadSource === 'donor-selection' &&
+          mutationMode !== 'deletion' ? (
             <div className="field-grid">
               <label className="field-card">
                 <span className="field-label">Donor fragment</span>
                 <select
                   className="text-input"
                   value={controller.mutationDonorKey}
-                  onChange={(event) => controller.setMutationDonorKey(event.target.value as 'fragmentA' | 'fragmentB')}
+                  onChange={(event) =>
+                    controller.setMutationDonorKey(
+                      event.target.value as 'fragmentA' | 'fragmentB',
+                    )
+                  }
                 >
-                  <option value="fragmentA" disabled={controller.mutationRecipientKey === 'fragmentA'}>
+                  <option
+                    value="fragmentA"
+                    disabled={controller.mutationRecipientKey === 'fragmentA'}
+                  >
                     Fragment A
                   </option>
-                  <option value="fragmentB" disabled={controller.mutationRecipientKey === 'fragmentB'}>
+                  <option
+                    value="fragmentB"
+                    disabled={controller.mutationRecipientKey === 'fragmentB'}
+                  >
                     Fragment B
                   </option>
                 </select>
               </label>
               <div className="field-card">
                 <span className="field-label">Donor selected range</span>
-                <code className="inline-sequence-preview">{mutationPayload || 'No donor selection available.'}</code>
+                <code className="inline-sequence-preview">
+                  {mutationPayload || 'No donor selection available.'}
+                </code>
               </div>
             </div>
           ) : null}
 
-          {controller.mutationPayloadSource === 'manual' && mutationMode !== 'deletion' ? (
+          {controller.mutationPayloadSource === 'manual' &&
+          mutationMode !== 'deletion' ? (
             <label className="field-card">
-              <span className="field-label">{mutationMode === 'domain-swap' ? 'Swap payload' : 'Mutation payload'}</span>
+              <span className="field-label">
+                {mutationMode === 'domain-swap'
+                  ? 'Swap payload'
+                  : 'Mutation payload'}
+              </span>
               <textarea
                 aria-label="Mutation payload"
                 className="sequence-input short-input"
                 value={controller.mutationPayloadInput}
-                onChange={(event) => controller.setMutationPayloadInput(event.target.value)}
-                placeholder={mutationMode === 'insertion' ? 'Inserted DNA' : 'Replacement DNA'}
+                onChange={(event) =>
+                  controller.setMutationPayloadInput(event.target.value)
+                }
+                placeholder={
+                  mutationMode === 'insertion'
+                    ? 'Inserted DNA'
+                    : 'Replacement DNA'
+                }
                 spellCheck={false}
               />
             </label>
@@ -533,19 +593,38 @@ export function SequenceStep({
               <>
                 <ul className="status-list">
                   <li>{mutationPreview.summary}</li>
-                  <li>Left flank: {mutationPreview.leftFragment.sequence.length} bp</li>
-                  <li>Removed region: {mutationPreview.removedSequence.length} bp</li>
+                  <li>
+                    Left flank: {mutationPreview.leftFragment.sequence.length}{' '}
+                    bp
+                  </li>
+                  <li>
+                    Removed region: {mutationPreview.removedSequence.length} bp
+                  </li>
                   <li>Payload: {mutationPreview.insertSequence.length} bp</li>
-                  <li>Right flank: {mutationPreview.rightFragment.sequence.length} bp</li>
+                  <li>
+                    Right flank: {mutationPreview.rightFragment.sequence.length}{' '}
+                    bp
+                  </li>
                 </ul>
-                <SequencePreview title="Planned target product" sequence={mutationPreview.targetSequence} />
+                <SequencePreview
+                  title="Planned target product"
+                  sequence={mutationPreview.targetSequence}
+                />
               </>
             ) : (
-              <p>Fill in valid recipient coordinates and payload settings to preview the planned construct.</p>
+              <p>
+                Fill in valid recipient coordinates and payload settings to
+                preview the planned construct.
+              </p>
             )}
           </div>
 
-          <button type="button" className="button button-secondary" onClick={onApplyMutationWorkflow} disabled={!mutationPreview}>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={onApplyMutationWorkflow}
+            disabled={!mutationPreview}
+          >
             Apply mutation workflow
           </button>
         </section>
@@ -558,7 +637,9 @@ export function SequenceStep({
               <p className="eyebrow">Fragment A</p>
               <h2>{project.fragmentA.label}</h2>
             </div>
-            <span className="pill pill-muted">{fragmentAMetrics.length} bp</span>
+            <span className="pill pill-muted">
+              {fragmentAMetrics.length} bp
+            </span>
           </div>
 
           <div className="field-grid">
@@ -568,12 +649,22 @@ export function SequenceStep({
                 className="text-input"
                 value={project.fragmentA.label}
                 disabled={isFragmentALocked}
-                onChange={(event) => controller.updateFragment('fragmentA', 'label', event.target.value)}
+                onChange={(event) =>
+                  controller.updateFragment(
+                    'fragmentA',
+                    'label',
+                    event.target.value,
+                  )
+                }
               />
             </label>
             <label className="field-card">
               <span className="field-label">GC</span>
-              <input className="text-input" value={`${fragmentAMetrics.gcPercentage.toFixed(1)}%`} readOnly />
+              <input
+                className="text-input"
+                value={`${fragmentAMetrics.gcPercentage.toFixed(1)}%`}
+                readOnly
+              />
             </label>
           </div>
 
@@ -583,7 +674,12 @@ export function SequenceStep({
               className="sequence-input"
               value={project.fragmentA.sequence}
               disabled={isFragmentALocked}
-              onChange={(event) => controller.updateFragmentSequence('fragmentA', event.target.value)}
+              onChange={(event) =>
+                controller.updateFragmentSequence(
+                  'fragmentA',
+                  event.target.value,
+                )
+              }
               placeholder="Paste fragment A DNA sequence"
               spellCheck={false}
             />
@@ -601,7 +697,12 @@ export function SequenceStep({
             <button
               type="button"
               className="button button-secondary"
-              onClick={() => controller.updateProject('fragmentA', createEmptyFragment('Fragment A'))}
+              onClick={() =>
+                controller.updateProject(
+                  'fragmentA',
+                  createEmptyFragment('Fragment A'),
+                )
+              }
               disabled={isFragmentALocked}
             >
               Reset fragment A
@@ -615,8 +716,16 @@ export function SequenceStep({
                 className="text-input"
                 type="number"
                 value={project.fragmentA.start}
-                disabled={isFragmentALocked || project.editorLocks.fragmentABoundaries}
-                onChange={(event) => controller.updateFragment('fragmentA', 'start', Number(event.target.value) || 1)}
+                disabled={
+                  isFragmentALocked || project.editorLocks.fragmentABoundaries
+                }
+                onChange={(event) =>
+                  controller.updateFragment(
+                    'fragmentA',
+                    'start',
+                    Number(event.target.value) || 1,
+                  )
+                }
               />
             </label>
             <label className="field-card">
@@ -625,8 +734,16 @@ export function SequenceStep({
                 className="text-input"
                 type="number"
                 value={project.fragmentA.end}
-                disabled={isFragmentALocked || project.editorLocks.fragmentABoundaries}
-                onChange={(event) => controller.updateFragment('fragmentA', 'end', Number(event.target.value) || 1)}
+                disabled={
+                  isFragmentALocked || project.editorLocks.fragmentABoundaries
+                }
+                onChange={(event) =>
+                  controller.updateFragment(
+                    'fragmentA',
+                    'end',
+                    Number(event.target.value) || 1,
+                  )
+                }
               />
             </label>
           </div>
@@ -635,24 +752,41 @@ export function SequenceStep({
             <div className="status-block">
               <p className="status-title">GenBank features</p>
               <ul className="status-list">
-                {project.fragmentA.features.slice(0, 6).map((feature, index) => {
-                  const selectionSummary = describeFeatureSelection(feature, project.fragmentA.topology);
-                  const parsed = parseFeatureSelection(feature.location, project.fragmentA.topology);
-                  return (
-                    <li key={`${feature.key}-${feature.location}`}>
-                      {feature.label} ({feature.key}) at {feature.location} - {selectionSummary}
-                      <button
-                        type="button"
-                        className="button button-secondary inline-button"
-                        onClick={() => controller.applyFeatureSelection('fragmentA', index)}
-                        disabled={isFragmentALocked || project.editorLocks.fragmentABoundaries || !parsed?.supported}
-                      >
-                        Use feature range
-                      </button>
-                    </li>
-                  );
-                })}
-                {controller.featureSelectionMessage ? <li>{controller.featureSelectionMessage}</li> : null}
+                {project.fragmentA.features
+                  .slice(0, 6)
+                  .map((feature, index) => {
+                    const selectionSummary = describeFeatureSelection(
+                      feature,
+                      project.fragmentA.topology,
+                    );
+                    const parsed = parseFeatureSelection(
+                      feature.location,
+                      project.fragmentA.topology,
+                    );
+                    return (
+                      <li key={`${feature.key}-${feature.location}`}>
+                        {feature.label} ({feature.key}) at {feature.location} -{' '}
+                        {selectionSummary}
+                        <button
+                          type="button"
+                          className="button button-secondary inline-button"
+                          onClick={() =>
+                            controller.applyFeatureSelection('fragmentA', index)
+                          }
+                          disabled={
+                            isFragmentALocked ||
+                            project.editorLocks.fragmentABoundaries ||
+                            !parsed?.supported
+                          }
+                        >
+                          Use feature range
+                        </button>
+                      </li>
+                    );
+                  })}
+                {controller.featureSelectionMessage ? (
+                  <li>{controller.featureSelectionMessage}</li>
+                ) : null}
               </ul>
             </div>
           ) : null}
@@ -664,7 +798,9 @@ export function SequenceStep({
               <p className="eyebrow">Fragment B</p>
               <h2>{project.fragmentB.label}</h2>
             </div>
-            <span className="pill pill-muted">{fragmentBMetrics.length} bp</span>
+            <span className="pill pill-muted">
+              {fragmentBMetrics.length} bp
+            </span>
           </div>
 
           <div className="field-grid">
@@ -674,12 +810,22 @@ export function SequenceStep({
                 className="text-input"
                 value={project.fragmentB.label}
                 disabled={isFragmentBLocked}
-                onChange={(event) => controller.updateFragment('fragmentB', 'label', event.target.value)}
+                onChange={(event) =>
+                  controller.updateFragment(
+                    'fragmentB',
+                    'label',
+                    event.target.value,
+                  )
+                }
               />
             </label>
             <label className="field-card">
               <span className="field-label">GC</span>
-              <input className="text-input" value={`${fragmentBMetrics.gcPercentage.toFixed(1)}%`} readOnly />
+              <input
+                className="text-input"
+                value={`${fragmentBMetrics.gcPercentage.toFixed(1)}%`}
+                readOnly
+              />
             </label>
           </div>
 
@@ -689,7 +835,12 @@ export function SequenceStep({
               className="sequence-input"
               value={project.fragmentB.sequence}
               disabled={isFragmentBLocked}
-              onChange={(event) => controller.updateFragmentSequence('fragmentB', event.target.value)}
+              onChange={(event) =>
+                controller.updateFragmentSequence(
+                  'fragmentB',
+                  event.target.value,
+                )
+              }
               placeholder="Paste fragment B DNA sequence"
               spellCheck={false}
             />
@@ -707,7 +858,12 @@ export function SequenceStep({
             <button
               type="button"
               className="button button-secondary"
-              onClick={() => controller.updateProject('fragmentB', createEmptyFragment('Fragment B'))}
+              onClick={() =>
+                controller.updateProject(
+                  'fragmentB',
+                  createEmptyFragment('Fragment B'),
+                )
+              }
               disabled={isFragmentBLocked}
             >
               Reset fragment B
@@ -721,8 +877,16 @@ export function SequenceStep({
                 className="text-input"
                 type="number"
                 value={project.fragmentB.start}
-                disabled={isFragmentBLocked || project.editorLocks.fragmentBBoundaries}
-                onChange={(event) => controller.updateFragment('fragmentB', 'start', Number(event.target.value) || 1)}
+                disabled={
+                  isFragmentBLocked || project.editorLocks.fragmentBBoundaries
+                }
+                onChange={(event) =>
+                  controller.updateFragment(
+                    'fragmentB',
+                    'start',
+                    Number(event.target.value) || 1,
+                  )
+                }
               />
             </label>
             <label className="field-card">
@@ -731,8 +895,16 @@ export function SequenceStep({
                 className="text-input"
                 type="number"
                 value={project.fragmentB.end}
-                disabled={isFragmentBLocked || project.editorLocks.fragmentBBoundaries}
-                onChange={(event) => controller.updateFragment('fragmentB', 'end', Number(event.target.value) || 1)}
+                disabled={
+                  isFragmentBLocked || project.editorLocks.fragmentBBoundaries
+                }
+                onChange={(event) =>
+                  controller.updateFragment(
+                    'fragmentB',
+                    'end',
+                    Number(event.target.value) || 1,
+                  )
+                }
               />
             </label>
           </div>
@@ -741,24 +913,41 @@ export function SequenceStep({
             <div className="status-block">
               <p className="status-title">GenBank features</p>
               <ul className="status-list">
-                {project.fragmentB.features.slice(0, 6).map((feature, index) => {
-                  const selectionSummary = describeFeatureSelection(feature, project.fragmentB.topology);
-                  const parsed = parseFeatureSelection(feature.location, project.fragmentB.topology);
-                  return (
-                    <li key={`${feature.key}-${feature.location}`}>
-                      {feature.label} ({feature.key}) at {feature.location} - {selectionSummary}
-                      <button
-                        type="button"
-                        className="button button-secondary inline-button"
-                        onClick={() => controller.applyFeatureSelection('fragmentB', index)}
-                        disabled={isFragmentBLocked || project.editorLocks.fragmentBBoundaries || !parsed?.supported}
-                      >
-                        Use feature range
-                      </button>
-                    </li>
-                  );
-                })}
-                {controller.featureSelectionMessage ? <li>{controller.featureSelectionMessage}</li> : null}
+                {project.fragmentB.features
+                  .slice(0, 6)
+                  .map((feature, index) => {
+                    const selectionSummary = describeFeatureSelection(
+                      feature,
+                      project.fragmentB.topology,
+                    );
+                    const parsed = parseFeatureSelection(
+                      feature.location,
+                      project.fragmentB.topology,
+                    );
+                    return (
+                      <li key={`${feature.key}-${feature.location}`}>
+                        {feature.label} ({feature.key}) at {feature.location} -{' '}
+                        {selectionSummary}
+                        <button
+                          type="button"
+                          className="button button-secondary inline-button"
+                          onClick={() =>
+                            controller.applyFeatureSelection('fragmentB', index)
+                          }
+                          disabled={
+                            isFragmentBLocked ||
+                            project.editorLocks.fragmentBBoundaries ||
+                            !parsed?.supported
+                          }
+                        >
+                          Use feature range
+                        </button>
+                      </li>
+                    );
+                  })}
+                {controller.featureSelectionMessage ? (
+                  <li>{controller.featureSelectionMessage}</li>
+                ) : null}
               </ul>
             </div>
           ) : null}
@@ -769,149 +958,214 @@ export function SequenceStep({
         <summary>Advanced settings</summary>
 
         {EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED ? (
-        <section className="editor-panel advanced-section">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Editing workspace</p>
-              <h3>Explicit reversible fragment operations</h3>
+          <section className="editor-panel advanced-section">
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">Editing workspace</p>
+                <h3>Explicit reversible fragment operations</h3>
+              </div>
+              <span className="pill pill-muted">
+                {controller.canUndo || controller.canRedo
+                  ? 'Undo history available'
+                  : 'No undo history yet'}
+              </span>
             </div>
-            <span className="pill pill-muted">{controller.canUndo || controller.canRedo ? 'Undo history available' : 'No undo history yet'}</span>
-          </div>
 
-          <div className="field-grid">
-            <label className="field-card">
-              <span className="field-label">Active fragment</span>
-              <select
-                className="text-input"
-                value={controller.activeFragmentKey}
-                onChange={(event) => controller.setActiveFragmentKey(event.target.value as 'fragmentA' | 'fragmentB')}
+            <div className="field-grid">
+              <label className="field-card">
+                <span className="field-label">Active fragment</span>
+                <select
+                  className="text-input"
+                  value={controller.activeFragmentKey}
+                  onChange={(event) =>
+                    controller.setActiveFragmentKey(
+                      event.target.value as 'fragmentA' | 'fragmentB',
+                    )
+                  }
+                >
+                  <option value="fragmentA">Fragment A</option>
+                  <option value="fragmentB">Fragment B</option>
+                </select>
+              </label>
+              <label className="field-card">
+                <span className="field-label">Trim amount</span>
+                <input
+                  className="text-input"
+                  type="number"
+                  min={1}
+                  step="1"
+                  value={controller.trimAmount}
+                  onChange={(event) =>
+                    controller.setTrimAmount(
+                      Math.max(1, Number(event.target.value) || 1),
+                    )
+                  }
+                />
+              </label>
+              <label className="field-card">
+                <span className="field-label">Edit position</span>
+                <input
+                  className="text-input"
+                  type="number"
+                  min={1}
+                  step="1"
+                  value={controller.editPosition}
+                  onChange={(event) =>
+                    controller.setEditPosition(
+                      Math.max(1, Number(event.target.value) || 1),
+                    )
+                  }
+                />
+              </label>
+              <label className="field-card">
+                <span className="field-label">Payload / linker / tag</span>
+                <input
+                  className="text-input"
+                  value={controller.editPayload}
+                  onChange={(event) =>
+                    controller.setEditPayload(event.target.value)
+                  }
+                  placeholder="DNA payload for insert or replace"
+                />
+              </label>
+            </div>
+
+            <div className="toggle-grid">
+              <label className="toggle-card">
+                <input
+                  type="checkbox"
+                  checked={project.editorLocks.fragmentA}
+                  onChange={() => controller.toggleEditorLock('fragmentA')}
+                />
+                <span>Lock fragment A</span>
+              </label>
+              <label className="toggle-card">
+                <input
+                  type="checkbox"
+                  checked={project.editorLocks.fragmentB}
+                  onChange={() => controller.toggleEditorLock('fragmentB')}
+                />
+                <span>Lock fragment B</span>
+              </label>
+              <label className="toggle-card">
+                <input
+                  type="checkbox"
+                  checked={project.editorLocks.fragmentABoundaries}
+                  onChange={() =>
+                    controller.toggleEditorLock('fragmentABoundaries')
+                  }
+                />
+                <span>Lock A boundaries</span>
+              </label>
+              <label className="toggle-card">
+                <input
+                  type="checkbox"
+                  checked={project.editorLocks.fragmentBBoundaries}
+                  onChange={() =>
+                    controller.toggleEditorLock('fragmentBBoundaries')
+                  }
+                />
+                <span>Lock B boundaries</span>
+              </label>
+              <label className="toggle-card">
+                <input
+                  type="checkbox"
+                  checked={project.editorLocks.insertSequence}
+                  onChange={() => controller.toggleEditorLock('insertSequence')}
+                />
+                <span>Lock inserted sequence</span>
+              </label>
+              <label className="toggle-card">
+                <input
+                  type="checkbox"
+                  checked={project.editorLocks.polymeraseSettings}
+                  onChange={() =>
+                    controller.toggleEditorLock('polymeraseSettings')
+                  }
+                />
+                <span>Lock polymerase settings</span>
+              </label>
+            </div>
+
+            <div className="action-row">
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => controller.handleTrim('left')}
+                disabled={activeFragmentLocked}
               >
-                <option value="fragmentA">Fragment A</option>
-                <option value="fragmentB">Fragment B</option>
-              </select>
-            </label>
-            <label className="field-card">
-              <span className="field-label">Trim amount</span>
-              <input
-                className="text-input"
-                type="number"
-                min={1}
-                step="1"
-                value={controller.trimAmount}
-                onChange={(event) => controller.setTrimAmount(Math.max(1, Number(event.target.value) || 1))}
-              />
-            </label>
-            <label className="field-card">
-              <span className="field-label">Edit position</span>
-              <input
-                className="text-input"
-                type="number"
-                min={1}
-                step="1"
-                value={controller.editPosition}
-                onChange={(event) => controller.setEditPosition(Math.max(1, Number(event.target.value) || 1))}
-              />
-            </label>
-            <label className="field-card">
-              <span className="field-label">Payload / linker / tag</span>
-              <input
-                className="text-input"
-                value={controller.editPayload}
-                onChange={(event) => controller.setEditPayload(event.target.value)}
-                placeholder="DNA payload for insert or replace"
-              />
-            </label>
-          </div>
-
-          <div className="toggle-grid">
-            <label className="toggle-card">
-              <input type="checkbox" checked={project.editorLocks.fragmentA} onChange={() => controller.toggleEditorLock('fragmentA')} />
-              <span>Lock fragment A</span>
-            </label>
-            <label className="toggle-card">
-              <input type="checkbox" checked={project.editorLocks.fragmentB} onChange={() => controller.toggleEditorLock('fragmentB')} />
-              <span>Lock fragment B</span>
-            </label>
-            <label className="toggle-card">
-              <input
-                type="checkbox"
-                checked={project.editorLocks.fragmentABoundaries}
-                onChange={() => controller.toggleEditorLock('fragmentABoundaries')}
-              />
-              <span>Lock A boundaries</span>
-            </label>
-            <label className="toggle-card">
-              <input
-                type="checkbox"
-                checked={project.editorLocks.fragmentBBoundaries}
-                onChange={() => controller.toggleEditorLock('fragmentBBoundaries')}
-              />
-              <span>Lock B boundaries</span>
-            </label>
-            <label className="toggle-card">
-              <input type="checkbox" checked={project.editorLocks.insertSequence} onChange={() => controller.toggleEditorLock('insertSequence')} />
-              <span>Lock inserted sequence</span>
-            </label>
-            <label className="toggle-card">
-              <input
-                type="checkbox"
-                checked={project.editorLocks.polymeraseSettings}
-                onChange={() => controller.toggleEditorLock('polymeraseSettings')}
-              />
-              <span>Lock polymerase settings</span>
-            </label>
-          </div>
-
-          <div className="action-row">
-            <button type="button" className="button button-secondary" onClick={() => controller.handleTrim('left')} disabled={activeFragmentLocked}>
-              Trim left
-            </button>
-            <button type="button" className="button button-secondary" onClick={() => controller.handleTrim('right')} disabled={activeFragmentLocked}>
-              Trim right
-            </button>
-            <button type="button" className="button button-secondary" onClick={controller.handleExtractSelection} disabled={activeFragmentLocked}>
-              Extract selection
-            </button>
-            <button type="button" className="button button-secondary" onClick={controller.handleDuplicateSelection} disabled={activeFragmentLocked}>
-              Duplicate selection
-            </button>
-            <button type="button" className="button button-secondary" onClick={controller.handleDeleteSelection} disabled={activeFragmentLocked}>
-              Delete selection
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={controller.handleReplaceSelection}
-              disabled={activeFragmentLocked || !controller.editPayload.trim()}
-            >
-              Replace selection
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={controller.handleInsertPayload}
-              disabled={activeFragmentLocked || !controller.editPayload.trim()}
-            >
-              Insert payload
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={controller.handleSplitActiveFragment}
-              disabled={activeFragmentLocked || counterpartFragmentLocked}
-            >
-              Split to A/B
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={controller.handleDuplicateSelectionToInsert}
-              disabled={isInsertLocked}
-            >
-              Duplicate to insert
-            </button>
-          </div>
-        </section>
+                Trim left
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => controller.handleTrim('right')}
+                disabled={activeFragmentLocked}
+              >
+                Trim right
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={controller.handleExtractSelection}
+                disabled={activeFragmentLocked}
+              >
+                Extract selection
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={controller.handleDuplicateSelection}
+                disabled={activeFragmentLocked}
+              >
+                Duplicate selection
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={controller.handleDeleteSelection}
+                disabled={activeFragmentLocked}
+              >
+                Delete selection
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={controller.handleReplaceSelection}
+                disabled={
+                  activeFragmentLocked || !controller.editPayload.trim()
+                }
+              >
+                Replace selection
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={controller.handleInsertPayload}
+                disabled={
+                  activeFragmentLocked || !controller.editPayload.trim()
+                }
+              >
+                Insert payload
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={controller.handleSplitActiveFragment}
+                disabled={activeFragmentLocked || counterpartFragmentLocked}
+              >
+                Split to A/B
+              </button>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={controller.handleDuplicateSelectionToInsert}
+                disabled={isInsertLocked}
+              >
+                Duplicate to insert
+              </button>
+            </div>
+          </section>
         ) : null}
 
         {project.mode === 'protein-fusion' ? (
@@ -921,8 +1175,12 @@ export function SequenceStep({
                 <p className="eyebrow">Coding intent</p>
                 <h3>Reading-frame checks</h3>
               </div>
-              <span className={`pill ${design.proteinValidation?.framePreserved ? 'pill-success' : 'pill-watch'}`}>
-                {design.proteinValidation?.framePreserved ? 'Frame preserved' : 'Check frame'}
+              <span
+                className={`pill ${design.proteinValidation?.framePreserved ? 'pill-success' : 'pill-watch'}`}
+              >
+                {design.proteinValidation?.framePreserved
+                  ? 'Frame preserved'
+                  : 'Check frame'}
               </span>
             </div>
 
@@ -932,7 +1190,12 @@ export function SequenceStep({
                 <select
                   className="text-input"
                   value={project.coding.upstreamFrame}
-                  onChange={(event) => controller.updateCoding('upstreamFrame', Number(event.target.value) as 0 | 1 | 2)}
+                  onChange={(event) =>
+                    controller.updateCoding(
+                      'upstreamFrame',
+                      Number(event.target.value) as 0 | 1 | 2,
+                    )
+                  }
                 >
                   <option value={0}>0</option>
                   <option value={1}>1</option>
@@ -944,7 +1207,12 @@ export function SequenceStep({
                 <select
                   className="text-input"
                   value={project.coding.downstreamFrame}
-                  onChange={(event) => controller.updateCoding('downstreamFrame', Number(event.target.value) as 0 | 1 | 2)}
+                  onChange={(event) =>
+                    controller.updateCoding(
+                      'downstreamFrame',
+                      Number(event.target.value) as 0 | 1 | 2,
+                    )
+                  }
                 >
                   <option value={0}>0</option>
                   <option value={1}>1</option>
@@ -956,9 +1224,18 @@ export function SequenceStep({
             <div className="status-block">
               <p className="status-title">Protein-fusion checks</p>
               <ul className="status-list">
-                <li>{design.proteinValidation?.frameMessage ?? 'No protein-fusion validation is available for the current design.'}</li>
-                <li>Junction amino-acid window: {design.proteinValidation?.junctionAminoAcids || 'n/a'}</li>
-                <li>Inserted amino acids: {design.proteinValidation?.linkerAminoAcids || 'none'}</li>
+                <li>
+                  {design.proteinValidation?.frameMessage ??
+                    'No protein-fusion validation is available for the current design.'}
+                </li>
+                <li>
+                  Junction amino-acid window:{' '}
+                  {design.proteinValidation?.junctionAminoAcids || 'n/a'}
+                </li>
+                <li>
+                  Inserted amino acids:{' '}
+                  {design.proteinValidation?.linkerAminoAcids || 'none'}
+                </li>
               </ul>
             </div>
 
@@ -989,7 +1266,10 @@ export function SequenceStep({
                 value={project.reactionConditions.monovalentMillimolar}
                 disabled={isPolymeraseLocked}
                 onChange={(event) =>
-                  controller.updateReactionCondition('monovalentMillimolar', Math.max(0, Number(event.target.value) || 0))
+                  controller.updateReactionCondition(
+                    'monovalentMillimolar',
+                    Math.max(0, Number(event.target.value) || 0),
+                  )
                 }
               />
             </label>
@@ -1003,7 +1283,10 @@ export function SequenceStep({
                 value={project.reactionConditions.magnesiumMillimolar}
                 disabled={isPolymeraseLocked}
                 onChange={(event) =>
-                  controller.updateReactionCondition('magnesiumMillimolar', Math.max(0, Number(event.target.value) || 0))
+                  controller.updateReactionCondition(
+                    'magnesiumMillimolar',
+                    Math.max(0, Number(event.target.value) || 0),
+                  )
                 }
               />
             </label>
@@ -1017,7 +1300,10 @@ export function SequenceStep({
                 value={project.reactionConditions.dntpMillimolar}
                 disabled={isPolymeraseLocked}
                 onChange={(event) =>
-                  controller.updateReactionCondition('dntpMillimolar', Math.max(0, Number(event.target.value) || 0))
+                  controller.updateReactionCondition(
+                    'dntpMillimolar',
+                    Math.max(0, Number(event.target.value) || 0),
+                  )
                 }
               />
             </label>
@@ -1031,7 +1317,10 @@ export function SequenceStep({
                 value={project.reactionConditions.oligoNanomolar}
                 disabled={isPolymeraseLocked}
                 onChange={(event) =>
-                  controller.updateReactionCondition('oligoNanomolar', Math.max(0.001, Number(event.target.value) || 0.001))
+                  controller.updateReactionCondition(
+                    'oligoNanomolar',
+                    Math.max(0.001, Number(event.target.value) || 0.001),
+                  )
                 }
               />
             </label>
@@ -1044,7 +1333,12 @@ export function SequenceStep({
                 step="0.1"
                 value={project.reactionConditions.dmsoPercent}
                 disabled={isPolymeraseLocked}
-                onChange={(event) => controller.updateReactionCondition('dmsoPercent', Math.max(0, Number(event.target.value) || 0))}
+                onChange={(event) =>
+                  controller.updateReactionCondition(
+                    'dmsoPercent',
+                    Math.max(0, Number(event.target.value) || 0),
+                  )
+                }
               />
             </label>
             <label className="field-card">
@@ -1056,12 +1350,16 @@ export function SequenceStep({
                 step="0.01"
                 value={project.reactionConditions.dmsoFactor}
                 disabled={isPolymeraseLocked}
-                onChange={(event) => controller.updateReactionCondition('dmsoFactor', Math.max(0, Number(event.target.value) || 0))}
+                onChange={(event) =>
+                  controller.updateReactionCondition(
+                    'dmsoFactor',
+                    Math.max(0, Number(event.target.value) || 0),
+                  )
+                }
               />
             </label>
           </div>
         </section>
-
       </details>
     </div>
   );

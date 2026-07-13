@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { calculateNearestNeighborTm, defaultThermodynamicConditions, divalentToMonovalentEquivalent, isSelfComplementary } from './thermodynamics';
+import {
+  calculateNearestNeighborTm,
+  defaultThermodynamicConditions,
+  divalentToMonovalentEquivalent,
+  isSelfComplementary,
+} from './thermodynamics';
 
 type TmReferenceFixture = {
   fixtureFormatVersion: number;
@@ -42,22 +47,35 @@ type TmReferenceFixture = {
 };
 
 const tmReferenceFixtures = JSON.parse(
-  readFileSync(path.resolve(process.cwd(), 'test-data/reference/tm-reference.json'), 'utf8'),
+  readFileSync(
+    path.resolve(process.cwd(), 'test-data/reference/tm-reference.json'),
+    'utf8',
+  ),
 ) as TmReferenceFixture;
 
 describe('thermodynamics', () => {
   it('ships at least 30 curated primer3-backed Tm fixtures with complete reference metadata', () => {
     expect(tmReferenceFixtures.fixtureFormatVersion).toBe(1);
-    expect(tmReferenceFixtures.generatedBy.referenceToolName).toBe('primer3-py');
-    expect(tmReferenceFixtures.generatedBy.referenceToolVersion.length).toBeGreaterThan(0);
+    expect(tmReferenceFixtures.generatedBy.referenceToolName).toBe(
+      'primer3-py',
+    );
+    expect(
+      tmReferenceFixtures.generatedBy.referenceToolVersion.length,
+    ).toBeGreaterThan(0);
     expect(tmReferenceFixtures.cases.length).toBeGreaterThanOrEqual(30);
 
     for (const fixture of tmReferenceFixtures.cases) {
       expect(fixture.referenceTool.name, fixture.name).toBe('primer3-py');
-      expect(fixture.referenceTool.version, fixture.name).toBe(tmReferenceFixtures.generatedBy.referenceToolVersion);
-      expect(fixture.referenceTool.function, fixture.name).toBe('primer3.bindings.calc_tm');
+      expect(fixture.referenceTool.version, fixture.name).toBe(
+        tmReferenceFixtures.generatedBy.referenceToolVersion,
+      );
+      expect(fixture.referenceTool.function, fixture.name).toBe(
+        'primer3.bindings.calc_tm',
+      );
       expect(fixture.parameters.tm_method, fixture.name).toBe('santalucia');
-      expect(fixture.parameters.salt_corrections_method, fixture.name).toBe('owczarzy');
+      expect(fixture.parameters.salt_corrections_method, fixture.name).toBe(
+        'owczarzy',
+      );
       expect(fixture.toleranceCelsius, fixture.name).toBeGreaterThanOrEqual(0);
       expect(fixture.coverageTags.length, fixture.name).toBeGreaterThan(0);
     }
@@ -75,28 +93,43 @@ describe('thermodynamics', () => {
       });
 
       if (fixture.expected.errorType) {
-        expect(Number.isFinite(result.correctedTmCelsius), fixture.name).toBe(false);
+        expect(Number.isFinite(result.correctedTmCelsius), fixture.name).toBe(
+          false,
+        );
         continue;
       }
 
-      expect(result.selfComplementary, fixture.name).toBe(fixture.expected.selfComplementary);
-      expect(Number.isFinite(result.correctedTmCelsius), fixture.name).toBe(true);
+      expect(result.selfComplementary, fixture.name).toBe(
+        fixture.expected.selfComplementary,
+      );
+      expect(Number.isFinite(result.correctedTmCelsius), fixture.name).toBe(
+        true,
+      );
       expect(
-        Math.abs(result.correctedTmCelsius - (fixture.expected.correctedTmCelsius ?? Number.NaN)),
+        Math.abs(
+          result.correctedTmCelsius -
+            (fixture.expected.correctedTmCelsius ?? Number.NaN),
+        ),
         fixture.name,
       ).toBeLessThanOrEqual(fixture.toleranceCelsius);
     }
   });
 
   it('applies DMSO as a separate correction', () => {
-    const withoutDmso = calculateNearestNeighborTm('ATGACTGACCGTACGT', defaultThermodynamicConditions());
+    const withoutDmso = calculateNearestNeighborTm(
+      'ATGACTGACCGTACGT',
+      defaultThermodynamicConditions(),
+    );
     const withDmso = calculateNearestNeighborTm('ATGACTGACCGTACGT', {
       ...defaultThermodynamicConditions(),
       dmsoPercent: 5,
       dmsoFactor: 0.6,
     });
 
-    expect(withDmso.correctedTmCelsius).toBeCloseTo(withoutDmso.correctedTmCelsius - 3, 6);
+    expect(withDmso.correctedTmCelsius).toBeCloseTo(
+      withoutDmso.correctedTmCelsius - 3,
+      6,
+    );
   });
 
   it('detects self-complementary sequences', () => {

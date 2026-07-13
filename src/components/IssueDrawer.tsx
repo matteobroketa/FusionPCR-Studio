@@ -39,15 +39,26 @@ export function IssueDrawer({ reviewItems, headingRef }: IssueDrawerProps) {
             {actionableItems.length} item(s) need review
           </h2>
         </div>
-        <button type="button" className="button button-secondary" onClick={() => setOpen((current) => !current)} aria-expanded={open}>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => setOpen((current) => !current)}
+          aria-expanded={open}
+        >
           {open ? 'Hide issue list' : 'Show all issues'}
         </button>
       </div>
 
-      <div className="issue-preview-list" role="list" aria-label="Top design issues">
+      <div
+        className="issue-preview-list"
+        role="list"
+        aria-label="Top design issues"
+      >
         {previewItems.map((item) => (
           <div key={item.id} className="issue-preview-item" role="listitem">
-            <span className={`pill ${severityPillClass[item.severity]}`}>{severityLabels[item.severity]}</span>
+            <span className={`pill ${severityPillClass[item.severity]}`}>
+              {severityLabels[item.severity]}
+            </span>
             <strong>{item.title}</strong>
             <p>{item.explanation}</p>
           </div>
@@ -56,30 +67,42 @@ export function IssueDrawer({ reviewItems, headingRef }: IssueDrawerProps) {
 
       {open ? (
         <div className="issue-sections">
-          {(['blocking', 'warning', 'review', 'information'] as const).map((severity) => {
-            const scopedItems = reviewItems.filter((item) => item.severity === severity);
-            if (!scopedItems.length) {
-              return null;
-            }
+          {(['blocking', 'warning', 'review', 'information'] as const).map(
+            (severity) => {
+              const scopedItems = reviewItems.filter(
+                (item) => item.severity === severity,
+              );
+              if (!scopedItems.length) {
+                return null;
+              }
 
-            return (
-              <div key={severity} className="status-block">
-                <p className="status-title">{severityLabels[severity]} items</p>
-                <div className="issue-sections">
-                  {scopedItems.map((item) => (
-                    <div key={item.id} className="issue-preview-item">
-                      <div className="panel-header">
-                        <strong>{item.title}</strong>
-                        <span className={`pill ${severityPillClass[item.severity]}`}>{severityLabels[item.severity]}</span>
+              return (
+                <div key={severity} className="status-block">
+                  <p className="status-title">
+                    {severityLabels[severity]} items
+                  </p>
+                  <div className="issue-sections">
+                    {scopedItems.map((item) => (
+                      <div key={item.id} className="issue-preview-item">
+                        <div className="panel-header">
+                          <strong>{item.title}</strong>
+                          <span
+                            className={`pill ${severityPillClass[item.severity]}`}
+                          >
+                            {severityLabels[item.severity]}
+                          </span>
+                        </div>
+                        <p>{item.explanation}</p>
+                        <p className="field-helper">
+                          Recommended action: {item.recommendedAction}
+                        </p>
                       </div>
-                      <p>{item.explanation}</p>
-                      <p className="field-helper">Recommended action: {item.recommendedAction}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            },
+          )}
         </div>
       ) : null}
     </section>

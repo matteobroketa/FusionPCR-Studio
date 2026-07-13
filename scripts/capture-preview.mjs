@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 
 const baseUrl = process.env.CAPTURE_BASE_URL || 'http://127.0.0.1:4173/';
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const rootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+);
 const screenshotDir = path.join(rootDir, 'docs', 'preview');
 const publicDir = path.join(rootDir, 'public');
 
@@ -15,7 +18,10 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
 
 await page.goto(baseUrl, { waitUntil: 'networkidle' });
-await page.getByText('Exact product verified').waitFor({ state: 'visible' });
+await page.getByRole('button', { name: 'Load exact fusion example' }).click();
+await page
+  .getByText('Sequence reconstruction verified.')
+  .waitFor({ state: 'visible' });
 await page.screenshot({
   path: path.join(screenshotDir, 'app-screenshot.png'),
   fullPage: true,

@@ -1,4 +1,9 @@
-import type { FusionDesign, PrimerDesign, ReviewItem, ReviewSeverity } from './fusion-model';
+import type {
+  FusionDesign,
+  PrimerDesign,
+  ReviewItem,
+  ReviewSeverity,
+} from './fusion-model';
 
 const severityRank: Record<ReviewSeverity, number> = {
   blocking: 0,
@@ -10,11 +15,13 @@ const severityRank: Record<ReviewSeverity, number> = {
 type ReviewItemInput = Omit<ReviewItem, 'id'> & { id?: string };
 
 function sanitizeReviewToken(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'item';
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'item'
+  );
 }
 
 export function createReviewItem(input: ReviewItemInput): ReviewItem {
@@ -47,7 +54,8 @@ export function deduplicateReviewItems(items: ReviewItem[]): ReviewItem[] {
 
 export function sortReviewItems(items: ReviewItem[]): ReviewItem[] {
   return [...items].sort((left, right) => {
-    const severityDelta = severityRank[left.severity] - severityRank[right.severity];
+    const severityDelta =
+      severityRank[left.severity] - severityRank[right.severity];
     if (severityDelta !== 0) {
       return severityDelta;
     }
@@ -74,22 +82,42 @@ export function filterActionableReviewItems(items: ReviewItem[]): ReviewItem[] {
   return items.filter((item) => item.severity !== 'information');
 }
 
-export function countReviewItemsBySeverity(items: ReviewItem[], severity: ReviewSeverity): number {
+export function countReviewItemsBySeverity(
+  items: ReviewItem[],
+  severity: ReviewSeverity,
+): number {
   return items.filter((item) => item.severity === severity).length;
 }
 
-export function getPrimerReviewItems(design: FusionDesign, primerName: string): ReviewItem[] {
-  return design.reviewItems.filter((item) => item.relatedObjectId === primerName);
+export function getPrimerReviewItems(
+  design: FusionDesign,
+  primerName: string,
+): ReviewItem[] {
+  return design.reviewItems.filter(
+    (item) => item.relatedObjectId === primerName,
+  );
 }
 
 export function countPrimerScopedReviewItems(design: FusionDesign): number {
   const primerNames = new Set(design.primers.map((primer) => primer.name));
-  return filterActionableReviewItems(design.reviewItems).filter((item) => item.relatedObjectId !== null && primerNames.has(item.relatedObjectId)).length;
+  return filterActionableReviewItems(design.reviewItems).filter(
+    (item) =>
+      item.relatedObjectId !== null && primerNames.has(item.relatedObjectId),
+  ).length;
 }
 
-export function summarizePrimerReviewStatus(primer: PrimerDesign, reviewItems: ReviewItem[]): { label: string; tone: 'success' | 'watch' | 'alert' } {
-  const relevantItems = reviewItems.filter((item) => item.relatedObjectId === primer.name);
-  if (relevantItems.some((item) => item.severity === 'warning' || item.severity === 'blocking')) {
+export function summarizePrimerReviewStatus(
+  primer: PrimerDesign,
+  reviewItems: ReviewItem[],
+): { label: string; tone: 'success' | 'watch' | 'alert' } {
+  const relevantItems = reviewItems.filter(
+    (item) => item.relatedObjectId === primer.name,
+  );
+  if (
+    relevantItems.some(
+      (item) => item.severity === 'warning' || item.severity === 'blocking',
+    )
+  ) {
     return { label: 'Review', tone: 'alert' };
   }
   if (relevantItems.some((item) => item.severity === 'review')) {

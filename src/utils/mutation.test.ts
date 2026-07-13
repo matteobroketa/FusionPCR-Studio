@@ -1,7 +1,12 @@
 import { checksumSequence, type FragmentInput } from './fusion';
 import { buildMutationPlan, selectedFragmentSequence } from './mutation';
 
-function makeFragment(label: string, sequence: string, start = 1, end = sequence.length): FragmentInput {
+function makeFragment(
+  label: string,
+  sequence: string,
+  start = 1,
+  end = sequence.length,
+): FragmentInput {
   return {
     label,
     sequence,
@@ -19,7 +24,9 @@ function makeFragment(label: string, sequence: string, start = 1, end = sequence
 
 describe('mutation planner', () => {
   it('extracts the selected fragment sequence', () => {
-    expect(selectedFragmentSequence(makeFragment('A', 'AACCGGTT', 3, 6))).toBe('CCGG');
+    expect(selectedFragmentSequence(makeFragment('A', 'AACCGGTT', 3, 6))).toBe(
+      'CCGG',
+    );
   });
 
   it('builds an insertion plan', () => {
@@ -64,7 +71,9 @@ describe('mutation planner', () => {
   });
 
   it('builds a domain-swap plan from donor payload', () => {
-    const donorPayload = selectedFragmentSequence(makeFragment('Donor', 'ATGGCCGGTTAA', 4, 9));
+    const donorPayload = selectedFragmentSequence(
+      makeFragment('Donor', 'ATGGCCGGTTAA', 4, 9),
+    );
     const plan = buildMutationPlan({
       mode: 'domain-swap',
       recipient: makeFragment('Recipient', 'AACCGGTT'),

@@ -8,11 +8,17 @@ import {
   buildProjectJson,
   buildProtocolText,
 } from '../utils/export';
-import { polymeraseProfiles, type FusionDesign, type FusionProjectInput, type ReactionPlan } from '../utils/fusion';
+import {
+  polymeraseProfiles,
+  type FusionDesign,
+  type FusionProjectInput,
+  type ReactionPlan,
+} from '../utils/fusion';
 import { downloadText } from '../utils/project';
 import { getStageSequencePreviews, type WorkflowStage } from '../utils/review';
 
-export type ProtocolResultTab = 'overview' | 'setup' | 'cycling' | 'pipetting' | 'products';
+export type ProtocolResultTab =
+  'overview' | 'setup' | 'cycling' | 'pipetting' | 'products';
 
 type ProjectController = ReturnType<typeof useProjectController>;
 type ProtocolExportStepProps = {
@@ -55,7 +61,9 @@ function ExportArtifactsPanel({
           <p className="eyebrow">Export</p>
           <h2>Public MVP artifacts</h2>
         </div>
-        <span className={`pill ${hasExportableDesign ? 'pill-success' : 'pill-watch'}`}>
+        <span
+          className={`pill ${hasExportableDesign ? 'pill-success' : 'pill-watch'}`}
+        >
           {hasExportableDesign ? 'Export ready' : 'Awaiting runnable design'}
         </span>
       </div>
@@ -64,7 +72,13 @@ function ExportArtifactsPanel({
         <button
           type="button"
           className="button button-primary"
-          onClick={() => downloadText('fusionpcr-primers.csv', buildPrimerCsv(design), 'text/csv')}
+          onClick={() =>
+            downloadText(
+              'fusionpcr-primers.csv',
+              buildPrimerCsv(design),
+              'text/csv',
+            )
+          }
           disabled={!hasExportableDesign}
         >
           Download oligo CSV
@@ -72,7 +86,13 @@ function ExportArtifactsPanel({
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => downloadText('fusionpcr-primers.fasta', buildPrimerFasta(design), 'text/plain')}
+          onClick={() =>
+            downloadText(
+              'fusionpcr-primers.fasta',
+              buildPrimerFasta(design),
+              'text/plain',
+            )
+          }
           disabled={!hasExportableDesign}
         >
           Export primer FASTA
@@ -80,7 +100,13 @@ function ExportArtifactsPanel({
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => downloadText('fusionpcr-final-construct.fasta', buildFinalConstructFasta(design), 'text/plain')}
+          onClick={() =>
+            downloadText(
+              'fusionpcr-final-construct.fasta',
+              buildFinalConstructFasta(design),
+              'text/plain',
+            )
+          }
           disabled={!hasExportableDesign}
         >
           Export final construct FASTA
@@ -88,7 +114,13 @@ function ExportArtifactsPanel({
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => downloadText('fusionpcr-protocol.txt', buildProtocolText(design), 'text/plain')}
+          onClick={() =>
+            downloadText(
+              'fusionpcr-protocol.txt',
+              buildProtocolText(design),
+              'text/plain',
+            )
+          }
           disabled={!hasExportableDesign}
         >
           Export printable protocol
@@ -96,7 +128,13 @@ function ExportArtifactsPanel({
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => downloadText('fusionpcr-project.json', buildProjectJson(project), 'application/json')}
+          onClick={() =>
+            downloadText(
+              'fusionpcr-project.json',
+              buildProjectJson(project),
+              'application/json',
+            )
+          }
           disabled={!hasExportableDesign}
         >
           Export project JSON
@@ -119,7 +157,10 @@ function ExportArtifactsPanel({
             <li>{design.primers.length} primer(s) available</li>
             <li>{design.reactions.length} reaction plan entry(ies)</li>
             <li>Final product length: {design.finalProduct.length} bp</li>
-            <li>Sequence reconstruction verified: {design.finalProductVerified ? 'pass' : 'pending'}</li>
+            <li>
+              Sequence reconstruction verified:{' '}
+              {design.finalProductVerified ? 'pass' : 'pending'}
+            </li>
           </ul>
         </div>
       </div>
@@ -154,7 +195,9 @@ export function ProtocolExportStep({
               Reaction planning and deliverables
             </h2>
           </div>
-          <span className="pill pill-muted">{project.protocolSettings.mixStrategy}</span>
+          <span className="pill pill-muted">
+            {project.protocolSettings.mixStrategy}
+          </span>
         </div>
 
         <div className="result-tabs">
@@ -172,16 +215,19 @@ export function ProtocolExportStep({
 
         {protocolResultTab === 'overview' ? (
           <div className="reaction-stack">
-            {(selectedReactionName ? design.reactions.filter((reaction) => reaction.name === selectedReactionName) : design.reactions).map(
-              (reaction) => (
-                <ReactionCard
-                  key={reaction.name}
-                  reaction={reaction}
-                  selected={activeReactionName === reaction.name}
-                  onSelect={() => onSelectOverviewReaction(reaction.name)}
-                />
-              ),
-            )}
+            {(selectedReactionName
+              ? design.reactions.filter(
+                  (reaction) => reaction.name === selectedReactionName,
+                )
+              : design.reactions
+            ).map((reaction) => (
+              <ReactionCard
+                key={reaction.name}
+                reaction={reaction}
+                selected={activeReactionName === reaction.name}
+                onSelect={() => onSelectOverviewReaction(reaction.name)}
+              />
+            ))}
           </div>
         ) : null}
 
@@ -194,7 +240,12 @@ export function ProtocolExportStep({
                   className="text-input"
                   value={project.polymeraseId}
                   disabled={isPolymeraseLocked}
-                  onChange={(event) => controller.updateProject('polymeraseId', event.target.value as FusionProjectInput['polymeraseId'])}
+                  onChange={(event) =>
+                    controller.updateProject(
+                      'polymeraseId',
+                      event.target.value as FusionProjectInput['polymeraseId'],
+                    )
+                  }
                 >
                   {Object.values(polymeraseProfiles).map((profile) => (
                     <option key={profile.id} value={profile.id}>
@@ -204,7 +255,9 @@ export function ProtocolExportStep({
                 </select>
               </label>
               <label className="field-card">
-                <span className="field-label">Fragment A concentration (ng/uL)</span>
+                <span className="field-label">
+                  Fragment A concentration (ng/uL)
+                </span>
                 <input
                   className="text-input"
                   type="number"
@@ -213,12 +266,17 @@ export function ProtocolExportStep({
                   value={project.protocolSettings.stageAConcentrationNgPerUl}
                   disabled={isPolymeraseLocked}
                   onChange={(event) =>
-                    controller.updateProtocolSetting('stageAConcentrationNgPerUl', Math.max(0.0001, Number(event.target.value) || 0.0001))
+                    controller.updateProtocolSetting(
+                      'stageAConcentrationNgPerUl',
+                      Math.max(0.0001, Number(event.target.value) || 0.0001),
+                    )
                   }
                 />
               </label>
               <label className="field-card">
-                <span className="field-label">Fragment B concentration (ng/uL)</span>
+                <span className="field-label">
+                  Fragment B concentration (ng/uL)
+                </span>
                 <input
                   className="text-input"
                   type="number"
@@ -227,7 +285,10 @@ export function ProtocolExportStep({
                   value={project.protocolSettings.stageBConcentrationNgPerUl}
                   disabled={isPolymeraseLocked}
                   onChange={(event) =>
-                    controller.updateProtocolSetting('stageBConcentrationNgPerUl', Math.max(0.0001, Number(event.target.value) || 0.0001))
+                    controller.updateProtocolSetting(
+                      'stageBConcentrationNgPerUl',
+                      Math.max(0.0001, Number(event.target.value) || 0.0001),
+                    )
                   }
                 />
               </label>
@@ -241,12 +302,20 @@ export function ProtocolExportStep({
                   value={project.protocolSettings.reactionVolumeMicroliters}
                   disabled={isPolymeraseLocked}
                   onChange={(event) =>
-                    controller.updateProtocolSetting('reactionVolumeMicroliters', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                    controller.updateProtocolSetting(
+                      'reactionVolumeMicroliters',
+                      Math.max(
+                        0.000001,
+                        Number(event.target.value) || 0.000001,
+                      ),
+                    )
                   }
                 />
               </label>
               <label className="field-card">
-                <span className="field-label">PCR 1 reactions per fragment</span>
+                <span className="field-label">
+                  PCR 1 reactions per fragment
+                </span>
                 <input
                   className="text-input"
                   type="number"
@@ -255,7 +324,10 @@ export function ProtocolExportStep({
                   value={project.protocolSettings.stage1ReactionCountPerProduct}
                   disabled={isPolymeraseLocked}
                   onChange={(event) =>
-                    controller.updateProtocolSetting('stage1ReactionCountPerProduct', Math.max(1, Number(event.target.value) || 1))
+                    controller.updateProtocolSetting(
+                      'stage1ReactionCountPerProduct',
+                      Math.max(1, Number(event.target.value) || 1),
+                    )
                   }
                 />
               </label>
@@ -268,7 +340,12 @@ export function ProtocolExportStep({
                   step="1"
                   value={project.protocolSettings.finalReactionCount}
                   disabled={isPolymeraseLocked}
-                  onChange={(event) => controller.updateProtocolSetting('finalReactionCount', Math.max(1, Number(event.target.value) || 1))}
+                  onChange={(event) =>
+                    controller.updateProtocolSetting(
+                      'finalReactionCount',
+                      Math.max(1, Number(event.target.value) || 1),
+                    )
+                  }
                 />
               </label>
             </div>
@@ -287,7 +364,13 @@ export function ProtocolExportStep({
                       value={project.protocolSettings.totalTemplatePmol}
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
-                        controller.updateProtocolSetting('totalTemplatePmol', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                        controller.updateProtocolSetting(
+                          'totalTemplatePmol',
+                          Math.max(
+                            0.000001,
+                            Number(event.target.value) || 0.000001,
+                          ),
+                        )
                       }
                     />
                   </label>
@@ -298,7 +381,11 @@ export function ProtocolExportStep({
                       value={project.protocolSettings.mixStrategy}
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
-                        controller.updateProtocolSetting('mixStrategy', event.target.value as FusionProjectInput['protocolSettings']['mixStrategy'])
+                        controller.updateProtocolSetting(
+                          'mixStrategy',
+                          event.target
+                            .value as FusionProjectInput['protocolSettings']['mixStrategy'],
+                        )
                       }
                     >
                       <option value="equimolar">1:1 equimolar</option>
@@ -317,7 +404,13 @@ export function ProtocolExportStep({
                       value={project.protocolSettings.stageMixRatioA}
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
-                        controller.updateProtocolSetting('stageMixRatioA', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                        controller.updateProtocolSetting(
+                          'stageMixRatioA',
+                          Math.max(
+                            0.000001,
+                            Number(event.target.value) || 0.000001,
+                          ),
+                        )
                       }
                     />
                   </label>
@@ -331,7 +424,13 @@ export function ProtocolExportStep({
                       value={project.protocolSettings.stageMixRatioB}
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
-                        controller.updateProtocolSetting('stageMixRatioB', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                        controller.updateProtocolSetting(
+                          'stageMixRatioB',
+                          Math.max(
+                            0.000001,
+                            Number(event.target.value) || 0.000001,
+                          ),
+                        )
                       }
                     />
                   </label>
@@ -345,7 +444,13 @@ export function ProtocolExportStep({
                       value={project.protocolSettings.primerStockMicromolar}
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
-                        controller.updateProtocolSetting('primerStockMicromolar', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                        controller.updateProtocolSetting(
+                          'primerStockMicromolar',
+                          Math.max(
+                            0.000001,
+                            Number(event.target.value) || 0.000001,
+                          ),
+                        )
                       }
                     />
                   </label>
@@ -359,7 +464,13 @@ export function ProtocolExportStep({
                       value={project.protocolSettings.primerWorkingMicromolar}
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
-                        controller.updateProtocolSetting('primerWorkingMicromolar', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                        controller.updateProtocolSetting(
+                          'primerWorkingMicromolar',
+                          Math.max(
+                            0.000001,
+                            Number(event.target.value) || 0.000001,
+                          ),
+                        )
                       }
                     />
                   </label>
@@ -370,46 +481,66 @@ export function ProtocolExportStep({
                       type="number"
                       min={0.000001}
                       step="1"
-                      value={project.protocolSettings.workingStockPrepMicroliters}
+                      value={
+                        project.protocolSettings.workingStockPrepMicroliters
+                      }
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
                         controller.updateProtocolSetting(
                           'workingStockPrepMicroliters',
-                          Math.max(0.000001, Number(event.target.value) || 0.000001),
+                          Math.max(
+                            0.000001,
+                            Number(event.target.value) || 0.000001,
+                          ),
                         )
                       }
                     />
                   </label>
                   <label className="field-card">
-                    <span className="field-label">Primer per reaction (uL)</span>
+                    <span className="field-label">
+                      Primer per reaction (uL)
+                    </span>
                     <input
                       className="text-input"
                       type="number"
                       min={0.000001}
                       step="0.1"
-                      value={project.protocolSettings.primerPerReactionMicroliters}
+                      value={
+                        project.protocolSettings.primerPerReactionMicroliters
+                      }
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
                         controller.updateProtocolSetting(
                           'primerPerReactionMicroliters',
-                          Math.max(0.000001, Number(event.target.value) || 0.000001),
+                          Math.max(
+                            0.000001,
+                            Number(event.target.value) || 0.000001,
+                          ),
                         )
                       }
                     />
                   </label>
                   <label className="field-card">
-                    <span className="field-label">Stage 1 template / reaction (uL)</span>
+                    <span className="field-label">
+                      Stage 1 template / reaction (uL)
+                    </span>
                     <input
                       className="text-input"
                       type="number"
                       min={0.000001}
                       step="0.1"
-                      value={project.protocolSettings.stage1TemplatePerReactionMicroliters}
+                      value={
+                        project.protocolSettings
+                          .stage1TemplatePerReactionMicroliters
+                      }
                       disabled={isPolymeraseLocked}
                       onChange={(event) =>
                         controller.updateProtocolSetting(
                           'stage1TemplatePerReactionMicroliters',
-                          Math.max(0.000001, Number(event.target.value) || 0.000001),
+                          Math.max(
+                            0.000001,
+                            Number(event.target.value) || 0.000001,
+                          ),
                         )
                       }
                     />
@@ -423,7 +554,12 @@ export function ProtocolExportStep({
                       step="1"
                       value={project.protocolSettings.overfillPercent}
                       disabled={isPolymeraseLocked}
-                      onChange={(event) => controller.updateProtocolSetting('overfillPercent', Math.max(0, Number(event.target.value) || 0))}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting(
+                          'overfillPercent',
+                          Math.max(0, Number(event.target.value) || 0),
+                        )
+                      }
                     />
                   </label>
                   <label className="field-card">
@@ -435,7 +571,12 @@ export function ProtocolExportStep({
                       step="1"
                       value={project.protocolSettings.stage1Cycles}
                       disabled={isPolymeraseLocked}
-                      onChange={(event) => controller.updateProtocolSetting('stage1Cycles', Math.max(1, Number(event.target.value) || 1))}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting(
+                          'stage1Cycles',
+                          Math.max(1, Number(event.target.value) || 1),
+                        )
+                      }
                     />
                   </label>
                   <label className="field-card">
@@ -447,7 +588,12 @@ export function ProtocolExportStep({
                       step="1"
                       value={project.protocolSettings.finalCycles}
                       disabled={isPolymeraseLocked}
-                      onChange={(event) => controller.updateProtocolSetting('finalCycles', Math.max(1, Number(event.target.value) || 1))}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting(
+                          'finalCycles',
+                          Math.max(1, Number(event.target.value) || 1),
+                        )
+                      }
                     />
                   </label>
                 </div>
@@ -460,8 +606,10 @@ export function ProtocolExportStep({
                 <ul className="status-list">
                   {design.protocolPlan.stageMixEntries.map((entry) => (
                     <li key={entry.label}>
-                      {entry.label}: {entry.targetPmol.toFixed(3)} pmol, {entry.requiredMassNg.toFixed(2)} ng,{' '}
-                      {entry.requiredVolumeUl.toFixed(2)} uL at {entry.concentrationNgPerUl} ng/uL
+                      {entry.label}: {entry.targetPmol.toFixed(3)} pmol,{' '}
+                      {entry.requiredMassNg.toFixed(2)} ng,{' '}
+                      {entry.requiredVolumeUl.toFixed(2)} uL at{' '}
+                      {entry.concentrationNgPerUl} ng/uL
                     </li>
                   ))}
                 </ul>
@@ -471,8 +619,10 @@ export function ProtocolExportStep({
                 <ul className="status-list">
                   {design.protocolPlan.reactionMixes.map((mix) => (
                     <li key={mix.name}>
-                      {mix.name}: {mix.totalMasterMixVolumeUl.toFixed(2)} uL total master mix, {mix.cycleCount} cycles,{' '}
-                      {mix.overfilledReactionCount.toFixed(2)} effective reactions
+                      {mix.name}: {mix.totalMasterMixVolumeUl.toFixed(2)} uL
+                      total master mix, {mix.cycleCount} cycles,{' '}
+                      {mix.overfilledReactionCount.toFixed(2)} effective
+                      reactions
                     </li>
                   ))}
                 </ul>
@@ -501,8 +651,9 @@ export function ProtocolExportStep({
               <ul className="status-list">
                 {design.protocolPlan.primerUsage.map((entry) => (
                   <li key={entry.primerName}>
-                    {entry.primerName}: {entry.totalWorkingVolumeUl.toFixed(2)} uL total working stock across{' '}
-                    {entry.reactionsUsingPrimer} reactions
+                    {entry.primerName}: {entry.totalWorkingVolumeUl.toFixed(2)}{' '}
+                    uL total working stock across {entry.reactionsUsingPrimer}{' '}
+                    reactions
                   </li>
                 ))}
               </ul>
@@ -515,14 +666,17 @@ export function ProtocolExportStep({
                     <div className="panel-header">
                       <div>
                         <h3>{recipe.name}</h3>
-                        <p className="field-helper">{recipe.totalVolumeUl.toFixed(2)} uL total setup volume</p>
+                        <p className="field-helper">
+                          {recipe.totalVolumeUl.toFixed(2)} uL total setup
+                          volume
+                        </p>
                       </div>
                     </div>
                     <ul className="status-list">
                       {recipe.entries.map((entry) => (
                         <li key={`${recipe.name}-${entry.label}`}>
-                          {entry.label}: {entry.perReactionVolumeUl.toFixed(2)} uL/reaction, {entry.totalVolumeUl.toFixed(2)}{' '}
-                          uL total
+                          {entry.label}: {entry.perReactionVolumeUl.toFixed(2)}{' '}
+                          uL/reaction, {entry.totalVolumeUl.toFixed(2)} uL total
                           {entry.note ? ` (${entry.note})` : ''}
                         </li>
                       ))}
@@ -538,13 +692,21 @@ export function ProtocolExportStep({
         {protocolResultTab === 'products' ? (
           <div className="workspace-two-column">
             {stageSequencePreviews.map((preview) => (
-              <SequencePreview key={preview.label} title={preview.label} sequence={preview.sequence} />
+              <SequencePreview
+                key={preview.label}
+                title={preview.label}
+                sequence={preview.sequence}
+              />
             ))}
           </div>
         ) : null}
       </section>
 
-      <ExportArtifactsPanel project={project} design={design} hasExportableDesign={hasExportableDesign} />
+      <ExportArtifactsPanel
+        project={project}
+        design={design}
+        hasExportableDesign={hasExportableDesign}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 **Repository:** `fusion-pcr-studio`
 **Public title:** **FusionPCR Studio**
-**Tagline:** *Visual design, validation and protocol planning for overlap-extension PCR.*
+**Tagline:** _Visual design, validation and protocol planning for overlap-extension PCR._
 
 The application should let a researcher visually assemble DNA fragments, mutations, linkers and tags; automatically design the required primers; explain why each primer was chosen; calculate reaction conditions; and export a complete experimental package.
 
@@ -54,14 +54,14 @@ Replace one region with a homologous or heterologous fragment while preserving t
 
 Later releases can add:
 
-* Degenerate codons
-* Saturation mutagenesis
-* Hierarchical assembly of many fragments
-* Batch design of construct libraries
-* Protein-preserving synonymous junction optimization
-* Vector-linearization primers
-* Gibson-ready terminal homology
-* Multiplex and one-pot OE-PCR modes
+- Degenerate codons
+- Saturation mutagenesis
+- Hierarchical assembly of many fragments
+- Batch design of construct libraries
+- Protein-preserving synonymous junction optimization
+- Vector-linearization primers
+- Gibson-ready terminal homology
+- Multiplex and one-pot OE-PCR modes
 
 The first release should remain focused on **two- and three-fragment, two-stage OE-PCR**. It should not initially attempt to become a complete cloning platform.
 
@@ -96,21 +96,21 @@ At low zoom, the canvas shows whole fragments and junctions. At high zoom, it sh
 
 The central canvas should support independently toggleable tracks:
 
-* Source fragments
-* Final assembled construct
-* Primer positions
-* 5′ overlap tails
-* 3′ template-binding regions
-* Intended fusion overlaps
-* Annotated biological features
-* Reading frames and translation
-* Local GC percentage
-* Predicted local melting behavior
-* Repetitive sequence
-* Potential off-target sites
-* Hairpin and dimer interactions
-* Expected first-stage PCR products
-* Expected final product
+- Source fragments
+- Final assembled construct
+- Primer positions
+- 5′ overlap tails
+- 3′ template-binding regions
+- Intended fusion overlaps
+- Annotated biological features
+- Reading frames and translation
+- Local GC percentage
+- Predicted local melting behavior
+- Repetitive sequence
+- Potential off-target sites
+- Hairpin and dimer interactions
+- Expected first-stage PCR products
+- Expected final product
 
 Each fragment should retain a stable visual identity across every screen. The same fragment should look recognizably identical in the source list, target construct, reaction diagram and exported report.
 
@@ -132,11 +132,11 @@ Final junction:
 
 The inspector should make the following distinctions unambiguous:
 
-* Bases originating from the upstream fragment
-* Bases originating from the downstream fragment
-* Newly inserted or mutated bases
-* Bases used as the 3′ annealing region of each primer
-* Bases present only as a 5′ non-annealing tail in the first PCR
+- Bases originating from the upstream fragment
+- Bases originating from the downstream fragment
+- Newly inserted or mutated bases
+- Bases used as the 3′ annealing region of each primer
+- Bases present only as a 5′ non-annealing tail in the first PCR
 
 This distinction is essential. For tailed primers, the initial PCR annealing temperature must be calculated from the **3′ template-complementary portion**, not from the entire oligonucleotide. The entire oligo still matters for synthesis quality, hairpins and primer–primer interactions.
 
@@ -164,34 +164,34 @@ An example project should be immediately available so users can understand the i
 
 Accepted formats:
 
-* Plain DNA sequence
-* FASTA
-* GenBank
-* Multi-FASTA
-* Application project JSON
+- Plain DNA sequence
+- FASTA
+- GenBank
+- Multi-FASTA
+- Application project JSON
 
 For every imported sequence, show:
 
-* Name
-* Length
-* Linear or circular topology
-* GC percentage
-* Detected features
-* Ambiguous bases
-* Reverse-complement control
-* Sequence checksum
+- Name
+- Length
+- Linear or circular topology
+- GC percentage
+- Detected features
+- Ambiguous bases
+- Reverse-complement control
+- Sequence checksum
 
 GenBank features should be preserved and mapped into the final construct.
 
 The parser must reject or explicitly handle:
 
-* Invalid characters
-* Protein sequences pasted into DNA fields
-* Empty sequences
-* Conflicting coordinates
-* Unsupported ambiguity symbols
-* Duplicate sequence names
-* Circular coordinates crossing the origin
+- Invalid characters
+- Protein sequences pasted into DNA fields
+- Empty sequences
+- Conflicting coordinates
+- Unsupported ambiguity symbols
+- Duplicate sequence names
+- Circular coordinates crossing the origin
 
 ## Step 3: Compose the target
 
@@ -199,17 +199,17 @@ Users should drag fragments onto the target construct or select ranges from sour
 
 Operations should include:
 
-* Reverse-complement
-* Trim left or right
-* Extract coordinates
-* Split
-* Duplicate
-* Insert sequence
-* Delete region
-* Replace region
-* Add linker
-* Add tag
-* Lock fragment
+- Reverse-complement
+- Trim left or right
+- Extract coordinates
+- Split
+- Duplicate
+- Insert sequence
+- Delete region
+- Replace region
+- Add linker
+- Add tag
+- Lock fragment
 
 The final desired DNA sequence must always be explicit. The primer engine should design a route to that target rather than allowing the design algorithm to silently alter the target.
 
@@ -217,21 +217,21 @@ The final desired DNA sequence must always be explicit. The primer engine should
 
 For each junction, ask whether it is:
 
-* Exact DNA fusion
-* Protein fusion
-* Mutation
-* Insertion
-* Deletion
-* Flexible protein-preserving junction
+- Exact DNA fusion
+- Protein fusion
+- Mutation
+- Insertion
+- Deletion
+- Flexible protein-preserving junction
 
 For coding sequences, ask for:
 
-* Coding frame
-* Whether the upstream stop codon should be retained
-* Whether the downstream start codon should be retained
-* Whether a linker is required
-* Whether synonymous changes are allowed
-* Whether restriction sites or motifs must be avoided
+- Coding frame
+- Whether the upstream stop codon should be retained
+- Whether the downstream start codon should be retained
+- Whether a linker is required
+- Whether synonymous changes are allowed
+- Whether restriction sites or motifs must be avoided
 
 ## Step 5: Select reaction conditions
 
@@ -239,11 +239,11 @@ The user should select a polymerase profile rather than manually entering every 
 
 Initial profiles could include:
 
-* Generic high-fidelity polymerase
-* Q5 High-Fidelity
-* Q5 master mix
-* Phusion Plus
-* Custom profile
+- Generic high-fidelity polymerase
+- Q5 High-Fidelity
+- Q5 master mix
+- Phusion Plus
+- Custom profile
 
 Profiles should be versioned data files, not scattered constants in source code.
 
@@ -295,34 +295,34 @@ Fragment A   Fragment B    Equimolar     Overlap      Outer primers
 
 Each step should display:
 
-* Inputs
-* Expected product
-* Product length
-* Primer pair
-* Annealing temperature
-* Extension time
-* Reaction volume
-* Expected gel band
-* Cleanup or dilution step
-* Warnings
+- Inputs
+- Expected product
+- Product length
+- Primer pair
+- Annealing temperature
+- Extension time
+- Reaction volume
+- Expected gel band
+- Cleanup or dilution step
+- Warnings
 
 ## Step 8: Export
 
 The project should export:
 
-* Oligo-ordering CSV
-* Primer FASTA
-* Final construct FASTA
-* Annotated GenBank
-* First-stage amplicon FASTA
-* Complete project JSON
-* Printable protocol
-* Pipetting table
-* Thermocycler program
-* Junction report
-* Validation report
-* Expected gel diagram
-* Methods and calculation manifest
+- Oligo-ordering CSV
+- Primer FASTA
+- Final construct FASTA
+- Annotated GenBank
+- First-stage amplicon FASTA
+- Complete project JSON
+- Printable protocol
+- Pipetting table
+- Thermocycler program
+- Junction report
+- Validation report
+- Expected gel diagram
+- Methods and calculation manifest
 
 ---
 
@@ -372,10 +372,10 @@ The two inner primers are deliberately highly complementary. A normal primer-des
 
 FusionPCR Studio must understand that:
 
-* They are intentionally complementary.
-* They are normally used in separate first-stage reactions.
-* Their complementarity is the mechanism that creates the shared overlap.
-* They should not be scored as if they were an ordinary primer pair used together.
+- They are intentionally complementary.
+- They are normally used in separate first-stage reactions.
+- Their complementarity is the mechanism that creates the shared overlap.
+- They should not be scored as if they were an ordinary primer pair used together.
 
 The engine should still warn when the protocol places them in the same reaction, particularly in an advanced one-pot design.
 
@@ -397,26 +397,26 @@ These are search limits, not universal biological laws. The preferred range shou
 
 For each candidate, calculate:
 
-* Annealing-region length
-* Entire oligo length
-* Annealing-region Tm
-* Entire-oligo nominal Tm
-* GC percentage
-* 3′ GC content
-* 3′ terminal stability
-* Homopolymer length
-* Dinucleotide repeats
-* Low-complexity score
-* Hairpin strength
-* Self-dimer strength
-* Heterodimer strength
-* 3′-anchored dimer strength
-* Local-template uniqueness
-* Whole-input-project uniqueness
-* Optional genomic specificity
-* Synthesis-complexity warnings
-* Junction-overlap Tm
-* Primer-pair Tm difference
+- Annealing-region length
+- Entire oligo length
+- Annealing-region Tm
+- Entire-oligo nominal Tm
+- GC percentage
+- 3′ GC content
+- 3′ terminal stability
+- Homopolymer length
+- Dinucleotide repeats
+- Low-complexity score
+- Hairpin strength
+- Self-dimer strength
+- Heterodimer strength
+- 3′-anchored dimer strength
+- Local-template uniqueness
+- Whole-input-project uniqueness
+- Optional genomic specificity
+- Synthesis-complexity warnings
+- Junction-overlap Tm
+- Primer-pair Tm difference
 
 Primer3 considers Tm, size, GC content, primer-dimer formation, product size, position and ectopic priming, and its thermodynamic mode evaluates oligo–oligo and hairpin interactions. FusionPCR Studio should cover at least the equivalent conceptual categories while adding OE-PCR-specific overlap logic. ([Primer3][3])
 
@@ -439,10 +439,10 @@ Tm(°C) = Tm(K) − 273.15
 
 Where:
 
-* `ΔH` is duplex enthalpy
-* `ΔSsalt` is salt-corrected entropy
-* `R` is the gas constant
-* `Ct` is the effective oligo concentration
+- `ΔH` is duplex enthalpy
+- `ΔSsalt` is salt-corrected entropy
+- `R` is the gas constant
+- `Ct` is the effective oligo concentration
 
 When using kcal/mol for `ΔH`, multiply it by 1,000 before combining it with entropy in cal/mol/K.
 
@@ -458,11 +458,11 @@ where `N` is sequence length and the salt concentration is in molar units. Prime
 
 The calculation must accept:
 
-* Monovalent ion concentration
-* Magnesium concentration
-* Total dNTP concentration
-* Oligo concentration
-* DMSO percentage
+- Monovalent ion concentration
+- Magnesium concentration
+- Total dNTP concentration
+- Oligo concentration
+- DMSO percentage
 
 Magnesium cannot simply be added to sodium concentration. Some magnesium is complexed by dNTPs, and mixed monovalent/divalent conditions require an appropriate model. Implement the Owczarzy correction scheme with test vectors rather than inventing a new approximation. Primer3 supports this model and explicitly considers Mg²⁺ and dNTP concentrations. ([PubMed][5])
 
@@ -508,13 +508,13 @@ The overlap Tm should be presented as a **comparative design metric**, not a gua
 
 The calculation engine should evaluate:
 
-* Hairpins
-* Self-dimers
-* Heterodimers
-* 3′ self-dimers
-* 3′ heterodimers
-* Intended inner-primer complementarity
-* Cross-dimers among all primers in a multi-fragment project
+- Hairpins
+- Self-dimers
+- Heterodimers
+- 3′ self-dimers
+- 3′ heterodimers
+- Intended inner-primer complementarity
+- Cross-dimers among all primers in a multi-fragment project
 
 ## Required outputs
 
@@ -570,10 +570,10 @@ Specificity should have two levels.
 
 This always runs locally against:
 
-* Every imported template
-* Reverse complements
-* The final construct
-* All first-stage products
+- Every imported template
+- Reverse complements
+- The final construct
+- All first-stage products
 
 For each 3′ annealing region:
 
@@ -610,16 +610,16 @@ The application should clearly disclose when sequences leave the browser.
 
 For coding sequences, calculate and display:
 
-* Reading frame
-* Protein translation
-* Stop codons
-* Start codons
-* Junction codons
-* Linker translation
-* Protein length
-* Amino-acid sequence around each junction
-* Frame shifts
-* Unintended amino-acid changes
+- Reading frame
+- Protein translation
+- Stop codons
+- Start codons
+- Junction codons
+- Linker translation
+- Protein length
+- Amino-acid sequence around each junction
+- Frame shifts
+- Unintended amino-acid changes
 
 The basic frame condition is:
 
@@ -658,12 +658,12 @@ Synonymous changes allowed within ±4 codons of the junction
 
 The engine then searches synonymous codon combinations to improve:
 
-* Overlap Tm
-* GC balance
-* Repeat content
-* Hairpin risk
-* Primer length
-* Synthesis complexity
+- Overlap Tm
+- GC balance
+- Repeat content
+- Hairpin risk
+- Primer length
+- Synthesis complexity
 
 Use beam search rather than enumerating every possible synonymous combination.
 
@@ -720,10 +720,10 @@ volume_µL = required_mass_ng / concentration_ng_per_µL
 
 The application should calculate equimolar fragment mixing and allow:
 
-* 1:1 molar ratio
-* User-defined ratios
-* Limiting-fragment strategy
-* Total target DNA input
+- 1:1 molar ratio
+- User-defined ratios
+- Limiting-fragment strategy
+- Total target DNA input
 
 Avoid predicting PCR yield from sequence alone. It is not reliable enough to present as a quantitative promise.
 
@@ -737,12 +737,12 @@ C1 × V1 = C2 × V2
 
 Generate:
 
-* Working-stock preparation
-* Primer volume per reaction
-* Master-mix quantities
-* Overfill allowance
-* Number of reactions
-* Total required oligo volume
+- Working-stock preparation
+- Primer volume per reaction
+- Master-mix quantities
+- Overfill allowance
+- Number of reactions
+- Total required oligo volume
 
 ## Annealing temperature
 
@@ -775,12 +775,12 @@ Cycle recommendations should come from polymerase profiles and remain user-edita
 
 Do not attempt to infer a precise optimal cycle number from primer sequence. Instead, consider:
 
-* Template type
-* Starting template amount
-* First-stage versus final PCR
-* Product length
-* Whether the product will be cloned or only visualized
-* Risk of error accumulation
+- Template type
+- Starting template amount
+- First-stage versus final PCR
+- Product length
+- Whether the product will be cloned or only visualized
+- Risk of error accumulation
 
 ## Gradient recommendation
 
@@ -812,12 +812,12 @@ Generate the top 20–100 candidates for every primer and junction.
 
 Calculate:
 
-* Pairwise cross-dimer scores
-* Tm compatibility
-* Shared 3′ seeds
-* Unintended overlap compatibility
-* Similarity between primers
-* Potential cross-amplification
+- Pairwise cross-dimer scores
+- Tm compatibility
+- Shared 3′ seeds
+- Unintended overlap compatibility
+- Similarity between primers
+- Potential cross-amplification
 
 ### Stage 3: Search complete designs
 
@@ -827,12 +827,12 @@ Use beam search or integer optimization to choose one candidate per primer while
 
 Return designs optimized for different priorities:
 
-* Highest overall quality
-* Shortest oligos
-* Lowest secondary-structure risk
-* Most uniform PCR conditions
-* Fewest total reactions
-* Lowest estimated synthesis complexity
+- Highest overall quality
+- Shortest oligos
+- Lowest secondary-structure risk
+- Most uniform PCR conditions
+- Fewest total reactions
+- Lowest estimated synthesis complexity
 
 ## Hierarchical assembly planning
 
@@ -855,13 +855,13 @@ AB + CD → ABCD
 
 Score assembly plans based on:
 
-* Number of reactions
-* Number of primers
-* Longest intermediate product
-* Weakest overlap
-* Fragment-size imbalance
-* Total handling steps
-* Compatibility of reaction conditions
+- Number of reactions
+- Number of primers
+- Longest intermediate product
+- Weakest overlap
+- Fragment-size imbalance
+- Total handling steps
+- Compatibility of reaction conditions
 
 Do not claim that the mathematically highest score guarantees the highest wet-lab success. Label it as an optimization recommendation.
 
@@ -893,21 +893,21 @@ Q = 100 × ∏(qi / 100)^wi
 
 Where:
 
-* `qi` is each component score
-* `wi` is its normalized weight
-* Sum of all weights equals 1
+- `qi` is each component score
+- `wi` is its normalized weight
+- Sum of all weights equals 1
 
 Hard failures override the score:
 
-* Wrong assembled sequence
-* Non-complementary intended overlap
-* 3′ mismatch to the intended template
-* Impossible frame
-* Ambiguous 3′ base
-* Missing primer
-* Duplicate primer names
-* Product outside permitted length
-* Unresolvable off-target product
+- Wrong assembled sequence
+- Non-complementary intended overlap
+- 3′ mismatch to the intended template
+- Impossible frame
+- Ambiguous 3′ base
+- Missing primer
+- Duplicate primer names
+- Product outside permitted length
+- Unresolvable off-target product
 
 Display the score breakdown:
 
@@ -964,23 +964,23 @@ No sequence changes have been applied.
 
 Other recommendations should cover:
 
-* Low or high GC
-* Long homopolymers
-* Repetitive 3′ sequence
-* Large primer Tm difference
-* Weak overlap
-* Very long oligo
-* Long inserted sequence
-* High-GC amplicon
-* Long amplicon
-* Multiple local binding sites
-* Frame shift
-* Unexpected stop codon
-* Intentionally complementary inner primers used together
-* Unbalanced fragment molarity
-* Ambiguous template bases
-* Need for a temperature gradient
-* Need for a synthetic bridge fragment
+- Low or high GC
+- Long homopolymers
+- Repetitive 3′ sequence
+- Large primer Tm difference
+- Weak overlap
+- Very long oligo
+- Long inserted sequence
+- High-GC amplicon
+- Long amplicon
+- Multiple local binding sites
+- Frame shift
+- Unexpected stop codon
+- Intentionally complementary inner primers used together
+- Unbalanced fragment molarity
+- Ambiguous template bases
+- Need for a temperature gradient
+- Need for a synthetic bridge fragment
 
 ## Synthetic-fragment recommendation
 
@@ -1023,34 +1023,34 @@ A desktop workspace should use four main regions.
 
 Contains:
 
-* Source fragments
-* Tags and linkers
-* Saved sequences
-* Operations
-* Target-product outline
+- Source fragments
+- Tags and linkers
+- Saved sequences
+- Operations
+- Target-product outline
 
 ## Centre: construct canvas
 
 Supports:
 
-* Pan and zoom
-* Base-level selection
-* Dragging fragments
-* Junction editing
-* Primer overlays
-* Feature tracks
-* Translation
-* Risk highlighting
+- Pan and zoom
+- Base-level selection
+- Dragging fragments
+- Junction editing
+- Primer overlays
+- Feature tracks
+- Translation
+- Risk highlighting
 
 ## Right panel: inspector
 
 Changes based on selection:
 
-* Fragment inspector
-* Junction inspector
-* Primer inspector
-* Reaction inspector
-* Warning inspector
+- Fragment inspector
+- Junction inspector
+- Primer inspector
+- Reaction inspector
+- Warning inspector
 
 ## Bottom panel: workflow
 
@@ -1078,12 +1078,12 @@ Every editing operation must be reversible.
 
 Users must be able to lock:
 
-* Fragment boundaries
-* Junction position
-* Inserted sequence
-* Annealing body
-* Complete primer
-* Polymerase settings
+- Fragment boundaries
+- Junction position
+- Inserted sequence
+- Annealing body
+- Complete primer
+- Polymerase settings
 
 ## Compare mode
 
@@ -1102,33 +1102,33 @@ Local off-targets     0            0
 
 The default interface should show:
 
-* Construct
-* Primers
-* Main warnings
-* Recommended protocol
+- Construct
+- Primers
+- Main warnings
+- Recommended protocol
 
 An advanced toggle should reveal:
 
-* Ionic conditions
-* Thermodynamic model
-* Weighting parameters
-* Full structures
-* Candidate-generation limits
-* All scoring terms
+- Ionic conditions
+- Thermodynamic model
+- Weighting parameters
+- Full structures
+- Candidate-generation limits
+- All scoring terms
 
 ## Accessibility
 
 Requirements:
 
-* No meaning communicated by color alone
-* Patterns or icons for fragment types
-* Keyboard navigation
-* Visible focus states
-* Screen-reader labels
-* Sufficient contrast
-* Scalable text
-* Text alternatives for interaction diagrams
-* Exportable plain-text calculations
+- No meaning communicated by color alone
+- Patterns or icons for fragment types
+- Keyboard navigation
+- Visible focus states
+- Screen-reader labels
+- Sufficient contrast
+- Scalable text
+- Text alternatives for interaction diagrams
+- Exportable plain-text calculations
 
 ## Mobile support
 
@@ -1256,11 +1256,11 @@ pub fn simulate_products(
 
 Keep `fusion-core` free of browser dependencies so it can later support:
 
-* Command-line use
-* Python bindings
-* Native desktop use
-* Batch processing
-* Reproducible pipelines
+- Command-line use
+- Python bindings
+- Native desktop use
+- Batch processing
+- Reproducible pipelines
 
 ---
 
@@ -1290,7 +1290,7 @@ interface PrimerCandidate {
   fullSequence: string;
   annealingSequence: string;
   fivePrimeTail: string;
-  direction: "forward" | "reverse";
+  direction: 'forward' | 'reverse';
   templateId: string;
   templateStart: number;
   templateEnd: number;
@@ -1311,12 +1311,7 @@ interface Junction {
   upstreamFragmentId: string;
   downstreamFragmentId: string;
   insertedSequence: string;
-  mode:
-    | "exact"
-    | "protein-fusion"
-    | "insertion"
-    | "deletion"
-    | "substitution";
+  mode: 'exact' | 'protein-fusion' | 'insertion' | 'deletion' | 'substitution';
   preserveProtein: boolean;
   flexibleCodons: number;
   locked: boolean;
@@ -1357,20 +1352,20 @@ Do not copy Primer3 source into a permissively licensed repository without resol
 
 Test:
 
-* Reverse complements
-* Circular coordinate extraction
-* FASTA parsing
-* GenBank parsing
-* GC calculation
-* Molecular-weight conversions
-* Tm calculations
-* Salt corrections
-* Hairpin structures
-* Dimer structures
-* Codon translation
-* Primer construction
-* Amplicon simulation
-* Fusion-product reconstruction
+- Reverse complements
+- Circular coordinate extraction
+- FASTA parsing
+- GenBank parsing
+- GC calculation
+- Molecular-weight conversions
+- Tm calculations
+- Salt corrections
+- Hairpin structures
+- Dimer structures
+- Codon translation
+- Primer construction
+- Amplicon simulation
+- Fusion-product reconstruction
 
 ## Property-based tests
 
@@ -1402,10 +1397,10 @@ Every primer 3′ body exactly matches its intended template.
 
 Compare Tm and structural outputs against:
 
-* Primer3
-* Published examples
-* Carefully recorded IDT OligoAnalyzer outputs
-* Hand-calculated small cases
+- Primer3
+- Published examples
+- Carefully recorded IDT OligoAnalyzer outputs
+- Hand-calculated small cases
 
 Differences should be documented rather than silently adjusted until they appear similar.
 
@@ -1413,14 +1408,14 @@ Differences should be documented rather than silently adjusted until they appear
 
 Automate:
 
-* Importing sequences
-* Creating a two-fragment fusion
-* Adding an insertion
-* Fixing a frame warning
-* Locking a primer
-* Comparing candidates
-* Exporting all formats
-* Reloading a saved project
+- Importing sequences
+- Creating a two-fragment fusion
+- Adding an insertion
+- Fixing a frame warning
+- Locking a primer
+- Comparing candidates
+- Exporting all formats
+- Reloading a saved project
 
 ## Performance tests
 
@@ -1444,16 +1439,16 @@ Software agreement is not enough. The project should eventually include wet-lab 
 
 Build a dataset containing:
 
-* Exact two-fragment fusions
-* Protein fusions
-* Insertions
-* Deletions
-* Point mutations
-* GC-rich junctions
-* AT-rich junctions
-* Long products
-* Designs predicted to be weak
-* Designs predicted to be strong
+- Exact two-fragment fusions
+- Protein fusions
+- Insertions
+- Deletions
+- Point mutations
+- GC-rich junctions
+- AT-rich junctions
+- Long products
+- Designs predicted to be weak
+- Designs predicted to be strong
 
 For each experiment, record:
 
@@ -1490,51 +1485,51 @@ Only after a substantial, independently evaluated dataset should the project con
 
 Include:
 
-* What the tool does
-* Live application
-* Screenshot or short demonstration
-* Privacy statement
-* Supported use cases
-* Example workflow
-* Installation for developers
-* Scientific limitations
-* Citation
+- What the tool does
+- Live application
+- Screenshot or short demonstration
+- Privacy statement
+- Supported use cases
+- Example workflow
+- Installation for developers
+- Scientific limitations
+- Citation
 
 ## `METHODS.md`
 
 Describe:
 
-* Primer-generation algorithm
-* Tm model
-* Salt correction
-* Secondary-structure model
-* Specificity method
-* Global optimization
-* Scoring system
-* Protocol profiles
+- Primer-generation algorithm
+- Tm model
+- Salt correction
+- Secondary-structure model
+- Specificity method
+- Global optimization
+- Scoring system
+- Protocol profiles
 
 ## `VALIDATION.md`
 
 Include:
 
-* Reference tools
-* Test tolerances
-* Experimental validation
-* Known discrepancies
-* Unsupported cases
+- Reference tools
+- Test tolerances
+- Experimental validation
+- Known discrepancies
+- Unsupported cases
 
 ## `THERMODYNAMIC_MODELS.md`
 
 Document:
 
-* Constants
-* Nearest-neighbour tables
-* Initiation terms
-* Symmetry terms
-* Salt corrections
-* Magnesium treatment
-* DMSO correction
-* Concentration assumptions
+- Constants
+- Nearest-neighbour tables
+- Initiation terms
+- Symmetry terms
+- Salt corrections
+- Magnesium treatment
+- DMSO correction
+- Concentration assumptions
 
 ## `PROJECT_FORMAT.md`
 
@@ -1548,15 +1543,15 @@ Explain how profiles are sourced, versioned and updated.
 
 Explicitly state that the tool cannot fully predict:
 
-* Template quality
-* Contamination
-* Actual polymerase activity
-* Pipetting errors
-* Complex template secondary structure
-* Uncharacterized buffer effects
-* Oligo synthesis failures
-* Exact PCR yield
-* Biological function of the assembled construct
+- Template quality
+- Contamination
+- Actual polymerase activity
+- Pipetting errors
+- Complex template secondary structure
+- Uncharacterized buffer effects
+- Oligo synthesis failures
+- Exact PCR yield
+- Biological function of the assembled construct
 
 ---
 
@@ -1566,12 +1561,12 @@ Explicitly state that the tool cannot fully predict:
 
 Deliver:
 
-* FASTA and plain-sequence import
-* Linear fragment editing
-* Exact two-fragment target assembly
-* Reverse complement
-* Base-level canvas
-* Project save/load
+- FASTA and plain-sequence import
+- Linear fragment editing
+- Exact two-fragment target assembly
+- Reverse complement
+- Base-level canvas
+- Project save/load
 
 Definition of done:
 
@@ -1584,11 +1579,11 @@ save it and reopen it without sequence changes.
 
 Deliver:
 
-* Four-primer design for two fragments
-* Separation of 5′ tails and 3′ bodies
-* GC, length and simple Tm calculations
-* Product simulation
-* Primer CSV export
+- Four-primer design for two fragments
+- Separation of 5′ tails and 3′ bodies
+- GC, length and simple Tm calculations
+- Product simulation
+- Primer CSV export
 
 Definition of done:
 
@@ -1600,12 +1595,12 @@ Every generated design reconstructs the requested final sequence.
 
 Deliver:
 
-* SantaLucia nearest-neighbour Tm
-* Salt and magnesium corrections
-* DMSO setting
-* Hairpin analysis
-* Self- and heterodimer analysis
-* Structure diagrams
+- SantaLucia nearest-neighbour Tm
+- Salt and magnesium corrections
+- DMSO setting
+- Hairpin analysis
+- Self- and heterodimer analysis
+- Structure diagrams
 
 Definition of done:
 
@@ -1618,55 +1613,55 @@ within documented numerical tolerances.
 
 Deliver:
 
-* Insertions
-* Deletions
-* Substitutions
-* Protein translation
-* Frame checks
-* Start/stop warnings
-* Linker support
+- Insertions
+- Deletions
+- Substitutions
+- Protein translation
+- Frame checks
+- Start/stop warnings
+- Linker support
 
 ## Phase 5: Multi-fragment optimization
 
 Deliver:
 
-* Three- and four-fragment designs
-* Global cross-dimer matrix
-* Beam-search optimization
-* Candidate comparison
-* Hierarchical assembly recommendations
+- Three- and four-fragment designs
+- Global cross-dimer matrix
+- Beam-search optimization
+- Candidate comparison
+- Hierarchical assembly recommendations
 
 ## Phase 6: Protocol engine
 
 Deliver:
 
-* Polymerase profiles
-* Equimolar mixing
-* Pipetting tables
-* Extension-time calculation
-* Annealing recommendations
-* Expected gel bands
-* Printable protocol
+- Polymerase profiles
+- Equimolar mixing
+- Pipetting tables
+- Extension-time calculation
+- Annealing recommendations
+- Expected gel bands
+- Printable protocol
 
 ## Phase 7: Specificity
 
 Deliver:
 
-* Local template scanning
-* Off-target product simulation
-* Primer-BLAST handoff
-* Optional online search service
+- Local template scanning
+- Off-target product simulation
+- Primer-BLAST handoff
+- Optional online search service
 
 ## Phase 8: Validation and publication
 
 Deliver:
 
-* Experimental validation dataset
-* Versioned release
-* Methods document
-* Citation file
-* Reproducibility report
-* Public GitHub Pages deployment
+- Experimental validation dataset
+- Versioned release
+- Methods document
+- Citation file
+- Reproducibility report
+- Public GitHub Pages deployment
 
 ---
 
@@ -1674,28 +1669,28 @@ Deliver:
 
 Version `0.1.0` should do only the following, but do it reliably:
 
-* Import two DNA fragments
-* Select the portions to fuse
-* Insert an optional linker or mutation
-* Display the final sequence
-* Design four primers
-* Separate each primer’s tail and annealing body
-* Calculate body Tm, GC and basic structures
-* Simulate both first-stage products
-* Simulate the final fusion product
-* Verify exact agreement with the target
-* Generate a starting PCR plan
-* Export primer CSV, FASTA, project JSON and protocol
-* Run entirely locally in the browser
+- Import two DNA fragments
+- Select the portions to fuse
+- Insert an optional linker or mutation
+- Display the final sequence
+- Design four primers
+- Separate each primer’s tail and annealing body
+- Calculate body Tm, GC and basic structures
+- Simulate both first-stage products
+- Simulate the final fusion product
+- Verify exact agreement with the target
+- Generate a starting PCR plan
+- Export primer CSV, FASTA, project JSON and protocol
+- Run entirely locally in the browser
 
 Do not delay the first release for:
 
-* Whole-genome specificity
-* Batch libraries
-* Six-fragment assembly
-* AI recommendations
-* Vendor ordering
-* Laboratory inventory integration
+- Whole-genome specificity
+- Batch libraries
+- Six-fragment assembly
+- AI recommendations
+- Vendor ordering
+- Laboratory inventory integration
 
 ---
 
@@ -1731,14 +1726,14 @@ fusion-pcr-studio
 
 This would be a credible flagship repository: scientifically relevant, visually demonstrable, computationally substantial, useful to bench researchers, and directly aligned with Mr Broketa’s existing browser-tool and Rust portfolio.
 
-[1]: https://pubmed.ncbi.nlm.nih.gov/2744487/?utm_source=chatgpt.com "Site-directed mutagenesis by overlap extension using the ..."
-[2]: https://www.neb.com/en/protocols/pcr-using-q5-high-fidelity-dna-polymerase-m0491?srsltid=AfmBOopJ778JRtYY5EevD_BQ8cGcDcZnzax9UvvfC2vno4jU2cEAiU7H&utm_source=chatgpt.com "PCR Using Q5® High-Fidelity DNA Polymerase ..."
-[3]: https://primer3.org/manual.html?utm_source=chatgpt.com "Primer3 - Manual"
-[4]: https://pubmed.ncbi.nlm.nih.gov/9465037/?utm_source=chatgpt.com "A unified view of polymer, dumbbell, and oligonucleotide ..."
-[5]: https://pubmed.ncbi.nlm.nih.gov/18422348/?utm_source=chatgpt.com "Predicting stability of DNA duplexes in solutions containing ..."
-[6]: https://primer3.org/manual.html "Primer3 - Manual"
-[7]: https://www.idtdna.com/page/support-and-education/decoded-plus/using-the-oligoanalyzer-program?utm_source=chatgpt.com "How to use the OligoAnalyzer Tool | IDT"
-[8]: https://www.ncbi.nlm.nih.gov/tools/primer-blast/?utm_source=chatgpt.com "Primer designing tool - NCBI - NIH"
-[9]: https://www.neb.com/en/protocols/pcr-using-q5-hot-start-high-fidelity-dna-polymerase-m0493?srsltid=AfmBOooyh8IUQeAy22_dqraJnr7GWWkSY1Vt9mdAlH3RFPGNZWkcROYl&utm_source=chatgpt.com "PCR Using Q5® Hot Start High-Fidelity DNA Polymerase ..."
-[10]: https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages?utm_source=chatgpt.com "Using custom workflows with GitHub Pages"
-[11]: https://github.com/primer3-org/primer3 "GitHub - primer3-org/primer3: Primer3 is a command line tool to select primers for polymerase chain reaction (PCR). · GitHub"
+[1]: https://pubmed.ncbi.nlm.nih.gov/2744487/?utm_source=chatgpt.com 'Site-directed mutagenesis by overlap extension using the ...'
+[2]: https://www.neb.com/en/protocols/pcr-using-q5-high-fidelity-dna-polymerase-m0491?srsltid=AfmBOopJ778JRtYY5EevD_BQ8cGcDcZnzax9UvvfC2vno4jU2cEAiU7H&utm_source=chatgpt.com 'PCR Using Q5® High-Fidelity DNA Polymerase ...'
+[3]: https://primer3.org/manual.html?utm_source=chatgpt.com 'Primer3 - Manual'
+[4]: https://pubmed.ncbi.nlm.nih.gov/9465037/?utm_source=chatgpt.com 'A unified view of polymer, dumbbell, and oligonucleotide ...'
+[5]: https://pubmed.ncbi.nlm.nih.gov/18422348/?utm_source=chatgpt.com 'Predicting stability of DNA duplexes in solutions containing ...'
+[6]: https://primer3.org/manual.html 'Primer3 - Manual'
+[7]: https://www.idtdna.com/page/support-and-education/decoded-plus/using-the-oligoanalyzer-program?utm_source=chatgpt.com 'How to use the OligoAnalyzer Tool | IDT'
+[8]: https://www.ncbi.nlm.nih.gov/tools/primer-blast/?utm_source=chatgpt.com 'Primer designing tool - NCBI - NIH'
+[9]: https://www.neb.com/en/protocols/pcr-using-q5-hot-start-high-fidelity-dna-polymerase-m0493?srsltid=AfmBOooyh8IUQeAy22_dqraJnr7GWWkSY1Vt9mdAlH3RFPGNZWkcROYl&utm_source=chatgpt.com 'PCR Using Q5® Hot Start High-Fidelity DNA Polymerase ...'
+[10]: https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages?utm_source=chatgpt.com 'Using custom workflows with GitHub Pages'
+[11]: https://github.com/primer3-org/primer3 'GitHub - primer3-org/primer3: Primer3 is a command line tool to select primers for polymerase chain reaction (PCR). · GitHub'

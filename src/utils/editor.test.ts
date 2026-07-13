@@ -58,7 +58,10 @@ describe('editor operations', () => {
   });
 
   it('replaces the selected range with a payload', () => {
-    const fragment = replaceSelectedRange(makeFragment('AACCGGTT', 3, 6), 'TTAA');
+    const fragment = replaceSelectedRange(
+      makeFragment('AACCGGTT', 3, 6),
+      'TTAA',
+    );
     expect(fragment.sequence).toBe('AATTAATT');
     expect(fragment.start).toBe(3);
     expect(fragment.end).toBe(6);
@@ -79,7 +82,12 @@ describe('editor operations', () => {
   });
 
   it('splits a fragment into two fragments', () => {
-    const [left, right] = splitFragment(makeFragment('AACCGGTT', 1, 8), 4, 'Left', 'Right');
+    const [left, right] = splitFragment(
+      makeFragment('AACCGGTT', 1, 8),
+      4,
+      'Left',
+      'Right',
+    );
     expect(left.sequence).toBe('AACC');
     expect(right.sequence).toBe('GGTT');
     expect(left.label).toBe('Left');

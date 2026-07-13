@@ -25,7 +25,12 @@ export function ConfirmationDialog({
 
   return (
     <div className="dialog-backdrop" role="presentation">
-      <div className="dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="confirmation-dialog-title">
+      <div
+        className="dialog panel"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirmation-dialog-title"
+      >
         <div className="panel-header">
           <div>
             <p className="eyebrow">Confirm action</p>
@@ -34,10 +39,19 @@ export function ConfirmationDialog({
         </div>
         <p>{message}</p>
         <div className="action-row">
-          <button ref={cancelButtonRef} type="button" className="button button-secondary" onClick={onCancel}>
+          <button
+            ref={cancelButtonRef}
+            type="button"
+            className="button button-secondary"
+            onClick={onCancel}
+          >
             Cancel
           </button>
-          <button type="button" className="button button-primary" onClick={onConfirm}>
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </button>
         </div>

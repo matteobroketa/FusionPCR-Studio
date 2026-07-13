@@ -5,9 +5,18 @@ type ReactionTimelineProps = {
   onSelectStage: (stage: WorkflowStage) => void;
 };
 
-const workflowStages: WorkflowStage[] = ['overview', 'pcr1a', 'pcr1b', 'fusion', 'verification'];
+const workflowStages: WorkflowStage[] = [
+  'overview',
+  'pcr1a',
+  'pcr1b',
+  'fusion',
+  'verification',
+];
 
-export function ReactionTimeline({ selectedStage, onSelectStage }: ReactionTimelineProps) {
+export function ReactionTimeline({
+  selectedStage,
+  onSelectStage,
+}: ReactionTimelineProps) {
   return (
     <section className="timeline-dock panel">
       <div className="panel-header">

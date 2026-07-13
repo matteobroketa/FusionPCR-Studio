@@ -1,4 +1,10 @@
-import { checksumSequence, type FragmentInput, type FusionDesign, type FusionProjectInput, type PrimerDesign } from './fusion';
+import {
+  checksumSequence,
+  type FragmentInput,
+  type FusionDesign,
+  type FusionProjectInput,
+  type PrimerDesign,
+} from './fusion';
 import { filterActionableReviewItems } from './review-items';
 import { buildJunctionSummary } from './review';
 
@@ -54,7 +60,10 @@ function formatFastaRecord(header: string, sequence: string): string {
   return `>${header}\n${wrapSequence(sequence)}`;
 }
 
-function findPrimer(design: FusionDesign, primerName: string): PrimerDesign | null {
+function findPrimer(
+  design: FusionDesign,
+  primerName: string,
+): PrimerDesign | null {
   return design.primers.find((primer) => primer.name === primerName) ?? null;
 }
 
@@ -90,7 +99,7 @@ function selectionSpanLength(fragment: FragmentInput): number {
     return Math.max(0, fragment.end - fragment.start + 1);
   }
 
-  return (sequenceLength - fragment.start + 1) + fragment.end;
+  return sequenceLength - fragment.start + 1 + fragment.end;
 }
 
 function sanitizeGenbankText(value: string): string {
@@ -101,7 +110,9 @@ function sanitizeFeatureKey(key: string): string {
   return /^[A-Za-z_]+$/.test(key) ? key : 'misc_feature';
 }
 
-function parseSimpleFeatureLocation(location: string): { start: number; end: number; complement: boolean } | null {
+function parseSimpleFeatureLocation(
+  location: string,
+): { start: number; end: number; complement: boolean } | null {
   const complementMatch = location.match(/^complement\((<?\d+)\.\.(>?\d+)\)$/i);
   if (complementMatch) {
     return {
@@ -137,7 +148,8 @@ function mapFragmentFeatures(
     return {
       mapped: [],
       skipped: fragment.features.length,
-      skippedReason: 'final construct sequence length differs from the selected source span after approved edits',
+      skippedReason:
+        'final construct sequence length differs from the selected source span after approved edits',
     };
   }
 
@@ -166,14 +178,18 @@ function mapFragmentFeatures(
 
     const mappedStart = constructStart + (parsed.start - fragment.start);
     const mappedEnd = constructStart + (parsed.end - fragment.start);
-    const location = parsed.complement ? `complement(${mappedStart}..${mappedEnd})` : `${mappedStart}..${mappedEnd}`;
+    const location = parsed.complement
+      ? `complement(${mappedStart}..${mappedEnd})`
+      : `${mappedStart}..${mappedEnd}`;
     const qualifiers: Record<string, string> = {
       label: feature.label || feature.key,
       note: `Imported from ${fragment.label}; original location ${feature.location}.`,
       source_format: fragment.sourceFormat,
     };
 
-    for (const [qualifierKey, qualifierValue] of Object.entries(feature.qualifiers)) {
+    for (const [qualifierKey, qualifierValue] of Object.entries(
+      feature.qualifiers,
+    )) {
       if (!qualifierValue) {
         continue;
       }
@@ -199,18 +215,37 @@ function formatGenbankDate(dateInput: string): string {
     return '01-JAN-2000';
   }
 
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const months = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ];
   return `${String(date.getUTCDate()).padStart(2, '0')}-${months[date.getUTCMonth()]}-${date.getUTCFullYear()}`;
 }
 
 function formatFeatureQualifiers(qualifiers: Record<string, string>): string[] {
   return Object.entries(qualifiers)
     .filter(([, value]) => value.trim().length > 0)
-    .map(([key, value]) => `                     /${key}="${sanitizeGenbankText(value)}"`);
+    .map(
+      ([key, value]) =>
+        `                     /${key}="${sanitizeGenbankText(value)}"`,
+    );
 }
 
 function formatGenbankFeature(feature: ExportFeature): string[] {
-  return [`     ${feature.key.padEnd(15)}${feature.location}`, ...formatFeatureQualifiers(feature.qualifiers)];
+  return [
+    `     ${feature.key.padEnd(15)}${feature.location}`,
+    ...formatFeatureQualifiers(feature.qualifiers),
+  ];
 }
 
 function formatOrigin(sequence: string): string[] {
@@ -233,15 +268,23 @@ function describeDesignWarnings(design: FusionDesign): string[] {
   return warnings.length ? warnings : ['No design warnings were emitted.'];
 }
 
-function buildThermocyclerBlock(design: FusionDesign, reactionName: 'PCR 1A' | 'PCR 1B' | 'Fusion PCR'): string[] {
-  const reaction = design.reactions.find((entry) => entry.name === reactionName);
+function buildThermocyclerBlock(
+  design: FusionDesign,
+  reactionName: 'PCR 1A' | 'PCR 1B' | 'Fusion PCR',
+): string[] {
+  const reaction = design.reactions.find(
+    (entry) => entry.name === reactionName,
+  );
   if (!reaction) {
     return [];
   }
 
   const cycles =
-    design.protocolPlan.reactionMixes.find((mix) => mix.name === reactionName)?.cycleCount ??
-    (reactionName === 'Fusion PCR' ? design.project.protocolSettings.finalCycles : design.project.protocolSettings.stage1Cycles);
+    design.protocolPlan.reactionMixes.find((mix) => mix.name === reactionName)
+      ?.cycleCount ??
+    (reactionName === 'Fusion PCR'
+      ? design.project.protocolSettings.finalCycles
+      : design.project.protocolSettings.stage1Cycles);
 
   return [
     reactionName,
@@ -257,11 +300,15 @@ function buildThermocyclerBlock(design: FusionDesign, reactionName: 'PCR 1A' | '
 
 function buildValidationSummary(design: FusionDesign): ValidationSummary {
   const highRiskSpecificitySites = design.primers.reduce(
-    (total, primer) => total + primer.specificitySites.filter((site) => site.risk === 'high').length,
+    (total, primer) =>
+      total +
+      primer.specificitySites.filter((site) => site.risk === 'high').length,
     0,
   );
   const watchSpecificitySites = design.primers.reduce(
-    (total, primer) => total + primer.specificitySites.filter((site) => site.risk === 'watch').length,
+    (total, primer) =>
+      total +
+      primer.specificitySites.filter((site) => site.risk === 'watch').length,
     0,
   );
 
@@ -276,14 +323,28 @@ function buildValidationSummary(design: FusionDesign): ValidationSummary {
     localOffTargetAmplicons: design.offTargetAmplicons.length,
     highRiskSpecificitySites,
     watchSpecificitySites,
-    highRiskPrimerPairInteractions: design.primerPairInteractions.filter((pair) => pair.interaction?.risk === 'High').length,
+    highRiskPrimerPairInteractions: design.primerPairInteractions.filter(
+      (pair) => pair.interaction?.risk === 'High',
+    ).length,
   };
 }
 
-function buildGelLane(label: string, productLength: number, maxLength: number): string {
+function buildGelLane(
+  label: string,
+  productLength: number,
+  maxLength: number,
+): string {
   const width = 36;
-  const position = Math.max(0, Math.min(width - 1, Math.round((productLength / Math.max(maxLength, 1)) * (width - 1))));
-  const track = Array.from({ length: width }, (_, index) => (index === position ? '*' : '-')).join('');
+  const position = Math.max(
+    0,
+    Math.min(
+      width - 1,
+      Math.round((productLength / Math.max(maxLength, 1)) * (width - 1)),
+    ),
+  );
+  const track = Array.from({ length: width }, (_, index) =>
+    index === position ? '*' : '-',
+  ).join('');
   return `${label.padEnd(18)} ${track} ${productLength} bp`;
 }
 
@@ -295,17 +356,30 @@ export function buildPrimerCsv(design: FusionDesign): string {
 }
 
 export function buildPrimerFasta(design: FusionDesign): string {
-  return design.primers.map((primer) => formatFastaRecord(`${primer.name} ${primer.reaction}`, primer.sequence)).join('\n\n');
+  return design.primers
+    .map((primer) =>
+      formatFastaRecord(`${primer.name} ${primer.reaction}`, primer.sequence),
+    )
+    .join('\n\n');
 }
 
 export function buildFinalConstructFasta(design: FusionDesign): string {
-  return formatFastaRecord(`${design.project.name} final_construct length=${design.finalProduct.length}bp mode=${design.project.mode}`, design.finalProduct);
+  return formatFastaRecord(
+    `${design.project.name} final_construct length=${design.finalProduct.length}bp mode=${design.project.mode}`,
+    design.finalProduct,
+  );
 }
 
 export function buildStageProductFasta(design: FusionDesign): string {
   return [
-    formatFastaRecord(`${design.project.name} PCR_1A_product length=${design.stageAProduct.length}bp`, design.stageAProduct),
-    formatFastaRecord(`${design.project.name} PCR_1B_product length=${design.stageBProduct.length}bp`, design.stageBProduct),
+    formatFastaRecord(
+      `${design.project.name} PCR_1A_product length=${design.stageAProduct.length}bp`,
+      design.stageAProduct,
+    ),
+    formatFastaRecord(
+      `${design.project.name} PCR_1B_product length=${design.stageBProduct.length}bp`,
+      design.stageBProduct,
+    ),
   ].join('\n\n');
 }
 
@@ -314,7 +388,9 @@ export function buildProjectJson(project: FusionProjectInput): string {
 }
 
 export function buildAnnotatedGenbank(design: FusionDesign): string {
-  const locusName = (design.project.name.replace(/[^A-Za-z0-9_]/g, '_') || 'fusionpcr').slice(0, 16);
+  const locusName = (
+    design.project.name.replace(/[^A-Za-z0-9_]/g, '_') || 'fusionpcr'
+  ).slice(0, 16);
   const constructLength = design.finalProduct.length;
   const selectedALength = selectionSpanLength(design.project.fragmentA);
   const selectedBLength = selectionSpanLength(design.project.fragmentB);
@@ -324,8 +400,18 @@ export function buildAnnotatedGenbank(design: FusionDesign): string {
   const insertEnd = fragmentAEnd + design.insertSequence.length;
   const fragmentBStart = insertEnd + 1;
   const fragmentBEnd = constructLength;
-  const mappedA = mapFragmentFeatures(design.project.fragmentA, fragmentAStart, selectedALength, design.effectiveSelectedA.length);
-  const mappedB = mapFragmentFeatures(design.project.fragmentB, fragmentBStart, selectedBLength, design.effectiveSelectedB.length);
+  const mappedA = mapFragmentFeatures(
+    design.project.fragmentA,
+    fragmentAStart,
+    selectedALength,
+    design.effectiveSelectedA.length,
+  );
+  const mappedB = mapFragmentFeatures(
+    design.project.fragmentB,
+    fragmentBStart,
+    selectedBLength,
+    design.effectiveSelectedB.length,
+  );
 
   const features: ExportFeature[] = [
     {
@@ -356,7 +442,10 @@ export function buildAnnotatedGenbank(design: FusionDesign): string {
       key: 'misc_feature',
       location: `${insertStart}..${insertEnd}`,
       qualifiers: {
-        label: design.project.mode === 'protein-fusion' ? 'Linker or inserted sequence' : 'Inserted sequence',
+        label:
+          design.project.mode === 'protein-fusion'
+            ? 'Linker or inserted sequence'
+            : 'Inserted sequence',
         note: `${design.project.mode} payload introduced between fragment contributions.`,
       },
     });
@@ -423,8 +512,14 @@ export function buildPrimerBlastPackage(design: FusionDesign): string {
       productLength: design.finalProduct.length,
     },
   ].filter(
-    (pair): pair is { name: string; forward: PrimerDesign; reverse: PrimerDesign; productLength: number } =>
-      Boolean(pair.forward && pair.reverse),
+    (
+      pair,
+    ): pair is {
+      name: string;
+      forward: PrimerDesign;
+      reverse: PrimerDesign;
+      productLength: number;
+    } => Boolean(pair.forward && pair.reverse),
   );
 
   return [
@@ -560,10 +655,12 @@ export function buildProtocolText(design: FusionDesign): string {
     '',
     'Local specificity',
     ...(design.offTargetAmplicons.length
-      ? design.offTargetAmplicons.slice(0, 12).map(
-          (amplicon) =>
-            `- ${amplicon.templateName}: ${amplicon.forwardPrimerName}/${amplicon.reversePrimerName} -> ${amplicon.length} bp (${amplicon.risk})`,
-        )
+      ? design.offTargetAmplicons
+          .slice(0, 12)
+          .map(
+            (amplicon) =>
+              `- ${amplicon.templateName}: ${amplicon.forwardPrimerName}/${amplicon.reversePrimerName} -> ${amplicon.length} bp (${amplicon.risk})`,
+          )
       : ['- No unintended amplicons detected by the current local scan.']),
     ...(design.proteinValidation
       ? [
@@ -594,13 +691,23 @@ export function buildProtocolText(design: FusionDesign): string {
       : []),
     '',
     'Warnings',
-    ...(design.warnings.length ? design.warnings.map((warning) => `- ${warning}`) : ['- None']),
+    ...(design.warnings.length
+      ? design.warnings.map((warning) => `- ${warning}`)
+      : ['- None']),
   ].join('\n');
 }
 
 export function buildPipettingTableCsv(design: FusionDesign): string {
   const rows = [
-    ['section', 'reaction', 'role', 'item', 'per_reaction_ul', 'total_ul', 'note'].join(','),
+    [
+      'section',
+      'reaction',
+      'role',
+      'item',
+      'per_reaction_ul',
+      'total_ul',
+      'note',
+    ].join(','),
     ...design.protocolPlan.stageMixEntries.map((entry) =>
       [
         csvEscape('stage-mix'),
@@ -609,7 +716,9 @@ export function buildPipettingTableCsv(design: FusionDesign): string {
         csvEscape(entry.label),
         '',
         entry.requiredVolumeUl.toFixed(2),
-        csvEscape(`${entry.targetPmol.toFixed(3)} pmol target from ${entry.productLengthBp} bp product at ${entry.concentrationNgPerUl} ng/uL`),
+        csvEscape(
+          `${entry.targetPmol.toFixed(3)} pmol target from ${entry.productLengthBp} bp product at ${entry.concentrationNgPerUl} ng/uL`,
+        ),
       ].join(','),
     ),
     ...design.protocolPlan.primerUsage.map((entry) =>
@@ -648,7 +757,10 @@ export function buildThermocyclerProgram(design: FusionDesign): string {
     `Polymerase profile: ${design.profile.label}`,
     'Current release note: denaturation and final-extension steps use the app default high-fidelity PCR program, while annealing and extension durations are design-specific.',
     '',
-    ...(['PCR 1A', 'PCR 1B', 'Fusion PCR'] as const).flatMap((name) => [...buildThermocyclerBlock(design, name), '']),
+    ...(['PCR 1A', 'PCR 1B', 'Fusion PCR'] as const).flatMap((name) => [
+      ...buildThermocyclerBlock(design, name),
+      '',
+    ]),
   ]
     .join('\n')
     .trim();
@@ -748,10 +860,14 @@ export function buildValidationReport(design: FusionDesign): string {
           (proposal) =>
             `- ${proposal.label}: ${proposal.from || 'none'} -> ${proposal.to || 'delete'} (${proposal.approved ? 'approved' : 'pending'})`,
         )
-      : ['- No explicit sequence-change approvals are attached to this design.']),
+      : [
+          '- No explicit sequence-change approvals are attached to this design.',
+        ]),
     '',
     'Blocking issues',
-    ...(design.issues.length ? design.issues.map((issue) => `- ${issue}`) : ['- None']),
+    ...(design.issues.length
+      ? design.issues.map((issue) => `- ${issue}`)
+      : ['- None']),
     '',
     'Warnings',
     ...describeDesignWarnings(design).map((warning) => `- ${warning}`),
@@ -759,7 +875,12 @@ export function buildValidationReport(design: FusionDesign): string {
 }
 
 export function buildExpectedGelDiagram(design: FusionDesign): string {
-  const maxLength = Math.max(design.stageAProduct.length, design.stageBProduct.length, design.finalProduct.length, 100);
+  const maxLength = Math.max(
+    design.stageAProduct.length,
+    design.stageBProduct.length,
+    design.finalProduct.length,
+    100,
+  );
 
   return [
     `FusionPCR Studio expected gel diagram for ${design.project.name}`,
@@ -793,13 +914,19 @@ export function buildCalculationManifest(design: FusionDesign): string {
     sequenceSelection: {
       fragmentA: {
         label: design.project.fragmentA.label,
-        selectedCoordinates: [design.project.fragmentA.start, design.project.fragmentA.end],
+        selectedCoordinates: [
+          design.project.fragmentA.start,
+          design.project.fragmentA.end,
+        ],
         importedName: design.project.fragmentA.importedName,
         checksum: design.project.fragmentA.checksum,
       },
       fragmentB: {
         label: design.project.fragmentB.label,
-        selectedCoordinates: [design.project.fragmentB.start, design.project.fragmentB.end],
+        selectedCoordinates: [
+          design.project.fragmentB.start,
+          design.project.fragmentB.end,
+        ],
         importedName: design.project.fragmentB.importedName,
         checksum: design.project.fragmentB.checksum,
       },
@@ -808,11 +935,16 @@ export function buildCalculationManifest(design: FusionDesign): string {
       finalSequenceChecksum: checksumSequence(design.finalProduct),
     },
     methods: {
-      tmModel: 'Nearest-neighbour DNA duplex model with the application thermodynamic conditions and DMSO adjustment settings.',
-      primerStructureModel: 'Local hairpin, homodimer, heterodimer, and 3-prime dimer analysis from src/utils/structure.ts.',
-      specificityModel: 'Local imported-template scan plus stage-product/final-product contextual screening from src/utils/specificity.ts.',
-      optimizer: 'Bounded whole-design candidate enumeration and score ranking from src/utils/fusion.ts.',
-      protocolPlanner: 'Profile-driven reaction mix and stage-planning logic from src/utils/protocol.ts.',
+      tmModel:
+        'Nearest-neighbour DNA duplex model with the application thermodynamic conditions and DMSO adjustment settings.',
+      primerStructureModel:
+        'Local hairpin, homodimer, heterodimer, and 3-prime dimer analysis from src/utils/structure.ts.',
+      specificityModel:
+        'Local imported-template scan plus stage-product/final-product contextual screening from src/utils/specificity.ts.',
+      optimizer:
+        'Bounded whole-design candidate enumeration and score ranking from src/utils/fusion.ts.',
+      protocolPlanner:
+        'Profile-driven reaction mix and stage-planning logic from src/utils/protocol.ts.',
       genbankAnnotationPolicy:
         'Selected source features are mapped only when the imported location is a simple in-range interval and the selected span length is preserved in the final construct.',
     },

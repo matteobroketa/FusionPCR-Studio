@@ -28,7 +28,9 @@ export function getActiveFocusableElement() {
     return null;
   }
 
-  return document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  return document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : null;
 }
 
 export function isEditableElement(element: HTMLElement | null) {
@@ -37,15 +39,23 @@ export function isEditableElement(element: HTMLElement | null) {
   }
 
   const tagName = element.tagName.toLowerCase();
-  return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || element.isContentEditable;
+  return (
+    tagName === 'input' ||
+    tagName === 'textarea' ||
+    tagName === 'select' ||
+    element.isContentEditable
+  );
 }
 
 export function focusInspectorPanel() {
   window.setTimeout(() => {
-    const retryButton = Array.from(document.querySelectorAll('.inspector-pane button')).find((button) =>
-      button.textContent?.includes('Retry'),
-    );
-    if (retryButton instanceof HTMLElement && retryButton.textContent?.includes('Retry')) {
+    const retryButton = Array.from(
+      document.querySelectorAll('.inspector-pane button'),
+    ).find((button) => button.textContent?.includes('Retry'));
+    if (
+      retryButton instanceof HTMLElement &&
+      retryButton.textContent?.includes('Retry')
+    ) {
       retryButton.focus();
       return;
     }
@@ -89,7 +99,10 @@ export function buildStepStatuses({
   const primerStepStatus: StepStatus = !design.primers.length
     ? { level: 'pending', text: 'No primer set yet' }
     : primerScopedReviewCount
-      ? { level: 'warning', text: `${primerScopedReviewCount} primer review item(s)` }
+      ? {
+          level: 'warning',
+          text: `${primerScopedReviewCount} primer review item(s)`,
+        }
       : { level: 'complete', text: `${design.primers.length} primers ready` };
   const protocolStepStatus: StepStatus = !design.reactions.length
     ? { level: 'pending', text: 'Protocol not reviewed' }
@@ -97,7 +110,10 @@ export function buildStepStatuses({
       ? { level: 'warning', text: 'Protocol blocked by design issues' }
       : actionableReviewCount
         ? { level: 'warning', text: `${actionableReviewCount} review item(s)` }
-        : { level: 'complete', text: `${design.reactions.length} reactions planned` };
+        : {
+            level: 'complete',
+            text: `${design.reactions.length} reactions planned`,
+          };
 
   return {
     sequenceStepStatus,
@@ -115,24 +131,35 @@ export function buildCompareRows(
     {
       label: 'Total oligo nt',
       current: String(comparisonMetrics.totalOligoLength),
-      baseline: comparisonSnapshot ? String(comparisonSnapshot.metrics.totalOligoLength) : 'n/a',
+      baseline: comparisonSnapshot
+        ? String(comparisonSnapshot.metrics.totalOligoLength)
+        : 'n/a',
     },
     {
       label: 'Worst dimer dG',
-      current: comparisonMetrics.worstDimerDeltaG !== null ? comparisonMetrics.worstDimerDeltaG.toFixed(1) : 'n/a',
+      current:
+        comparisonMetrics.worstDimerDeltaG !== null
+          ? comparisonMetrics.worstDimerDeltaG.toFixed(1)
+          : 'n/a',
       baseline:
-        comparisonSnapshot && comparisonSnapshot.metrics.worstDimerDeltaG !== null
+        comparisonSnapshot &&
+        comparisonSnapshot.metrics.worstDimerDeltaG !== null
           ? comparisonSnapshot.metrics.worstDimerDeltaG.toFixed(1)
           : 'n/a',
     },
     {
       label: 'Tm spread',
       current: `${comparisonMetrics.tmSpread.toFixed(1)} C`,
-      baseline: comparisonSnapshot ? `${comparisonSnapshot.metrics.tmSpread.toFixed(1)} C` : 'n/a',
+      baseline: comparisonSnapshot
+        ? `${comparisonSnapshot.metrics.tmSpread.toFixed(1)} C`
+        : 'n/a',
     },
     {
       label: 'Overlap Tm',
-      current: comparisonMetrics.overlapTm !== null ? `${comparisonMetrics.overlapTm.toFixed(1)} C` : 'n/a',
+      current:
+        comparisonMetrics.overlapTm !== null
+          ? `${comparisonMetrics.overlapTm.toFixed(1)} C`
+          : 'n/a',
       baseline:
         comparisonSnapshot && comparisonSnapshot.metrics.overlapTm !== null
           ? `${comparisonSnapshot.metrics.overlapTm.toFixed(1)} C`
@@ -141,7 +168,9 @@ export function buildCompareRows(
     {
       label: 'Local off-targets',
       current: String(comparisonMetrics.localOffTargets),
-      baseline: comparisonSnapshot ? String(comparisonSnapshot.metrics.localOffTargets) : 'n/a',
+      baseline: comparisonSnapshot
+        ? String(comparisonSnapshot.metrics.localOffTargets)
+        : 'n/a',
     },
   ];
 }
