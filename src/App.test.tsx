@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
@@ -108,32 +108,23 @@ describe('App browser flows', () => {
     await waitFor(() => expect(screen.getByLabelText('Project name')).toHaveValue('Exact fusion example'));
   });
 
-  it('pins a compare snapshot and keeps current and baseline values side by side after edits', async () => {
+  it('keeps non-MVP analysis and mutation controls out of the public workspace', async () => {
     const user = userEvent.setup();
     render(<App />);
     await loadExampleProject(user);
-    await user.click(screen.getByRole('button', { name: 'Junction step' }));
-    await user.click(screen.getByText('Advanced settings'));
-
-    await user.click(screen.getByRole('button', { name: 'Pin current design' }));
-    expect(screen.getByRole('button', { name: 'Refresh pinned design' })).toBeInTheDocument();
-
     await user.click(screen.getByRole('button', { name: 'Sequences step' }));
-    fireEvent.change(screen.getByPlaceholderText('Optional inserted sequence between the selected fragment ranges'), {
-      target: { value: 'GGTGGT' },
-    });
+    await user.click(screen.getByText('Advanced settings'));
+
+    expect(screen.queryByText('Mutation planner')).not.toBeInTheDocument();
+    expect(screen.queryByText('Editing workspace')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sequence change approvals')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Junction step' }));
     await user.click(screen.getByText('Advanced settings'));
-    const totalOligoRow = screen
-      .getAllByRole('row')
-      .find((row) => within(row).queryByText('Total oligo nt'));
+    expect(screen.queryByRole('button', { name: 'Pin current design' })).not.toBeInTheDocument();
 
-    expect(totalOligoRow).toBeDefined();
-    await waitFor(() => {
-      const cells = within(totalOligoRow as HTMLElement).getAllByRole('cell');
-      expect(cells[1].textContent).not.toBe(cells[2].textContent);
-    });
+    await user.click(screen.getByRole('button', { name: 'Primers step' }));
+    expect(screen.queryByRole('button', { name: 'Alternatives' })).not.toBeInTheDocument();
   });
 
   it('enables export actions for a current clean design', async () => {

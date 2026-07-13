@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { SequencePreview, SequenceRail } from './designPanels';
 import type { CanvasTracks, ComparisonSnapshot } from '../hooks/useProjectController';
+import { ADVANCED_ANALYSIS_ENABLED } from '../utils/feature-flags';
 import type { FusionDesign, PrimerDesign, ProteinValidation } from '../utils/fusion';
 import type { WorkflowStage } from '../utils/review';
 
@@ -221,35 +222,39 @@ export function JunctionStep({
           <label className="toggle-card"><input type="checkbox" checked={canvasTracks.riskSummary} onChange={() => onToggleCanvasTrack('riskSummary')} /><span>Risk summary</span></label>
         </div>
 
-        <div className="action-row">
-          <button type="button" className="button button-secondary" onClick={onCaptureComparisonSnapshot}>
-            {comparisonSnapshot ? 'Refresh pinned design' : 'Pin current design'}
-          </button>
-          {comparisonSnapshot ? (
-            <button type="button" className="button button-secondary" onClick={onClearComparisonSnapshot}>
-              Clear compare
-            </button>
-          ) : null}
-        </div>
-
-        {comparisonSnapshot ? (
-          <div className="compare-table" role="table" aria-label="Design comparison">
-            <div className="compare-row compare-header" role="row">
-              <span role="columnheader">Metric</span>
-              <strong role="columnheader">Current</strong>
-              <strong role="columnheader">Pinned</strong>
+        {ADVANCED_ANALYSIS_ENABLED ? (
+          <>
+            <div className="action-row">
+              <button type="button" className="button button-secondary" onClick={onCaptureComparisonSnapshot}>
+                {comparisonSnapshot ? 'Refresh pinned design' : 'Pin current design'}
+              </button>
+              {comparisonSnapshot ? (
+                <button type="button" className="button button-secondary" onClick={onClearComparisonSnapshot}>
+                  Clear compare
+                </button>
+              ) : null}
             </div>
-            {compareRows.map((row) => (
-              <div key={row.label} className="compare-row" role="row">
-                <span role="cell">{row.label}</span>
-                <strong role="cell">{row.current}</strong>
-                <strong role="cell">{row.baseline}</strong>
+
+            {comparisonSnapshot ? (
+              <div className="compare-table" role="table" aria-label="Design comparison">
+                <div className="compare-row compare-header" role="row">
+                  <span role="columnheader">Metric</span>
+                  <strong role="columnheader">Current</strong>
+                  <strong role="columnheader">Pinned</strong>
+                </div>
+                {compareRows.map((row) => (
+                  <div key={row.label} className="compare-row" role="row">
+                    <span role="cell">{row.label}</span>
+                    <strong role="cell">{row.current}</strong>
+                    <strong role="cell">{row.baseline}</strong>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="field-helper">Pin the current design to compare total oligo length, dimer severity, Tm spread, overlap Tm, and local off-target counts after each edit.</p>
-        )}
+            ) : (
+              <p className="field-helper">Pin the current design to compare total oligo length, dimer severity, Tm spread, overlap Tm, and local off-target counts after each edit.</p>
+            )}
+          </>
+        ) : null}
       </details>
     </div>
   );

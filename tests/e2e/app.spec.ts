@@ -175,6 +175,35 @@ test.describe('FusionPCR Studio production build', () => {
       .toContain('>A_outer_F');
   });
 
+  test('keeps experimental analysis and mutation controls out of the public MVP surface', async ({ page }) => {
+    await page.goto('./');
+    await loadRunnableExample(page);
+
+    await openWorkbenchStep(page, 'Sequences');
+    await page.getByText('Advanced settings').click();
+    await expect(page.getByText('Mutation planner')).toHaveCount(0);
+    await expect(page.getByText('Editing workspace')).toHaveCount(0);
+    await expect(page.getByText('Sequence change approvals')).toHaveCount(0);
+
+    await openWorkbenchStep(page, 'Junction');
+    await page.getByText('Advanced settings').click();
+    await expect(page.getByRole('button', { name: 'Pin current design' })).toHaveCount(0);
+
+    await openWorkbenchStep(page, 'Primers');
+    await expect(page.getByRole('button', { name: 'Alternatives' })).toHaveCount(0);
+
+    await openWorkbenchStep(page, 'Protocol & Export');
+    await page.getByRole('button', { name: 'Reaction setup' }).click();
+    await expect(page.getByLabel('Polymerase')).toBeVisible();
+    await expect(page.getByLabel('Fragment A concentration (ng/uL)')).toBeVisible();
+    await expect(page.getByLabel('Fragment B concentration (ng/uL)')).toBeVisible();
+    await expect(page.getByLabel('Reaction volume (uL)')).toBeVisible();
+    await expect(page.getByLabel('PCR 1 reactions per fragment')).toBeVisible();
+    await expect(page.getByLabel('Fusion reactions')).toBeVisible();
+    await expect(page.getByText('Advanced protocol settings')).toBeVisible();
+    await expect(page.getByLabel('Mix strategy')).toBeHidden();
+  });
+
   test('renders a recoverable worker error and recalculates after Retry', async ({ page }) => {
     await page.route('**/*design.worker*.js', (route) =>
       route.fulfill({

@@ -8,7 +8,7 @@ import {
   buildProjectJson,
   buildProtocolText,
 } from '../utils/export';
-import type { FusionDesign, FusionProjectInput, ReactionPlan } from '../utils/fusion';
+import { polymeraseProfiles, type FusionDesign, type FusionProjectInput, type ReactionPlan } from '../utils/fusion';
 import { downloadText } from '../utils/project';
 import { getStageSequencePreviews, type WorkflowStage } from '../utils/review';
 
@@ -189,7 +189,22 @@ export function ProtocolExportStep({
           <>
             <div className="field-grid">
               <label className="field-card">
-                <span className="field-label">Stage A concentration (ng/uL)</span>
+                <span className="field-label">Polymerase</span>
+                <select
+                  className="text-input"
+                  value={project.polymeraseId}
+                  disabled={isPolymeraseLocked}
+                  onChange={(event) => controller.updateProject('polymeraseId', event.target.value as FusionProjectInput['polymeraseId'])}
+                >
+                  {Object.values(polymeraseProfiles).map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field-card">
+                <span className="field-label">Fragment A concentration (ng/uL)</span>
                 <input
                   className="text-input"
                   type="number"
@@ -203,7 +218,7 @@ export function ProtocolExportStep({
                 />
               </label>
               <label className="field-card">
-                <span className="field-label">Stage B concentration (ng/uL)</span>
+                <span className="field-label">Fragment B concentration (ng/uL)</span>
                 <input
                   className="text-input"
                   type="number"
@@ -213,141 +228,6 @@ export function ProtocolExportStep({
                   disabled={isPolymeraseLocked}
                   onChange={(event) =>
                     controller.updateProtocolSetting('stageBConcentrationNgPerUl', Math.max(0.0001, Number(event.target.value) || 0.0001))
-                  }
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Total target DNA (pmol)</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0.000001}
-                  step="0.01"
-                  value={project.protocolSettings.totalTemplatePmol}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) =>
-                    controller.updateProtocolSetting('totalTemplatePmol', Math.max(0.000001, Number(event.target.value) || 0.000001))
-                  }
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Mix strategy</span>
-                <select
-                  className="text-input"
-                  value={project.protocolSettings.mixStrategy}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) => controller.updateProtocolSetting('mixStrategy', event.target.value as FusionProjectInput['protocolSettings']['mixStrategy'])}
-                >
-                  <option value="equimolar">1:1 equimolar</option>
-                  <option value="user-defined">User-defined ratio</option>
-                  <option value="limiting-a">Fragment A limiting</option>
-                  <option value="limiting-b">Fragment B limiting</option>
-                </select>
-              </label>
-              <label className="field-card">
-                <span className="field-label">Mix ratio A</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0.000001}
-                  step="0.1"
-                  value={project.protocolSettings.stageMixRatioA}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) =>
-                    controller.updateProtocolSetting('stageMixRatioA', Math.max(0.000001, Number(event.target.value) || 0.000001))
-                  }
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Mix ratio B</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0.000001}
-                  step="0.1"
-                  value={project.protocolSettings.stageMixRatioB}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) =>
-                    controller.updateProtocolSetting('stageMixRatioB', Math.max(0.000001, Number(event.target.value) || 0.000001))
-                  }
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Primer stock (uM)</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0.000001}
-                  step="0.1"
-                  value={project.protocolSettings.primerStockMicromolar}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) =>
-                    controller.updateProtocolSetting('primerStockMicromolar', Math.max(0.000001, Number(event.target.value) || 0.000001))
-                  }
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Primer working (uM)</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0.000001}
-                  step="0.1"
-                  value={project.protocolSettings.primerWorkingMicromolar}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) =>
-                    controller.updateProtocolSetting('primerWorkingMicromolar', Math.max(0.000001, Number(event.target.value) || 0.000001))
-                  }
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Working stock prep (uL)</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0.000001}
-                  step="1"
-                  value={project.protocolSettings.workingStockPrepMicroliters}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) =>
-                    controller.updateProtocolSetting(
-                      'workingStockPrepMicroliters',
-                      Math.max(0.000001, Number(event.target.value) || 0.000001),
-                    )
-                  }
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Primer per reaction (uL)</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0.000001}
-                  step="0.1"
-                  value={project.protocolSettings.primerPerReactionMicroliters}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) =>
-                    controller.updateProtocolSetting(
-                      'primerPerReactionMicroliters',
-                      Math.max(0.000001, Number(event.target.value) || 0.000001),
-                    )
-                  }
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Stage 1 template / reaction (uL)</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0.000001}
-                  step="0.1"
-                  value={project.protocolSettings.stage1TemplatePerReactionMicroliters}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) =>
-                    controller.updateProtocolSetting(
-                      'stage1TemplatePerReactionMicroliters',
-                      Math.max(0.000001, Number(event.target.value) || 0.000001),
-                    )
                   }
                 />
               </label>
@@ -366,7 +246,7 @@ export function ProtocolExportStep({
                 />
               </label>
               <label className="field-card">
-                <span className="field-label">Stage 1 reactions / product</span>
+                <span className="field-label">PCR 1 reactions per fragment</span>
                 <input
                   className="text-input"
                   type="number"
@@ -380,7 +260,7 @@ export function ProtocolExportStep({
                 />
               </label>
               <label className="field-card">
-                <span className="field-label">Final reactions</span>
+                <span className="field-label">Fusion reactions</span>
                 <input
                   className="text-input"
                   type="number"
@@ -391,43 +271,188 @@ export function ProtocolExportStep({
                   onChange={(event) => controller.updateProtocolSetting('finalReactionCount', Math.max(1, Number(event.target.value) || 1))}
                 />
               </label>
-              <label className="field-card">
-                <span className="field-label">Overfill (%)</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={0}
-                  step="1"
-                  value={project.protocolSettings.overfillPercent}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) => controller.updateProtocolSetting('overfillPercent', Math.max(0, Number(event.target.value) || 0))}
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Stage 1 cycles</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={1}
-                  step="1"
-                  value={project.protocolSettings.stage1Cycles}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) => controller.updateProtocolSetting('stage1Cycles', Math.max(1, Number(event.target.value) || 1))}
-                />
-              </label>
-              <label className="field-card">
-                <span className="field-label">Final cycles</span>
-                <input
-                  className="text-input"
-                  type="number"
-                  min={1}
-                  step="1"
-                  value={project.protocolSettings.finalCycles}
-                  disabled={isPolymeraseLocked}
-                  onChange={(event) => controller.updateProtocolSetting('finalCycles', Math.max(1, Number(event.target.value) || 1))}
-                />
-              </label>
             </div>
+
+            <details className="advanced-disclosure">
+              <summary>Advanced protocol settings</summary>
+              <div className="advanced-section">
+                <div className="field-grid">
+                  <label className="field-card">
+                    <span className="field-label">Total target DNA (pmol)</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0.000001}
+                      step="0.01"
+                      value={project.protocolSettings.totalTemplatePmol}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting('totalTemplatePmol', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                      }
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Mix strategy</span>
+                    <select
+                      className="text-input"
+                      value={project.protocolSettings.mixStrategy}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting('mixStrategy', event.target.value as FusionProjectInput['protocolSettings']['mixStrategy'])
+                      }
+                    >
+                      <option value="equimolar">1:1 equimolar</option>
+                      <option value="user-defined">User-defined ratio</option>
+                      <option value="limiting-a">Fragment A limiting</option>
+                      <option value="limiting-b">Fragment B limiting</option>
+                    </select>
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Mix ratio A</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0.000001}
+                      step="0.1"
+                      value={project.protocolSettings.stageMixRatioA}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting('stageMixRatioA', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                      }
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Mix ratio B</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0.000001}
+                      step="0.1"
+                      value={project.protocolSettings.stageMixRatioB}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting('stageMixRatioB', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                      }
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Primer stock (uM)</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0.000001}
+                      step="0.1"
+                      value={project.protocolSettings.primerStockMicromolar}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting('primerStockMicromolar', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                      }
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Primer working (uM)</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0.000001}
+                      step="0.1"
+                      value={project.protocolSettings.primerWorkingMicromolar}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting('primerWorkingMicromolar', Math.max(0.000001, Number(event.target.value) || 0.000001))
+                      }
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Working stock prep (uL)</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0.000001}
+                      step="1"
+                      value={project.protocolSettings.workingStockPrepMicroliters}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting(
+                          'workingStockPrepMicroliters',
+                          Math.max(0.000001, Number(event.target.value) || 0.000001),
+                        )
+                      }
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Primer per reaction (uL)</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0.000001}
+                      step="0.1"
+                      value={project.protocolSettings.primerPerReactionMicroliters}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting(
+                          'primerPerReactionMicroliters',
+                          Math.max(0.000001, Number(event.target.value) || 0.000001),
+                        )
+                      }
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Stage 1 template / reaction (uL)</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0.000001}
+                      step="0.1"
+                      value={project.protocolSettings.stage1TemplatePerReactionMicroliters}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) =>
+                        controller.updateProtocolSetting(
+                          'stage1TemplatePerReactionMicroliters',
+                          Math.max(0.000001, Number(event.target.value) || 0.000001),
+                        )
+                      }
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Overfill (%)</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={0}
+                      step="1"
+                      value={project.protocolSettings.overfillPercent}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) => controller.updateProtocolSetting('overfillPercent', Math.max(0, Number(event.target.value) || 0))}
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Stage 1 cycles</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={1}
+                      step="1"
+                      value={project.protocolSettings.stage1Cycles}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) => controller.updateProtocolSetting('stage1Cycles', Math.max(1, Number(event.target.value) || 1))}
+                    />
+                  </label>
+                  <label className="field-card">
+                    <span className="field-label">Final cycles</span>
+                    <input
+                      className="text-input"
+                      type="number"
+                      min={1}
+                      step="1"
+                      value={project.protocolSettings.finalCycles}
+                      disabled={isPolymeraseLocked}
+                      onChange={(event) => controller.updateProtocolSetting('finalCycles', Math.max(1, Number(event.target.value) || 1))}
+                    />
+                  </label>
+                </div>
+              </div>
+            </details>
 
             <div className="workspace-two-column">
               <div className="status-block">

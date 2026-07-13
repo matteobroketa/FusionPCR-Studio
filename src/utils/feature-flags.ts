@@ -1,0 +1,3 @@
+export const EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED = false;
+export const ADVANCED_ANALYSIS_ENABLED = false;
+export const CODING_OPTIMIZATION_UI_ENABLED = false;

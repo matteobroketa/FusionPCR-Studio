@@ -1,6 +1,7 @@
 import { useState, type RefObject } from 'react';
 import { PrimerDetailPanel, summarizePrimerStatus } from './designPanels';
 import type { ComparisonSnapshot } from '../hooks/useProjectController';
+import { ADVANCED_ANALYSIS_ENABLED } from '../utils/feature-flags';
 import type { FusionDesign, PrimerDesign } from '../utils/fusion';
 import { getPrimerReviewItems } from '../utils/review-items';
 
@@ -30,7 +31,7 @@ const primerTabs: Array<[PrimerResultTab, string]> = [
   ['sequences', 'Primer sequences'],
   ['structures', 'Structures'],
   ['specificity', 'Specificity'],
-  ['alternatives', 'Alternatives'],
+  ...(ADVANCED_ANALYSIS_ENABLED ? ([['alternatives', 'Alternatives']] as Array<[PrimerResultTab, string]>) : []),
 ];
 
 export function PrimerStep({

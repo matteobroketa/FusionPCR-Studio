@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { SequencePreview } from './designPanels';
 import type { useProjectController } from '../hooks/useProjectController';
+import { CODING_OPTIMIZATION_UI_ENABLED, EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED } from '../utils/feature-flags';
 import { describeFeatureSelection, parseFeatureSelection } from '../utils/features';
 import { createEmptyFragment, polymeraseProfiles, type DesignMode, type FusionDesign, type FusionProjectInput } from '../utils/fusion';
 import { flipImportedSource, type ImportedSource } from '../utils/import';
@@ -222,7 +223,20 @@ export function SequenceStep({
               aria-label="Design mode"
               className="text-input"
               value={project.mode}
-              onChange={(event) => controller.updateProject('mode', event.target.value as DesignMode)}
+              onChange={(event) => {
+                const nextMode = event.target.value as DesignMode;
+                controller.updateProject('mode', nextMode);
+                if (nextMode === 'protein-fusion') {
+                  controller.updateProject('coding', {
+                    ...project.coding,
+                    retainUpstreamStop: true,
+                    retainDownstreamStart: true,
+                    linkerRequired: false,
+                    preserveProtein: false,
+                    flexibleCodons: 0,
+                  });
+                }
+              }}
             >
               <option value="exact">Exact fusion</option>
               <option value="protein-fusion">Protein fusion</option>
@@ -236,7 +250,7 @@ export function SequenceStep({
         </div>
 
         <label className="field-card">
-          <span className="field-label">Linker or mutation payload</span>
+          <span className="field-label">Linker or inserted sequence</span>
           <textarea
             className="sequence-input short-input"
             value={project.insertSequence}
@@ -392,7 +406,7 @@ export function SequenceStep({
         ) : null}
       </section>
 
-      {mutationMode && !isPublicDesignMode(project.mode) ? (
+      {EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED && mutationMode && !isPublicDesignMode(project.mode) ? (
         <section className="panel workspace-section mutation-panel">
           <div className="panel-header">
             <div>
@@ -754,6 +768,7 @@ export function SequenceStep({
       <details className="panel workspace-section advanced-disclosure">
         <summary>Advanced settings</summary>
 
+        {EXPERIMENTAL_SEQUENCE_WORKFLOWS_ENABLED ? (
         <section className="editor-panel advanced-section">
           <div className="panel-header">
             <div>
@@ -897,13 +912,14 @@ export function SequenceStep({
             </button>
           </div>
         </section>
+        ) : null}
 
         {project.mode === 'protein-fusion' ? (
           <section className="advanced-section protein-form">
             <div className="panel-header">
               <div>
                 <p className="eyebrow">Coding intent</p>
-                <h3>Frame and codon handling</h3>
+                <h3>Reading-frame checks</h3>
               </div>
               <span className={`pill ${design.proteinValidation?.framePreserved ? 'pill-success' : 'pill-watch'}`}>
                 {design.proteinValidation?.framePreserved ? 'Frame preserved' : 'Check frame'}
@@ -937,86 +953,21 @@ export function SequenceStep({
               </label>
             </div>
 
-            <div className="toggle-grid">
-              <label className="toggle-card">
-                <input
-                  type="checkbox"
-                  checked={project.coding.retainUpstreamStop}
-                  onChange={(event) => controller.updateCoding('retainUpstreamStop', event.target.checked)}
-                />
-                <span>Retain upstream stop codon</span>
-              </label>
-              <label className="toggle-card">
-                <input
-                  type="checkbox"
-                  checked={project.coding.retainDownstreamStart}
-                  onChange={(event) => controller.updateCoding('retainDownstreamStart', event.target.checked)}
-                />
-                <span>Retain downstream start codon</span>
-              </label>
-              <label className="toggle-card">
-                <input
-                  type="checkbox"
-                  checked={project.coding.linkerRequired}
-                  onChange={(event) => controller.updateCoding('linkerRequired', event.target.checked)}
-                />
-                <span>Require inserted linker</span>
-              </label>
-              <label className="toggle-card">
-                <input
-                  type="checkbox"
-                  checked={project.coding.preserveProtein}
-                  onChange={(event) => controller.updateCoding('preserveProtein', event.target.checked)}
-                />
-                <span>Preserve amino-acid sequence near junction</span>
-              </label>
-            </div>
-
-            <label className="field-card">
-              <span className="field-label">Flexible codons</span>
-              <input
-                className="text-input"
-                type="number"
-                min={0}
-                value={project.coding.flexibleCodons}
-                onChange={(event) => controller.updateCoding('flexibleCodons', Math.max(0, Number(event.target.value) || 0))}
-              />
-            </label>
-
             <div className="status-block">
-              <p className="status-title">Sequence change approvals</p>
-              {design.sequenceChangeProposals.length ? (
-                <div className="proposal-stack">
-                  {design.sequenceChangeProposals.map((proposal) => (
-                    <article key={proposal.id} className="proposal-card">
-                      <div>
-                        <strong>{proposal.label}</strong>
-                        <p className="field-helper">{proposal.description}</p>
-                      </div>
-                      <button
-                        type="button"
-                        className={`button ${proposal.approved ? 'button-primary' : 'button-secondary'}`}
-                        onClick={() => {
-                          if (proposal.kind === 'remove-upstream-stop') {
-                            controller.toggleChangeApproval('removeUpstreamStop');
-                            return;
-                          }
-                          if (proposal.kind === 'remove-downstream-start') {
-                            controller.toggleChangeApproval('removeDownstreamStart');
-                            return;
-                          }
-                          controller.toggleSynonymousChangeApproval(proposal.id);
-                        }}
-                      >
-                        {proposal.approved ? 'Approved' : 'Approve'}
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p>No proposed coding-sequence changes are pending for the current protein-fusion design.</p>
-              )}
+              <p className="status-title">Protein-fusion checks</p>
+              <ul className="status-list">
+                <li>{design.proteinValidation?.frameMessage ?? 'No protein-fusion validation is available for the current design.'}</li>
+                <li>Junction amino-acid window: {design.proteinValidation?.junctionAminoAcids || 'n/a'}</li>
+                <li>Inserted amino acids: {design.proteinValidation?.linkerAminoAcids || 'none'}</li>
+              </ul>
             </div>
+
+            {CODING_OPTIMIZATION_UI_ENABLED ? (
+              <div className="status-block">
+                <p className="status-title">Sequence change approvals</p>
+                <p>Hidden experimental coding-optimization UI.</p>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
