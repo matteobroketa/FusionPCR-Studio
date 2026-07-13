@@ -1,65 +1,30 @@
-import { useEffect, useRef, useState, useTransition, type ChangeEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { PrimerCard, ReactionCard, SequencePreview, SequenceRail } from './components/designPanels';
-import { emptyProject, exampleProject, exampleProjectOptions, exampleProjects, type ExampleProjectId } from './data/example';
+import { ProjectToolbar } from './components/ProjectToolbar';
+import { StepNavigation } from './components/StepNavigation';
+import { WelcomeScreen } from './components/WelcomeScreen';
+import { exampleProjectOptions } from './data/example';
 import { useFusionDesign } from './hooks/useFusionDesign';
+import { useProjectController, type MutationPayloadSource } from './hooks/useProjectController';
 import { useProjectPersistence } from './hooks/useProjectPersistence';
 import { describeFeatureSelection, parseFeatureSelection } from './utils/features';
 import {
-  buildAnnotatedGenbank,
-  buildCalculationManifest,
-  buildExpectedGelDiagram,
   buildFinalConstructFasta,
-  buildJunctionReport,
-  buildPipettingTableCsv,
-  buildPrimerBlastPackage,
   buildPrimerCsv,
   buildPrimerFasta,
   buildProjectJson,
   buildProtocolText,
-  buildStageProductFasta,
-  buildThermocyclerProgram,
-  buildValidationReport,
 } from './utils/export';
 import {
-  checksumSequence,
   createEmptyFragment,
-  defaultChangeApprovals,
-  defaultCodingIntent,
-  defaultEditorLockConfig,
-  defaultGenomicSpecificitySettings,
-  defaultProtocolConfig,
-  defaultReactionConditions,
-  ENGINE_VERSION,
-  normalizeChangeApprovals,
-  normalizeEditorLocks,
-  normalizeFragmentInput,
-  normalizeGenomicSpecificitySettings,
-  normalizeProtocolConfig,
-  normalizeReactionConditions,
   polymeraseProfiles,
-  PROJECT_SCHEMA_VERSION,
   summarizeSequenceMetrics,
-  type CodingIntent,
-  type ChangeApprovals,
   type DesignMode,
-  type FragmentInput,
   type FusionProjectInput,
-  type GenomicSpecificitySettings,
 } from './utils/fusion';
-import {
-  deleteSelectedRange,
-  duplicateSelectedRange,
-  extractSelectedRange,
-  insertAtPosition,
-  replaceSelectedRange,
-  splitFragment,
-  trimFragment,
-  type EditorLocks,
-} from './utils/editor';
-import { flipImportedSource, parseSequenceImport, type ImportParseResult, type ImportedSource } from './utils/import';
+import { flipImportedSource } from './utils/import';
 import { buildMutationPlan, selectedFragmentSequence, type MutationPlannerMode } from './utils/mutation';
-import { reverseComplement } from './utils/pcr';
 import type { ProtocolSettings } from './utils/protocol';
 import {
   buildJunctionSummary,
@@ -67,15 +32,11 @@ import {
   getStageSequencePreviews,
   getWorkflowStageLabel,
   summarizeDesignComparison,
-  type DesignComparisonSummary,
   type WorkflowStage,
 } from './utils/review';
-import type { ThermodynamicConditions } from './utils/thermodynamics';
-import { downloadText, loadInitialProject, normalizeImportedProject, stampProjectMetadata } from './utils/project';
+import { downloadText } from './utils/project';
 
 const STORAGE_KEY = 'fusionpcr-studio-project';
-const EXPERIMENTAL_NOTICE_STORAGE_KEY = 'fusionpcr-studio-experimental-notice-dismissed';
-const PUBLIC_EXAMPLE_IDS: ExampleProjectId[] = ['protein-fusion', 'exact-fusion'];
 const PUBLIC_DESIGN_MODES: DesignMode[] = ['exact', 'protein-fusion'];
 
 type InspectorFocus = 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction';
@@ -83,60 +44,7 @@ type WorkbenchStep = 'sequences' | 'construct' | 'primers' | 'protocol' | 'expor
 type PrimerResultTab = 'overview' | 'sequences' | 'structures' | 'specificity' | 'alternatives';
 type ProtocolResultTab = 'overview' | 'setup' | 'cycling' | 'pipetting' | 'products';
 
-type CanvasTracks = {
-  sourceFragments: boolean;
-  finalConstruct: boolean;
-  primerOverlays: boolean;
-  gcAndTm: boolean;
-  stageProducts: boolean;
-  translation: boolean;
-  features: boolean;
-  riskSummary: boolean;
-};
-
-type ComparisonSnapshot = {
-  capturedAt: string;
-  metrics: DesignComparisonSummary;
-};
-
-type MutationPayloadSource = 'manual' | 'donor-selection';
-
 type StepStatusLevel = 'complete' | 'warning' | 'error' | 'pending';
-type ConfirmationState = {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-} | null;
-
-function loadInitialAppProject() {
-  return loadInitialProject(STORAGE_KEY, emptyProject);
-}
-
-function loadExperimentalNoticeVisibility() {
-  if (typeof window === 'undefined') {
-    return true;
-  }
-
-  return window.localStorage.getItem(EXPERIMENTAL_NOTICE_STORAGE_KEY) !== 'dismissed';
-}
-
-function hasProjectSequenceContent(project: FusionProjectInput) {
-  return Boolean(project.fragmentA.sequence.trim() || project.fragmentB.sequence.trim());
-}
-
-function isProjectNonEmpty(project: FusionProjectInput) {
-  return Boolean(
-    project.fragmentA.sequence.trim() ||
-      project.fragmentB.sequence.trim() ||
-      project.insertSequence.trim() ||
-      project.notes.trim(),
-  );
-}
-
-function isPublicExampleId(exampleId: ExampleProjectId) {
-  return PUBLIC_EXAMPLE_IDS.includes(exampleId);
-}
 
 function isPublicDesignMode(mode: DesignMode) {
   return PUBLIC_DESIGN_MODES.includes(mode);
@@ -156,53 +64,102 @@ function formatStepStatus(level: StepStatusLevel, text: string) {
 }
 
 function App() {
-  const [project, setProject] = useState<FusionProjectInput>(() => loadInitialAppProject());
-  const [pastProjects, setPastProjects] = useState<FusionProjectInput[]>([]);
-  const [futureProjects, setFutureProjects] = useState<FusionProjectInput[]>([]);
-  const [isPending, startTransition] = useTransition();
-  const [importError, setImportError] = useState('');
-  const [sequenceImportText, setSequenceImportText] = useState('');
-  const [sequenceImportError, setSequenceImportError] = useState('');
-  const [sequenceImportResult, setSequenceImportResult] = useState<ImportParseResult | null>(null);
-  const [featureSelectionMessage, setFeatureSelectionMessage] = useState('');
-  const [activeFragmentKey, setActiveFragmentKey] = useState<'fragmentA' | 'fragmentB'>('fragmentA');
-  const [editPayload, setEditPayload] = useState('');
-  const [editPosition, setEditPosition] = useState(1);
-  const [trimAmount, setTrimAmount] = useState(1);
   const [selectedStage, setSelectedStage] = useState<WorkflowStage>('overview');
   const [inspectorFocus, setInspectorFocus] = useState<InspectorFocus>('junction');
-  const [activeStep, setActiveStep] = useState<WorkbenchStep>(() => (hasProjectSequenceContent(loadInitialAppProject()) ? 'construct' : 'sequences'));
+  const {
+    project,
+    importError,
+    sequenceImportText,
+    setSequenceImportText,
+    sequenceImportError,
+    setSequenceImportError,
+    sequenceImportResult,
+    setSequenceImportResult,
+    featureSelectionMessage,
+    activeFragmentKey,
+    setActiveFragmentKey,
+    editPayload,
+    setEditPayload,
+    editPosition,
+    setEditPosition,
+    trimAmount,
+    setTrimAmount,
+    showExperimentalNotice,
+    setShowExperimentalNotice,
+    showWorkbench,
+    setShowWorkbench,
+    showSidebar,
+    setShowSidebar,
+    showInspector,
+    setShowInspector,
+    showMenu,
+    setShowMenu,
+    confirmationState,
+    setConfirmationState,
+    recoverableProjectSnapshot,
+    comparisonSnapshot,
+    setComparisonSnapshot,
+    canvasTracks,
+    mutationRecipientKey,
+    setMutationRecipientKey,
+    mutationDonorKey,
+    setMutationDonorKey,
+    mutationStart,
+    setMutationStart,
+    mutationEnd,
+    setMutationEnd,
+    mutationCoordinate,
+    setMutationCoordinate,
+    mutationPayloadSource,
+    setMutationPayloadSource,
+    mutationPayloadInput,
+    setMutationPayloadInput,
+    selectedExampleId,
+    setSelectedExampleId,
+    fileInputRef,
+    sequenceFileInputRef,
+    canUndo,
+    canRedo,
+    undoProject,
+    redoProject,
+    updateProject,
+    updateFragment,
+    updateFragmentSequence,
+    updateCoding,
+    updateReactionCondition,
+    updateProtocolSetting,
+    updateGenomicSpecificity,
+    loadExample,
+    resetProject,
+    restorePreviousProject,
+    handleImportClick,
+    handleSequenceImportClick,
+    applyImportedSource,
+    applyFirstTwoImportedSources,
+    reverseComplementFragment,
+    applyFeatureSelection,
+    toggleEditorLock,
+    toggleCanvasTrack,
+    toggleChangeApproval,
+    toggleSynonymousChangeApproval,
+    captureComparisonSnapshot,
+    applyMutationWorkflow,
+    handleTrim,
+    handleExtractSelection,
+    handleDeleteSelection,
+    handleDuplicateSelection,
+    handleReplaceSelection,
+    handleInsertPayload,
+    handleSplitActiveFragment,
+    handleDuplicateSelectionToInsert,
+    handleImportFile,
+    handleSequenceFileImport,
+    parseSequenceImportText,
+  } = useProjectController();
+  const [activeStep, setActiveStep] = useState<WorkbenchStep>(() => (showWorkbench ? 'construct' : 'sequences'));
   const [primerResultTab, setPrimerResultTab] = useState<PrimerResultTab>('overview');
   const [protocolResultTab, setProtocolResultTab] = useState<ProtocolResultTab>('overview');
   const [selectedPrimerName, setSelectedPrimerName] = useState<string | null>(null);
-  const [showExperimentalNotice, setShowExperimentalNotice] = useState(() => loadExperimentalNoticeVisibility());
-  const [showWorkbench, setShowWorkbench] = useState(() => hasProjectSequenceContent(loadInitialAppProject()));
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [showInspector, setShowInspector] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const [confirmationState, setConfirmationState] = useState<ConfirmationState>(null);
-  const [recoverableProjectSnapshot, setRecoverableProjectSnapshot] = useState<FusionProjectInput | null>(null);
-  const [comparisonSnapshot, setComparisonSnapshot] = useState<ComparisonSnapshot | null>(null);
-  const [canvasTracks, setCanvasTracks] = useState<CanvasTracks>({
-    sourceFragments: true,
-    finalConstruct: true,
-    primerOverlays: true,
-    gcAndTm: true,
-    stageProducts: true,
-    translation: true,
-    features: true,
-    riskSummary: true,
-  });
-  const [mutationRecipientKey, setMutationRecipientKey] = useState<'fragmentA' | 'fragmentB'>('fragmentA');
-  const [mutationDonorKey, setMutationDonorKey] = useState<'fragmentA' | 'fragmentB'>('fragmentB');
-  const [mutationStart, setMutationStart] = useState(1);
-  const [mutationEnd, setMutationEnd] = useState(1);
-  const [mutationCoordinate, setMutationCoordinate] = useState(1);
-  const [mutationPayloadSource, setMutationPayloadSource] = useState<MutationPayloadSource>('manual');
-  const [mutationPayloadInput, setMutationPayloadInput] = useState('');
-  const [selectedExampleId, setSelectedExampleId] = useState<ExampleProjectId>('protein-fusion');
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const sequenceFileInputRef = useRef<HTMLInputElement | null>(null);
   const { design, calculationState, isDesignPending, isDesignCurrent, workerError, retry } = useFusionDesign(project);
   const { persistenceState, persistenceError, retryPersistence } = useProjectPersistence(STORAGE_KEY, project);
   const fragmentAMetrics = summarizeSequenceMetrics(project.fragmentA.sequence);
@@ -266,7 +223,6 @@ function App() {
     selectedStage === 'overview' || selectedStage === 'verification'
       ? null
       : design.reactions.find((reaction) => reaction.name === getWorkflowStageLabel(selectedStage));
-  const hasSequenceContent = hasProjectSequenceContent(project);
   const activeReaction = selectedReaction ?? design.reactions[0] ?? null;
   const saveStateLabel =
     persistenceState === 'saving'
@@ -276,7 +232,11 @@ function App() {
         : persistenceState === 'failed'
           ? 'Local save failed'
           : 'Autosave pending';
-  const publicExampleOptions = exampleProjectOptions.filter((option) => isPublicExampleId(option.id));
+  const calculationStateLabel =
+    workerError ? 'Calculation failed' : calculationState === 'complete' && isDesignCurrent ? 'Calculation complete' : 'Calculating';
+  const calculationStateTone: 'success' | 'watch' | 'alert' =
+    workerError ? 'alert' : calculationState === 'complete' && isDesignCurrent ? 'success' : 'watch';
+  const publicExampleOptions = exampleProjectOptions.filter((option) => option.id === 'protein-fusion' || option.id === 'exact-fusion');
   const selectedPublicExampleDescription = publicExampleOptions.find((option) => option.id === selectedExampleId)?.description ?? 'Built-in example';
   const sequenceStepStatus: { level: StepStatusLevel; text: string } =
     project.fragmentA.sequence.trim() && project.fragmentB.sequence.trim()
@@ -340,63 +300,6 @@ function App() {
     },
   ];
 
-  const commitProject = (
-    updater: FusionProjectInput | ((current: FusionProjectInput) => FusionProjectInput),
-    options?: { recordHistory?: boolean },
-  ) => {
-    setProject((current) => {
-      const next = typeof updater === 'function' ? updater(current) : updater;
-      if (JSON.stringify(next) === JSON.stringify(current)) {
-        return current;
-      }
-      const stampedProject = stampProjectMetadata(next, current);
-      if (options?.recordHistory !== false) {
-        setPastProjects((previous) => [...previous.slice(-49), current]);
-        setFutureProjects([]);
-      }
-      return stampedProject;
-    });
-  };
-
-  const undoProject = () => {
-    if (!pastProjects.length) {
-      return;
-    }
-    const previous = pastProjects[pastProjects.length - 1];
-    setPastProjects((items) => items.slice(0, -1));
-    setFutureProjects((items) => [project, ...items].slice(0, 50));
-    setProject(previous);
-  };
-
-  const redoProject = () => {
-    if (!futureProjects.length) {
-      return;
-    }
-    const [next, ...rest] = futureProjects;
-    setFutureProjects(rest);
-    setPastProjects((items) => [...items.slice(-49), project]);
-    setProject(next);
-  };
-
-  useEffect(() => {
-    if (hasSequenceContent) {
-      setShowWorkbench(true);
-    }
-  }, [hasSequenceContent]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    if (showExperimentalNotice) {
-      window.localStorage.removeItem(EXPERIMENTAL_NOTICE_STORAGE_KEY);
-      return;
-    }
-
-    window.localStorage.setItem(EXPERIMENTAL_NOTICE_STORAGE_KEY, 'dismissed');
-  }, [showExperimentalNotice]);
-
   useEffect(() => {
     if (!visiblePrimers.length) {
       setSelectedPrimerName(null);
@@ -406,708 +309,73 @@ function App() {
     setSelectedPrimerName((current) => (current && visiblePrimers.some((primer) => primer.name === current) ? current : visiblePrimers[0].name));
   }, [visiblePrimers]);
 
-  const updateProject = <K extends keyof FusionProjectInput>(field: K, value: FusionProjectInput[K]) => {
-    commitProject((current) => {
-      if (field === 'insertSequence' && current.editorLocks.insertSequence) {
-        return current;
-      }
-      if ((field === 'polymeraseId' || field === 'reactionConditions' || field === 'protocolSettings') && current.editorLocks.polymeraseSettings) {
-        return current;
-      }
-      if ((field === 'fragmentA' && current.editorLocks.fragmentA) || (field === 'fragmentB' && current.editorLocks.fragmentB)) {
-        return current;
-      }
-      return {
-        ...current,
-        [field]: value,
-        modifiedAt: new Date().toISOString(),
-      };
-    });
+  const handleLoadExample = (exampleId = selectedExampleId) => {
+    loadExample(exampleId);
+    setActiveStep('construct');
+    setInspectorFocus('junction');
+    setPrimerResultTab('overview');
+    setProtocolResultTab('overview');
   };
 
-  const updateFragment = (
-    fragmentKey: 'fragmentA' | 'fragmentB',
-    field: keyof FragmentInput,
-    value: string | number,
-  ) => {
-    commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
-      const boundaryLocked =
-        (fragmentKey === 'fragmentA' && current.editorLocks.fragmentABoundaries) ||
-        (fragmentKey === 'fragmentB' && current.editorLocks.fragmentBBoundaries);
-      if (fragmentLocked) {
-        return current;
-      }
-      if (boundaryLocked && (field === 'start' || field === 'end')) {
-        return current;
-      }
-      return {
-        ...current,
-        [fragmentKey]: {
-          ...current[fragmentKey],
-          [field]: value,
-        },
-        modifiedAt: new Date().toISOString(),
-      };
-    });
+  const handleResetProject = () => {
+    resetProject();
+    setActiveStep('sequences');
+    setInspectorFocus('junction');
+    setSelectedPrimerName(null);
   };
 
-  const updateFragmentSequence = (fragmentKey: 'fragmentA' | 'fragmentB', value: string) => {
-    commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
-      if (fragmentLocked) {
-        return current;
-      }
-      const normalizedLength = value.toUpperCase().replace(/\s+/g, '').length;
-      const previousLength = current[fragmentKey].sequence.toUpperCase().replace(/\s+/g, '').length;
-      const currentFragment = current[fragmentKey];
-      const nextEnd =
-        normalizedLength === 0
-          ? 1
-          : previousLength === 0 || currentFragment.end > previousLength
-            ? normalizedLength
-            : Math.min(currentFragment.end, normalizedLength);
-      const nextStart = normalizedLength === 0 ? 1 : Math.min(currentFragment.start, nextEnd);
-      return {
-        ...current,
-        [fragmentKey]: {
-          ...currentFragment,
-          sequence: value,
-          end: nextEnd,
-          start: nextStart,
-          sourceFormat: 'manual',
-          checksum: checksumSequence(value),
-          ambiguousBases: Array.from(new Set(value.toUpperCase().match(/N/g) ?? [])),
-          features: [],
-          reverseComplemented: false,
-        },
-        modifiedAt: new Date().toISOString(),
-      };
-    });
+  const handleRestorePreviousProject = () => {
+    restorePreviousProject();
+    setActiveStep('construct');
+    setInspectorFocus('junction');
   };
 
-  const updateCoding = <K extends keyof CodingIntent>(field: K, value: CodingIntent[K]) => {
-    commitProject((current) => ({
-      ...current,
-      coding: {
-        ...current.coding,
-        [field]: value,
-      },
-      modifiedAt: new Date().toISOString(),
-    }));
-  };
-
-  const updateReactionCondition = <K extends keyof ThermodynamicConditions>(
-    field: K,
-    value: ThermodynamicConditions[K],
-  ) => {
-    commitProject((current) => {
-      if (current.editorLocks.polymeraseSettings) {
-        return current;
-      }
-      return {
-        ...current,
-        reactionConditions: {
-          ...current.reactionConditions,
-          [field]: value,
-        },
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-  };
-
-  const updateProtocolSetting = <K extends keyof ProtocolSettings>(field: K, value: ProtocolSettings[K]) => {
-    commitProject((current) => {
-      if (current.editorLocks.polymeraseSettings) {
-        return current;
-      }
-      return {
-        ...current,
-        protocolSettings: {
-          ...current.protocolSettings,
-          [field]: value,
-        },
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-  };
-
-  const updateGenomicSpecificity = <K extends keyof GenomicSpecificitySettings>(
-    field: K,
-    value: GenomicSpecificitySettings[K],
-  ) => {
-    commitProject((current) => ({
-      ...current,
-      genomicSpecificity: {
-        ...current.genomicSpecificity,
-        [field]: value,
-      },
-      modifiedAt: new Date().toISOString(),
-    }));
-  };
-
-  const preserveRecoverableSnapshot = (current: FusionProjectInput) => {
-    if (!isProjectNonEmpty(current)) {
-      return;
-    }
-
-    setRecoverableProjectSnapshot(current);
-  };
-
-  const requestProjectReplacement = (action: ConfirmationState extends infer T ? T : never) => {
-    if (!isProjectNonEmpty(project)) {
-      action?.onConfirm();
-      return;
-    }
-
-    setConfirmationState(action);
-  };
-
-  const loadExample = (exampleId: ExampleProjectId = selectedExampleId) => {
-    const runLoad = () => {
-      startTransition(() => {
-        preserveRecoverableSnapshot(project);
-        commitProject(exampleProjects[exampleId] ?? exampleProject);
-        setPastProjects([]);
-        setFutureProjects([]);
-        setImportError('');
-        setFeatureSelectionMessage('');
-        setShowWorkbench(true);
-        setShowMenu(false);
-        setActiveStep('construct');
-        setInspectorFocus('junction');
-        setPrimerResultTab('overview');
-        setProtocolResultTab('overview');
-      });
-    };
-
-    requestProjectReplacement({
-      title: 'Replace current project?',
-      message: 'Loading a built-in example will replace the current project in the editor. The current project will remain available as a recoverable snapshot.',
-      confirmLabel: 'Load built-in example',
-      onConfirm: runLoad,
-    });
-  };
-
-  const resetProject = () => {
-    requestProjectReplacement({
-      title: 'Clear current project?',
-      message: 'This removes the current project from the active editor. The previous project will remain available as a recoverable snapshot until another replacement occurs.',
-      confirmLabel: 'Clear project',
-      onConfirm: () => {
-        startTransition(() => {
-          preserveRecoverableSnapshot(project);
-          commitProject(emptyProject);
-          setPastProjects([]);
-          setFutureProjects([]);
-          setImportError('');
-          setFeatureSelectionMessage('');
-          setShowWorkbench(false);
-          setShowMenu(false);
-          setActiveStep('sequences');
-          setInspectorFocus('junction');
-          setSelectedPrimerName(null);
-        });
-      },
-    });
-  };
-
-  const restorePreviousProject = () => {
-    if (!recoverableProjectSnapshot) {
-      return;
-    }
-
-    startTransition(() => {
-      commitProject(recoverableProjectSnapshot);
-      setRecoverableProjectSnapshot(null);
-      setShowWorkbench(true);
-      setShowMenu(false);
-      setActiveStep('construct');
-      setInspectorFocus('junction');
-    });
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleSequenceImportClick = () => {
-    sequenceFileInputRef.current?.click();
-  };
-
-  const parseSequenceImportText = (rawInput: string) => {
-    try {
-      const parsed = parseSequenceImport(rawInput);
-      setSequenceImportResult(parsed);
-      setSequenceImportError('');
-      setFeatureSelectionMessage('');
-    } catch (error) {
-      setSequenceImportResult(null);
-      setSequenceImportError(error instanceof Error ? error.message : 'Sequence import failed.');
-    }
-  };
-
-  const applyImportedSource = (fragmentKey: 'fragmentA' | 'fragmentB', source: ImportedSource) => {
-    commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
-      if (fragmentLocked) {
-        return current;
-      }
-      return {
-        ...current,
-        [fragmentKey]: {
-          label: source.name,
-          sequence: source.sequence,
-          start: 1,
-          end: source.sequence.length || 1,
-          topology: source.topology,
-          sourceFormat: source.format,
-          importedName: source.name,
-          checksum: source.checksum,
-          ambiguousBases: source.ambiguousBases,
-          features: source.features,
-          reverseComplemented: source.reverseComplemented,
-        },
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-    setShowWorkbench(true);
+  const handleImportedSourceSelection = (fragmentKey: 'fragmentA' | 'fragmentB', source: Parameters<typeof applyImportedSource>[1]) => {
+    applyImportedSource(fragmentKey, source);
     setActiveStep('construct');
   };
 
-  const applyFirstTwoImportedSources = () => {
-    if (!sequenceImportResult?.records.length) {
-      return;
-    }
-
-    commitProject((current) => {
-      const [first, second] = sequenceImportResult.records;
-      const next = {
-        ...current,
-        fragmentA: current.fragmentA,
-        fragmentB: current.fragmentB,
-      };
-      let changed = false;
-
-      if (first && !current.editorLocks.fragmentA) {
-        next.fragmentA = {
-          label: first.name,
-          sequence: first.sequence,
-          start: 1,
-          end: first.sequence.length || 1,
-          topology: first.topology,
-          sourceFormat: first.format,
-          importedName: first.name,
-          checksum: first.checksum,
-          ambiguousBases: first.ambiguousBases,
-          features: first.features,
-          reverseComplemented: first.reverseComplemented,
-        };
-        changed = true;
-      }
-
-      if (second && !current.editorLocks.fragmentB) {
-        next.fragmentB = {
-          label: second.name,
-          sequence: second.sequence,
-          start: 1,
-          end: second.sequence.length || 1,
-          topology: second.topology,
-          sourceFormat: second.format,
-          importedName: second.name,
-          checksum: second.checksum,
-          ambiguousBases: second.ambiguousBases,
-          features: second.features,
-          reverseComplemented: second.reverseComplemented,
-        };
-        changed = true;
-      }
-
-      return changed
-        ? {
-            ...next,
-            modifiedAt: new Date().toISOString(),
-          }
-        : current;
-    });
-    setShowWorkbench(true);
+  const handleApplyFirstTwoImportedSources = () => {
+    applyFirstTwoImportedSources();
     setActiveStep('construct');
   };
 
-  const reverseComplementFragment = (fragmentKey: 'fragmentA' | 'fragmentB') => {
-    commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
-      if (fragmentLocked) {
-        return current;
-      }
-      const fragment = current[fragmentKey];
-      const sequence = reverseComplement(fragment.sequence);
-      return {
-        ...current,
-        [fragmentKey]: {
-          ...fragment,
-          sequence,
-          checksum: checksumSequence(sequence),
-          reverseComplemented: !fragment.reverseComplemented,
-          sourceFormat: fragment.sourceFormat === 'project' ? 'project' : 'manual',
-          features: [],
-        },
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-  };
-
-  const applyFeatureSelection = (fragmentKey: 'fragmentA' | 'fragmentB', featureIndex: number) => {
-    commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
-      const boundaryLocked =
-        (fragmentKey === 'fragmentA' && current.editorLocks.fragmentABoundaries) ||
-        (fragmentKey === 'fragmentB' && current.editorLocks.fragmentBBoundaries);
-      if (fragmentLocked || boundaryLocked) {
-        return current;
-      }
-
-      const fragment = current[fragmentKey];
-      const feature = fragment.features[featureIndex];
-      if (!feature) {
-        return current;
-      }
-
-      const parsed = parseFeatureSelection(feature.location, fragment.topology);
-      if (!parsed?.supported) {
-        setFeatureSelectionMessage(
-          parsed?.reason
-            ? `${feature.label}: ${parsed.reason}`
-            : `${feature.label}: this feature location is not currently selectable.`,
-        );
-        return current;
-      }
-
-      setFeatureSelectionMessage(
-        parsed.complement
-          ? `${feature.label} applied as ${parsed.start}-${parsed.end}. This feature is annotated on the complement strand; reverse-complement the fragment manually if you need feature orientation rather than genomic coordinates.`
-          : `${feature.label} applied as ${parsed.start}-${parsed.end}${parsed.wrapsOrigin ? ' wraparound coordinates' : ''}.`,
-      );
-
-      return {
-        ...current,
-        [fragmentKey]: {
-          ...fragment,
-          start: parsed.start,
-          end: parsed.end,
-        },
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-  };
-
-  const toggleEditorLock = (field: keyof EditorLocks) => {
-    commitProject((current) => ({
-      ...current,
-      editorLocks: {
-        ...current.editorLocks,
-        [field]: !current.editorLocks[field],
-      },
-      modifiedAt: new Date().toISOString(),
-    }));
-  };
-
-  const toggleCanvasTrack = (track: keyof CanvasTracks) => {
-    setCanvasTracks((current) => ({
-      ...current,
-      [track]: !current[track],
-    }));
-  };
-
-  const toggleChangeApproval = (field: Exclude<keyof ChangeApprovals, 'acceptedSynonymousChanges'>) => {
-    commitProject((current) => ({
-      ...current,
-      changeApprovals: {
-        ...current.changeApprovals,
-        [field]: !current.changeApprovals[field],
-      },
-      modifiedAt: new Date().toISOString(),
-    }));
-  };
-
-  const toggleSynonymousChangeApproval = (changeId: string) => {
-    commitProject((current) => {
-      const accepted = current.changeApprovals.acceptedSynonymousChanges.includes(changeId)
-        ? current.changeApprovals.acceptedSynonymousChanges.filter((item) => item !== changeId)
-        : [...current.changeApprovals.acceptedSynonymousChanges, changeId];
-
-      return {
-        ...current,
-        changeApprovals: {
-          ...current.changeApprovals,
-          acceptedSynonymousChanges: accepted,
-        },
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-  };
-
-  const captureComparisonSnapshot = () => {
-    setComparisonSnapshot({
-      capturedAt: new Date().toISOString(),
-      metrics: comparisonMetrics,
-    });
-  };
-
-  const applyMutationWorkflow = () => {
-    if (!mutationMode) {
-      return;
-    }
-
-    commitProject((current) => {
-      const recipient = current[mutationRecipientKey];
-      const donor = current[mutationDonorKey];
-      const payload = mutationPayloadSource === 'donor-selection' ? selectedFragmentSequence(donor) : mutationPayloadInput;
-      const plan = buildMutationPlan({
-        mode: mutationMode,
-        recipient,
-        coordinate: mutationCoordinate,
-        start: mutationStart,
-        end: mutationEnd,
-        payloadInput: payload,
-        recipientLabel: recipient.label,
-      });
-
-      return {
-        ...current,
-        fragmentA: plan.leftFragment,
-        fragmentB: plan.rightFragment,
-        insertSequence: plan.insertSequence,
-        changeApprovals: defaultChangeApprovals(),
-        notes: `${current.notes ? `${current.notes}\n` : ''}${plan.summary}`.trim(),
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-    setActiveFragmentKey('fragmentA');
+  const handleApplyMutationWorkflow = () => {
+    applyMutationWorkflow(mutationMode);
     setInspectorFocus('junction');
     setActiveStep('construct');
-    setShowWorkbench(true);
   };
 
-  const applyFragmentEdit = (
-    fragmentKey: 'fragmentA' | 'fragmentB',
-    operation: (fragment: FragmentInput) => FragmentInput,
-  ) => {
-    commitProject((current) => {
-      const fragmentLocked = fragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
-      if (fragmentLocked) {
-        return current;
-      }
-      return {
-        ...current,
-        [fragmentKey]: operation(current[fragmentKey]),
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-  };
-
-  const handleTrim = (side: 'left' | 'right') => {
-    applyFragmentEdit(activeFragmentKey, (fragment) => trimFragment(fragment, side, trimAmount));
-  };
-
-  const handleExtractSelection = () => {
-    applyFragmentEdit(activeFragmentKey, extractSelectedRange);
-  };
-
-  const handleDeleteSelection = () => {
-    applyFragmentEdit(activeFragmentKey, deleteSelectedRange);
-  };
-
-  const handleDuplicateSelection = () => {
-    applyFragmentEdit(activeFragmentKey, duplicateSelectedRange);
-  };
-
-  const handleReplaceSelection = () => {
-    applyFragmentEdit(activeFragmentKey, (fragment) => replaceSelectedRange(fragment, editPayload));
-  };
-
-  const handleInsertPayload = () => {
-    applyFragmentEdit(activeFragmentKey, (fragment) => insertAtPosition(fragment, editPosition, editPayload));
-  };
-
-  const handleSplitActiveFragment = () => {
-    commitProject((current) => {
-      const activeLocked = activeFragmentKey === 'fragmentA' ? current.editorLocks.fragmentA : current.editorLocks.fragmentB;
-      const counterpartLocked = activeFragmentKey === 'fragmentA' ? current.editorLocks.fragmentB : current.editorLocks.fragmentA;
-      if (activeLocked || counterpartLocked) {
-        return current;
-      }
-      const [left, right] = splitFragment(current[activeFragmentKey], editPosition, `${current[activeFragmentKey].label} left`, `${current[activeFragmentKey].label} right`);
-      return activeFragmentKey === 'fragmentA'
-        ? {
-            ...current,
-            fragmentA: left,
-            fragmentB: right,
-            modifiedAt: new Date().toISOString(),
-          }
-        : {
-            ...current,
-            fragmentA: left,
-            fragmentB: right,
-            modifiedAt: new Date().toISOString(),
-          };
-    });
-  };
-
-  const handleDuplicateSelectionToInsert = () => {
-    commitProject((current) => {
-      if (current.editorLocks.insertSequence) {
-        return current;
-      }
-      const fragment = current[activeFragmentKey];
-      const sequence = fragment.sequence.toUpperCase().replace(/\s+/g, '');
-      const start = Math.max(1, Math.min(fragment.start, sequence.length));
-      const end = Math.max(start, Math.min(fragment.end, sequence.length));
-      const selected = sequence.slice(start - 1, end);
-      return {
-        ...current,
-        insertSequence: `${current.insertSequence}${selected}`,
-        modifiedAt: new Date().toISOString(),
-      };
-    });
-  };
-
-  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    try {
-      const raw = await file.text();
-      const parsed = JSON.parse(raw) as unknown;
-      const normalized = normalizeImportedProject(parsed);
-
-      if (!normalized) {
-        throw new Error('The selected file is not a FusionPCR Studio project JSON document.');
-      }
-
-      const applyImportedProject = () => {
-        startTransition(() => {
-          preserveRecoverableSnapshot(project);
-          commitProject(normalized);
-          setImportError('');
-          setShowWorkbench(true);
-          setShowMenu(false);
-          setActiveStep('construct');
-        });
-      };
-
-      if (isProjectNonEmpty(project)) {
-        setConfirmationState({
-          title: 'Replace current project?',
-          message: 'Importing a project JSON will replace the current project in the editor. The current project will remain available as a recoverable snapshot.',
-          confirmLabel: 'Import project',
-          onConfirm: applyImportedProject,
-        });
-      } else {
-        applyImportedProject();
-      }
-    } catch (error) {
-      setImportError(error instanceof Error ? error.message : 'Project import failed.');
-    } finally {
-      event.target.value = '';
-    }
-  };
-
-  const handleSequenceFileImport = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    try {
-      const raw = await file.text();
-      setSequenceImportText(raw);
-      parseSequenceImportText(raw);
-    } catch (error) {
-      setSequenceImportError(error instanceof Error ? error.message : 'Sequence file import failed.');
-      setSequenceImportResult(null);
-    } finally {
-      event.target.value = '';
-    }
+  const handleProjectFileChange = (event: Parameters<typeof handleImportFile>[0]) => {
+    void handleImportFile(event);
+    setActiveStep('construct');
+    setInspectorFocus('junction');
   };
 
   return (
     <div className="app-shell">
       <main className="app">
-        <header className="app-topbar panel">
-          <div className="topbar-brand">
-            <div className="product-mark" aria-hidden="true">
-              FP
-            </div>
-            <div>
-              <strong>FusionPCR Studio</strong>
-              <span className="topbar-subtitle">Two-fragment OE-PCR workbench</span>
-            </div>
-          </div>
-
-          <div className="topbar-actions">
-            {!showWorkbench ? (
-              <button type="button" className="button button-secondary" onClick={handleImportClick}>
-                Open project
-              </button>
-            ) : null}
-            {showWorkbench ? (
-              <>
-                <label className="topbar-project">
-                  <span className="sr-only">Project name</span>
-                  <input
-                    aria-label="Project name"
-                    className="text-input"
-                    value={project.name}
-                    onChange={(event) => updateProject('name', event.target.value)}
-                  />
-                </label>
-                <div className="topbar-status">
-                  <span className={`pill ${persistenceState === 'failed' ? 'pill-alert' : persistenceState === 'saved' ? 'pill-success' : 'pill-watch'}`}>{saveStateLabel}</span>
-                  <span className={`pill ${workerError ? 'pill-alert' : calculationState === 'complete' && isDesignCurrent ? 'pill-success' : 'pill-watch'}`}>
-                    {workerError ? 'Calculation failed' : calculationState === 'complete' && isDesignCurrent ? 'Calculation complete' : 'Calculating'}
-                  </span>
-                </div>
-                <button type="button" className="button button-secondary" onClick={undoProject} disabled={!pastProjects.length}>
-                  Undo
-                </button>
-                <button type="button" className="button button-secondary" onClick={redoProject} disabled={!futureProjects.length}>
-                  Redo
-                </button>
-              </>
-            ) : null}
-            <div className="topbar-menu">
-              <button type="button" className="button button-secondary" aria-expanded={showMenu} onClick={() => setShowMenu((current) => !current)}>
-                Menu
-              </button>
-              {showMenu ? (
-                <div className="menu-panel panel" role="menu" aria-label="Project actions">
-                  <button type="button" className="button button-secondary" role="menuitem" onClick={handleImportClick}>
-                    Import project JSON
-                  </button>
-                  <button type="button" className="button button-secondary" role="menuitem" onClick={() => loadExample('exact-fusion')}>
-                    Load exact fusion example
-                  </button>
-                  <button type="button" className="button button-secondary" role="menuitem" onClick={() => loadExample('protein-fusion')}>
-                    Load protein fusion example
-                  </button>
-                  {recoverableProjectSnapshot ? (
-                    <button type="button" className="button button-secondary" role="menuitem" onClick={restorePreviousProject}>
-                      Restore previous project
-                    </button>
-                  ) : null}
-                  {showWorkbench ? (
-                    <button type="button" className="button button-secondary" role="menuitem" onClick={resetProject}>
-                      Clear project
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </header>
+        <ProjectToolbar
+          projectName={project.name}
+          showWorkbench={showWorkbench}
+          saveStateLabel={saveStateLabel}
+          persistenceState={persistenceState}
+          calculationStateLabel={calculationStateLabel}
+          calculationStateTone={calculationStateTone}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          showMenu={showMenu}
+          hasRecoverableProject={recoverableProjectSnapshot !== null}
+          onProjectNameChange={(value) => updateProject('name', value)}
+          onUndo={undoProject}
+          onRedo={redoProject}
+          onOpenProject={handleImportClick}
+          onToggleMenu={() => setShowMenu((current) => !current)}
+          onLoadExactExample={() => handleLoadExample('exact-fusion')}
+          onLoadProteinExample={() => handleLoadExample('protein-fusion')}
+          onRestorePreviousProject={handleRestorePreviousProject}
+          onClearProject={handleResetProject}
+        />
 
         {showExperimentalNotice ? (
           <div className="notice-banner panel" role="status">
@@ -1126,38 +394,19 @@ function App() {
           </div>
         ) : null}
 
-        <input ref={fileInputRef} type="file" accept="application/json" hidden onChange={handleImportFile} />
+        <input ref={fileInputRef} type="file" accept="application/json" hidden onChange={handleProjectFileChange} />
         <input ref={sequenceFileInputRef} type="file" accept=".txt,.fa,.fasta,.gb,.gbk,.gbff" hidden onChange={handleSequenceFileImport} />
 
         {!showWorkbench ? (
-          <section className="empty-state panel">
-            <div className="empty-state-copy">
-              <p className="eyebrow">FusionPCR Studio</p>
-              <h1>Design primers and protocols for two-fragment overlap-extension PCR.</h1>
-              <p className="hero-text">Load two sequences or start from a built-in example to enter the workbench.</p>
-            </div>
-            <div className="empty-state-actions">
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={() => {
-                  setShowWorkbench(true);
-                  setActiveStep('sequences');
-                }}
-              >
-                Import sequences
-              </button>
-              <button type="button" className="button button-secondary" onClick={() => loadExample('exact-fusion')}>
-                Load exact fusion example
-              </button>
-              <button type="button" className="button button-secondary" onClick={() => loadExample('protein-fusion')}>
-                Load protein fusion example
-              </button>
-              <button type="button" className="button button-secondary" onClick={handleImportClick}>
-                Open project
-              </button>
-            </div>
-          </section>
+          <WelcomeScreen
+            onImportSequences={() => {
+              setShowWorkbench(true);
+              setActiveStep('sequences');
+            }}
+            onLoadExactExample={() => handleLoadExample('exact-fusion')}
+            onLoadProteinExample={() => handleLoadExample('protein-fusion')}
+            onOpenProject={handleImportClick}
+          />
         ) : (
           <>
             <div className="workbench-mobile-actions">
@@ -1170,59 +419,24 @@ function App() {
             </div>
 
             <section className="workbench-layout">
-              <aside className={`workflow-sidebar panel ${showSidebar ? 'is-open' : ''}`}>
-                <div className="sidebar-header">
-                  <p className="eyebrow">Design steps</p>
-                  <h2>Workflow</h2>
-                </div>
-
-                <div className="workflow-step-list" role="tablist" aria-label="Design steps">
-                  {([
-                    ['sequences', 'Sequences', sequenceStepStatus],
-                    ['construct', 'Junction', constructStepStatus],
-                    ['primers', 'Primers', primerStepStatus],
-                    ['protocol', 'Protocol & Export', protocolStepStatus],
-                  ] as Array<[WorkbenchStep, string, { level: StepStatusLevel; text: string }]>).map(([step, label, status]) => (
-                    <button
-                      key={step}
-                      type="button"
-                      className={`workflow-step ${activeStep === step ? 'workflow-step-active' : ''}`}
-                      aria-label={`${label} step`}
-                      onClick={() => {
-                        setActiveStep(step);
-                        setShowSidebar(false);
-                      }}
-                    >
-                      <span className="workflow-step-index">{label === 'Sequences' ? 1 : label === 'Junction' ? 2 : label === 'Primers' ? 3 : 4}</span>
-                      <span className="workflow-step-copy">
-                        <strong>{label}</strong>
-                        <span className={`step-status step-status-${status.level}`}>{formatStepStatus(status.level, status.text)}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="sidebar-summary">
-                  <div className="metric compact-metric">
-                    <span>Selected stage</span>
-                    <strong>{getWorkflowStageLabel(selectedStage)}</strong>
-                  </div>
-                  <div className="metric compact-metric">
-                    <span>Target</span>
-                    <strong>{design.targetSequence.length} bp</strong>
-                  </div>
-                  <div className="metric compact-metric">
-                    <span>Exact verification</span>
-                    <strong>{design.finalProductVerified ? 'Pass' : 'Pending'}</strong>
-                  </div>
-                </div>
-
-                <div className="sidebar-actions">
-                  <button type="button" className="button button-secondary" onClick={resetProject}>
-                    Clear project
-                  </button>
-                </div>
-              </aside>
+              <StepNavigation
+                activeStep={activeStep as 'sequences' | 'construct' | 'primers' | 'protocol'}
+                showSidebar={showSidebar}
+                targetLength={design.targetSequence.length}
+                exactVerification={design.finalProductVerified}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                sequenceStepStatus={sequenceStepStatus}
+                constructStepStatus={constructStepStatus}
+                primerStepStatus={primerStepStatus}
+                protocolStepStatus={protocolStepStatus}
+                onSelectStep={(step) => {
+                  setActiveStep(step);
+                  setShowSidebar(false);
+                }}
+                onClearProject={handleResetProject}
+                formatStepStatus={formatStepStatus}
+              />
 
               <section className="workspace-pane">
                 {activeStep === 'sequences' ? (
@@ -1327,7 +541,7 @@ function App() {
                         <button
                           type="button"
                           className="button button-secondary"
-                          onClick={applyFirstTwoImportedSources}
+                          onClick={handleApplyFirstTwoImportedSources}
                           disabled={!sequenceImportResult?.records.length || (isFragmentALocked && isFragmentBLocked)}
                         >
                           Apply first two records
@@ -1385,10 +599,10 @@ function App() {
                                 </div>
                                 <code className="sequence-preview compact-preview">{record.sequence}</code>
                                 <div className="action-row">
-                                  <button type="button" className="button button-secondary" onClick={() => applyImportedSource('fragmentA', record)} disabled={isFragmentALocked}>
+                                  <button type="button" className="button button-secondary" onClick={() => handleImportedSourceSelection('fragmentA', record)} disabled={isFragmentALocked}>
                                     Use for fragment A
                                   </button>
-                                  <button type="button" className="button button-secondary" onClick={() => applyImportedSource('fragmentB', record)} disabled={isFragmentBLocked}>
+                                  <button type="button" className="button button-secondary" onClick={() => handleImportedSourceSelection('fragmentB', record)} disabled={isFragmentBLocked}>
                                     Use for fragment B
                                   </button>
                                   <button
@@ -1521,7 +735,7 @@ function App() {
                           )}
                         </div>
 
-                        <button type="button" className="button button-secondary" onClick={applyMutationWorkflow} disabled={!mutationPreview}>
+                        <button type="button" className="button button-secondary" onClick={handleApplyMutationWorkflow} disabled={!mutationPreview}>
                           Apply mutation workflow
                         </button>
                       </section>
@@ -1672,7 +886,7 @@ function App() {
                             <p className="eyebrow">Editing workspace</p>
                             <h3>Explicit reversible fragment operations</h3>
                           </div>
-                          <span className="pill pill-muted">History {pastProjects.length}/{futureProjects.length}</span>
+                          <span className="pill pill-muted">{canUndo || canRedo ? 'Undo history available' : 'No undo history yet'}</span>
                         </div>
 
                         <div className="field-grid">
@@ -1928,7 +1142,7 @@ function App() {
                       </div>
 
                       <div className="action-row">
-                        <button type="button" className="button button-secondary" onClick={captureComparisonSnapshot}>
+                        <button type="button" className="button button-secondary" onClick={() => captureComparisonSnapshot(comparisonMetrics)}>
                           {comparisonSnapshot ? 'Refresh pinned design' : 'Pin current design'}
                         </button>
                         {comparisonSnapshot ? (
