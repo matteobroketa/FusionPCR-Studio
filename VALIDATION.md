@@ -7,7 +7,7 @@ The repository currently verifies:
 - TypeScript/Vite application build via `npm run build`
 - Vitest unit and integration coverage via `npm run test`
 - Playwright browser coverage against the production Vite build via `npm run test:e2e`
-  Chromium functional flow plus Chromium/Firefox/WebKit smoke projects
+  Chromium functional flow, Chromium/Firefox/WebKit smoke projects, and Chromium axe checks across the public steps
 - GitHub Pages built-asset smoke checks via `npm run smoke:pages:dist`
 - Rust workspace compilation and tests via `cargo test --workspace`
 - Post-deployment Playwright smoke checks against the public Pages URL in Chromium, Firefox, and WebKit via [.github/workflows/deploy-pages.yml](/C:/Users/matte/Documents/GitHub/FusionPCR-Studio/.github/workflows/deploy-pages.yml)
@@ -32,6 +32,7 @@ The Playwright suite currently covers:
 - all 5 public MVP exports:
   `project JSON`, `oligo-ordering CSV`, `primer FASTA`, `final-construct FASTA`, and `printable protocol`
 - deployed-pages smoke passes against the public GitHub Pages URL in Chromium, Firefox, and WebKit
+- axe-based checks for the empty state plus the four public workbench steps with zero serious or critical violations
 
 The Playwright fixture fails the job on:
 

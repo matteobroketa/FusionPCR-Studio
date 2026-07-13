@@ -56,7 +56,7 @@ export function StepNavigation({
         <h2>Workflow</h2>
       </div>
 
-      <div className="workflow-step-list" role="tablist" aria-label="Design steps">
+      <div className="workflow-step-list" aria-label="Design steps">
         {workflowSteps.map(({ step, label, index }) => {
           const status = stepStatuses[step];
           return (

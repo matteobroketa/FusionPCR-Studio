@@ -13,7 +13,8 @@
     "smoke:pages:dist": "node scripts/smoke-pages.mjs",
     "test:rust": "cargo test --workspace",
     "test": "vitest run",
-    "test:e2e": "npm run test:e2e:functional && npm run test:e2e:smoke",
+    "test:e2e": "npm run test:e2e:functional && npm run test:e2e:smoke && npm run test:e2e:accessibility",
+    "test:e2e:accessibility": "npm run build && playwright test --project=chromium-accessibility tests/e2e/accessibility.spec.ts",
     "test:e2e:functional": "npm run build && playwright test --project=chromium-functional tests/e2e/app.spec.ts",
     "test:e2e:smoke": "npm run build && playwright test --project=chromium-smoke --project=firefox-smoke --project=webkit-smoke tests/e2e/smoke.spec.ts tests/e2e/deployed-smoke.spec.ts",
     "test:e2e:visual": "npm run build && playwright test --project=chromium-visual tests/e2e/visual.spec.ts",
@@ -30,6 +31,7 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

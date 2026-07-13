@@ -61,5 +61,12 @@ export default defineConfig({
       },
       testMatch: /visual\.spec\.ts/,
     },
+    {
+      name: 'chromium-accessibility',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+      testMatch: /accessibility\.spec\.ts/,
+    },
   ],
 });

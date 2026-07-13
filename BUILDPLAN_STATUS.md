@@ -29,6 +29,7 @@ Current browser-test coverage:
 
 - Chromium functional coverage for worker startup, built-in examples, invalid-input rendering, and all 5 public MVP exports
 - Chromium, Firefox, and WebKit smoke coverage for worker startup, current-design readiness, export-surface visibility, and post-deployment Pages loading
+- Chromium axe coverage for the empty state plus Sequences, Junction, Primers, and Protocol & Export with zero serious or critical violations
 - loading the two supported built-in examples
 - exact final-product verification on runnable examples
 - invalid-input error rendering
