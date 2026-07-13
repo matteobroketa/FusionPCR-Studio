@@ -116,6 +116,27 @@ test.describe('FusionPCR Studio production build', () => {
     await expect(page.locator('.inspector-pane').getByText('Upstream stop codon removal is proposed but not yet approved.')).toHaveCount(0);
     await expect(page.locator('.inspector-pane').getByText('Scientific scope')).toHaveCount(0);
   });
+
+  test('renders a recoverable worker error and recalculates after Retry', async ({ page }) => {
+    await page.route('**/*design.worker*.js', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/javascript',
+        body: 'throw new Error("forced worker failure");',
+      }),
+    );
+    await page.goto('./');
+    await page.getByRole('button', { name: 'Load protein fusion example' }).click();
+
+    await expect(page.getByText('Design worker failed. Review the project and use Retry to calculate again.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Retry calculation' })).toBeVisible();
+
+    await page.unroute('**/*design.worker*.js');
+    await page.getByRole('button', { name: 'Retry calculation' }).click();
+
+    await expect(page.getByText('Sequence reconstruction verified.')).toBeVisible();
+    await expect(page.getByText('Design worker failed. Review the project and use Retry to calculate again.')).toHaveCount(0);
+  });
 });
 
 test.describe('FusionPCR Studio responsive review', () => {

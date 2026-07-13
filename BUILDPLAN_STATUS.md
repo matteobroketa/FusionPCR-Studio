@@ -28,7 +28,7 @@ Current validated fixture counts:
 Current browser-test coverage:
 
 - Chromium functional coverage for worker startup, built-in examples, invalid-input rendering, and all 5 public MVP exports
-- Chromium functional coverage for tablet step-bar persistence, phone read-only review, one-primer-at-a-time phone primer review, and keeping global design warnings out of the contextual inspector
+- Chromium functional coverage for worker failure and retry, tablet step-bar persistence, phone read-only review, one-primer-at-a-time phone primer review, and keeping global design warnings out of the contextual inspector
 - Chromium, Firefox, and WebKit smoke coverage for worker startup, current-design readiness, export-surface visibility, and post-deployment Pages loading
 - Chromium axe coverage for the empty state plus Sequences, Junction, Primers, and Protocol & Export with zero serious or critical violations
 - loading the two supported built-in examples
