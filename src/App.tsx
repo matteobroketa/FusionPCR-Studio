@@ -1,33 +1,21 @@
 import { useEffect, useState } from 'react';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { ContextInspector } from './components/ContextInspector';
-import { PrimerCard, ReactionCard, SequencePreview, SequenceRail } from './components/designPanels';
+import { ExperimentalNotice } from './components/ExperimentalNotice';
 import { JunctionStep } from './components/JunctionStep';
+import { PrimerStep, type PrimerResultTab } from './components/PrimerStep';
+import { ProtocolExportStep, type ProtocolResultTab } from './components/ProtocolExportStep';
 import { ProjectToolbar } from './components/ProjectToolbar';
+import { ReactionTimeline } from './components/ReactionTimeline';
+import { SequenceStep } from './components/SequenceStep';
 import { StepNavigation } from './components/StepNavigation';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { exampleProjectOptions } from './data/example';
 import { useFusionDesign } from './hooks/useFusionDesign';
-import { useProjectController, type MutationPayloadSource } from './hooks/useProjectController';
+import { useProjectController } from './hooks/useProjectController';
 import { useProjectPersistence } from './hooks/useProjectPersistence';
-import { describeFeatureSelection, parseFeatureSelection } from './utils/features';
-import {
-  buildFinalConstructFasta,
-  buildPrimerCsv,
-  buildPrimerFasta,
-  buildProjectJson,
-  buildProtocolText,
-} from './utils/export';
-import {
-  createEmptyFragment,
-  polymeraseProfiles,
-  summarizeSequenceMetrics,
-  type DesignMode,
-  type FusionProjectInput,
-} from './utils/fusion';
-import { flipImportedSource } from './utils/import';
+import { summarizeSequenceMetrics } from './utils/fusion';
 import { buildMutationPlan, selectedFragmentSequence, type MutationPlannerMode } from './utils/mutation';
-import type { ProtocolSettings } from './utils/protocol';
 import {
   buildJunctionSummary,
   getStagePrimerNames,
@@ -36,21 +24,13 @@ import {
   summarizeDesignComparison,
   type WorkflowStage,
 } from './utils/review';
-import { downloadText } from './utils/project';
 
 const STORAGE_KEY = 'fusionpcr-studio-project';
-const PUBLIC_DESIGN_MODES: DesignMode[] = ['exact', 'protein-fusion'];
 
 type InspectorFocus = 'junction' | 'fragment-a' | 'fragment-b' | 'primer' | 'reaction';
-type WorkbenchStep = 'sequences' | 'construct' | 'primers' | 'protocol' | 'export';
-type PrimerResultTab = 'overview' | 'sequences' | 'structures' | 'specificity' | 'alternatives';
-type ProtocolResultTab = 'overview' | 'setup' | 'cycling' | 'pipetting' | 'products';
+type WorkbenchStep = 'sequences' | 'construct' | 'primers' | 'protocol';
 
 type StepStatusLevel = 'complete' | 'warning' | 'error' | 'pending';
-
-function isPublicDesignMode(mode: DesignMode) {
-  return PUBLIC_DESIGN_MODES.includes(mode);
-}
 
 function formatStepStatus(level: StepStatusLevel, text: string) {
   switch (level) {
@@ -68,24 +48,10 @@ function formatStepStatus(level: StepStatusLevel, text: string) {
 function App() {
   const [selectedStage, setSelectedStage] = useState<WorkflowStage>('overview');
   const [inspectorFocus, setInspectorFocus] = useState<InspectorFocus>('junction');
+  const projectController = useProjectController();
   const {
     project,
     importError,
-    sequenceImportText,
-    setSequenceImportText,
-    sequenceImportError,
-    setSequenceImportError,
-    sequenceImportResult,
-    setSequenceImportResult,
-    featureSelectionMessage,
-    activeFragmentKey,
-    setActiveFragmentKey,
-    editPayload,
-    setEditPayload,
-    editPosition,
-    setEditPosition,
-    trimAmount,
-    setTrimAmount,
     showExperimentalNotice,
     setShowExperimentalNotice,
     showWorkbench,
@@ -102,62 +68,10 @@ function App() {
     comparisonSnapshot,
     setComparisonSnapshot,
     canvasTracks,
-    mutationRecipientKey,
-    setMutationRecipientKey,
-    mutationDonorKey,
-    setMutationDonorKey,
-    mutationStart,
-    setMutationStart,
-    mutationEnd,
-    setMutationEnd,
-    mutationCoordinate,
-    setMutationCoordinate,
-    mutationPayloadSource,
-    setMutationPayloadSource,
-    mutationPayloadInput,
-    setMutationPayloadInput,
     selectedExampleId,
-    setSelectedExampleId,
     fileInputRef,
     sequenceFileInputRef,
-    canUndo,
-    canRedo,
-    undoProject,
-    redoProject,
-    updateProject,
-    updateFragment,
-    updateFragmentSequence,
-    updateCoding,
-    updateReactionCondition,
-    updateProtocolSetting,
-    updateGenomicSpecificity,
-    loadExample,
-    resetProject,
-    restorePreviousProject,
-    handleImportClick,
-    handleSequenceImportClick,
-    applyImportedSource,
-    applyFirstTwoImportedSources,
-    reverseComplementFragment,
-    applyFeatureSelection,
-    toggleEditorLock,
-    toggleCanvasTrack,
-    toggleChangeApproval,
-    toggleSynonymousChangeApproval,
-    captureComparisonSnapshot,
-    applyMutationWorkflow,
-    handleTrim,
-    handleExtractSelection,
-    handleDeleteSelection,
-    handleDuplicateSelection,
-    handleReplaceSelection,
-    handleInsertPayload,
-    handleSplitActiveFragment,
-    handleDuplicateSelectionToInsert,
-    handleImportFile,
-    handleSequenceFileImport,
-    parseSequenceImportText,
-  } = useProjectController();
+  } = projectController;
   const [activeStep, setActiveStep] = useState<WorkbenchStep>(() => (showWorkbench ? 'construct' : 'sequences'));
   const [primerResultTab, setPrimerResultTab] = useState<PrimerResultTab>('overview');
   const [protocolResultTab, setProtocolResultTab] = useState<ProtocolResultTab>('overview');
@@ -166,13 +80,13 @@ function App() {
   const { persistenceState, persistenceError, retryPersistence } = useProjectPersistence(STORAGE_KEY, project);
   const fragmentAMetrics = summarizeSequenceMetrics(project.fragmentA.sequence);
   const fragmentBMetrics = summarizeSequenceMetrics(project.fragmentB.sequence);
-  const activeFragment = project[activeFragmentKey];
+  const activeFragment = project[projectController.activeFragmentKey];
   const isFragmentALocked = project.editorLocks.fragmentA;
   const isFragmentBLocked = project.editorLocks.fragmentB;
   const isInsertLocked = project.editorLocks.insertSequence;
   const isPolymeraseLocked = project.editorLocks.polymeraseSettings;
-  const activeFragmentLocked = activeFragmentKey === 'fragmentA' ? isFragmentALocked : isFragmentBLocked;
-  const counterpartFragmentLocked = activeFragmentKey === 'fragmentA' ? isFragmentBLocked : isFragmentALocked;
+  const activeFragmentLocked = projectController.activeFragmentKey === 'fragmentA' ? isFragmentALocked : isFragmentBLocked;
+  const counterpartFragmentLocked = projectController.activeFragmentKey === 'fragmentA' ? isFragmentBLocked : isFragmentALocked;
   const hasCurrentValidDesign =
     isDesignCurrent &&
     calculationState === 'complete' &&
@@ -189,12 +103,12 @@ function App() {
     project.mode === 'insertion' || project.mode === 'deletion' || project.mode === 'substitution' || project.mode === 'domain-swap'
       ? project.mode
       : null;
-  const mutationRecipient = project[mutationRecipientKey];
-  const mutationDonor = project[mutationDonorKey];
+  const mutationRecipient = project[projectController.mutationRecipientKey];
+  const mutationDonor = project[projectController.mutationDonorKey];
   const mutationPayload =
-    mutationPayloadSource === 'donor-selection'
+    projectController.mutationPayloadSource === 'donor-selection'
       ? selectedFragmentSequence(mutationDonor)
-      : mutationPayloadInput;
+      : projectController.mutationPayloadInput;
   const mutationPreview =
     mutationMode === null
       ? null
@@ -203,9 +117,9 @@ function App() {
             return buildMutationPlan({
               mode: mutationMode,
               recipient: mutationRecipient,
-              coordinate: mutationCoordinate,
-              start: mutationStart,
-              end: mutationEnd,
+              coordinate: projectController.mutationCoordinate,
+              start: projectController.mutationStart,
+              end: projectController.mutationEnd,
               payloadInput: mutationPayload,
               recipientLabel: mutationRecipient.label,
             });
@@ -261,13 +175,6 @@ function App() {
     : design.issues.length
       ? { level: 'warning', text: 'Protocol blocked by design issues' }
       : { level: 'complete', text: `${design.reactions.length} reactions planned` };
-  const exportStepStatus: { level: StepStatusLevel; text: string } = hasExportableDesign
-    ? { level: 'complete', text: 'Export ready' }
-    : calculationState === 'pending' || calculationState === 'stale'
-      ? { level: 'warning', text: 'Waiting for a current calculation' }
-      : workerError
-        ? { level: 'error', text: 'Calculation failed' }
-    : { level: 'pending', text: 'Awaiting runnable design' };
   const compareRows = [
     {
       label: 'Total oligo nt',
@@ -312,7 +219,7 @@ function App() {
   }, [visiblePrimers]);
 
   const handleLoadExample = (exampleId = selectedExampleId) => {
-    loadExample(exampleId);
+    projectController.loadExample(exampleId);
     setActiveStep('construct');
     setInspectorFocus('junction');
     setPrimerResultTab('overview');
@@ -320,36 +227,39 @@ function App() {
   };
 
   const handleResetProject = () => {
-    resetProject();
+    projectController.resetProject();
     setActiveStep('sequences');
     setInspectorFocus('junction');
     setSelectedPrimerName(null);
   };
 
   const handleRestorePreviousProject = () => {
-    restorePreviousProject();
+    projectController.restorePreviousProject();
     setActiveStep('construct');
     setInspectorFocus('junction');
   };
 
-  const handleImportedSourceSelection = (fragmentKey: 'fragmentA' | 'fragmentB', source: Parameters<typeof applyImportedSource>[1]) => {
-    applyImportedSource(fragmentKey, source);
+  const handleImportedSourceSelection = (
+    fragmentKey: 'fragmentA' | 'fragmentB',
+    source: Parameters<typeof projectController.applyImportedSource>[1],
+  ) => {
+    projectController.applyImportedSource(fragmentKey, source);
     setActiveStep('construct');
   };
 
   const handleApplyFirstTwoImportedSources = () => {
-    applyFirstTwoImportedSources();
+    projectController.applyFirstTwoImportedSources();
     setActiveStep('construct');
   };
 
   const handleApplyMutationWorkflow = () => {
-    applyMutationWorkflow(mutationMode);
+    projectController.applyMutationWorkflow(mutationMode);
     setInspectorFocus('junction');
     setActiveStep('construct');
   };
 
-  const handleProjectFileChange = (event: Parameters<typeof handleImportFile>[0]) => {
-    void handleImportFile(event);
+  const handleProjectFileChange = (event: Parameters<typeof projectController.handleImportFile>[0]) => {
+    void projectController.handleImportFile(event);
     setActiveStep('construct');
     setInspectorFocus('junction');
   };
@@ -364,14 +274,14 @@ function App() {
           persistenceState={persistenceState}
           calculationStateLabel={calculationStateLabel}
           calculationStateTone={calculationStateTone}
-          canUndo={canUndo}
-          canRedo={canRedo}
+          canUndo={projectController.canUndo}
+          canRedo={projectController.canRedo}
           showMenu={showMenu}
           hasRecoverableProject={recoverableProjectSnapshot !== null}
-          onProjectNameChange={(value) => updateProject('name', value)}
-          onUndo={undoProject}
-          onRedo={redoProject}
-          onOpenProject={handleImportClick}
+          onProjectNameChange={(value) => projectController.updateProject('name', value)}
+          onUndo={projectController.undoProject}
+          onRedo={projectController.redoProject}
+          onOpenProject={projectController.handleImportClick}
           onToggleMenu={() => setShowMenu((current) => !current)}
           onLoadExactExample={() => handleLoadExample('exact-fusion')}
           onLoadProteinExample={() => handleLoadExample('protein-fusion')}
@@ -379,25 +289,16 @@ function App() {
           onClearProject={handleResetProject}
         />
 
-        {showExperimentalNotice ? (
-          <div className="notice-banner panel" role="status">
-            <span>
-              Experimental alpha — independently review primers and protocols.
-            </span>
-            <details className="notice-details">
-              <summary>Details</summary>
-              <p className="field-helper">
-                Primer ranking, structure review, specificity review, and protocol suggestions remain computational aids. Independently review every primer, reconstructed product, and protocol before experimental use.
-              </p>
-            </details>
-            <button type="button" className="button button-secondary" onClick={() => setShowExperimentalNotice(false)}>
-              Dismiss
-            </button>
-          </div>
-        ) : null}
+        {showExperimentalNotice ? <ExperimentalNotice onDismiss={() => setShowExperimentalNotice(false)} /> : null}
 
         <input ref={fileInputRef} type="file" accept="application/json" hidden onChange={handleProjectFileChange} />
-        <input ref={sequenceFileInputRef} type="file" accept=".txt,.fa,.fasta,.gb,.gbk,.gbff" hidden onChange={handleSequenceFileImport} />
+        <input
+          ref={sequenceFileInputRef}
+          type="file"
+          accept=".txt,.fa,.fasta,.gb,.gbk,.gbff"
+          hidden
+          onChange={projectController.handleSequenceFileImport}
+        />
 
         {!showWorkbench ? (
           <WelcomeScreen
@@ -407,7 +308,7 @@ function App() {
             }}
             onLoadExactExample={() => handleLoadExample('exact-fusion')}
             onLoadProteinExample={() => handleLoadExample('protein-fusion')}
-            onOpenProject={handleImportClick}
+            onOpenProject={projectController.handleImportClick}
           />
         ) : (
           <>
@@ -426,8 +327,8 @@ function App() {
                 showSidebar={showSidebar}
                 targetLength={design.targetSequence.length}
                 exactVerification={design.finalProductVerified}
-                canUndo={canUndo}
-                canRedo={canRedo}
+                canUndo={projectController.canUndo}
+                canRedo={projectController.canRedo}
                 sequenceStepStatus={sequenceStepStatus}
                 constructStepStatus={constructStepStatus}
                 primerStepStatus={primerStepStatus}
@@ -442,613 +343,25 @@ function App() {
 
               <section className="workspace-pane">
                 {activeStep === 'sequences' ? (
-                  <div className="workspace-stack">
-                    <section className="panel workspace-section">
-                      <div className="panel-header">
-                        <div>
-                          <p className="eyebrow">Project setup</p>
-                          <h2>Sequences and construct definition</h2>
-                        </div>
-                        <span className="pill pill-muted">{selectedPublicExampleDescription}</span>
-                      </div>
-
-                      <div className="field-grid">
-                        <label className="field-card">
-                          <span className="field-label">Polymerase profile</span>
-                          <select
-                            className="text-input"
-                            value={project.polymeraseId}
-                            disabled={isPolymeraseLocked}
-                            onChange={(event) => updateProject('polymeraseId', event.target.value as FusionProjectInput['polymeraseId'])}
-                          >
-                            {Object.values(polymeraseProfiles).map((profile) => (
-                              <option key={profile.id} value={profile.id}>
-                                {profile.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label className="field-card">
-                          <span className="field-label">Design mode</span>
-                          <select
-                            aria-label="Design mode"
-                            className="text-input"
-                            value={project.mode}
-                            onChange={(event) => updateProject('mode', event.target.value as DesignMode)}
-                          >
-                            <option value="exact">Exact fusion</option>
-                            <option value="protein-fusion">Protein fusion</option>
-                            {!isPublicDesignMode(project.mode) ? (
-                              <option value={project.mode} disabled>
-                                Experimental mode ({project.mode})
-                              </option>
-                            ) : null}
-                          </select>
-                        </label>
-                      </div>
-
-                      <label className="field-card">
-                        <span className="field-label">Linker or mutation payload</span>
-                        <textarea
-                          className="sequence-input short-input"
-                          value={project.insertSequence}
-                          disabled={isInsertLocked}
-                          onChange={(event) => updateProject('insertSequence', event.target.value)}
-                          placeholder="Optional inserted sequence between the selected fragment ranges"
-                          spellCheck={false}
-                        />
-                        <span className="field-helper">Leave empty for an exact fusion. Use DNA sequence only.</span>
-                      </label>
-
-                      <label className="field-card">
-                        <span className="field-label">Project notes</span>
-                        <textarea
-                          aria-label="Project notes"
-                          className="sequence-input short-input"
-                          value={project.notes}
-                          onChange={(event) => updateProject('notes', event.target.value)}
-                          placeholder="Optional wet-lab notes, template source, or cloning context"
-                        />
-                      </label>
-                    </section>
-
-                    <section className="panel workspace-section import-panel">
-                      <div className="panel-header">
-                        <div>
-                          <p className="eyebrow">Sequence import</p>
-                          <h2>Plain DNA, FASTA, Multi-FASTA, or GenBank</h2>
-                        </div>
-                      </div>
-
-                      <label className="field-card">
-                        <span className="field-label">Import text</span>
-                        <textarea
-                          aria-label="Import text"
-                          className="sequence-input"
-                          value={sequenceImportText}
-                          onChange={(event) => setSequenceImportText(event.target.value)}
-                          placeholder="Paste plain DNA, FASTA, or a GenBank record here"
-                          spellCheck={false}
-                        />
-                      </label>
-
-                      <div className="action-row">
-                        <button type="button" className="button button-primary" onClick={() => parseSequenceImportText(sequenceImportText)}>
-                          Parse import text
-                        </button>
-                        <button type="button" className="button button-secondary" onClick={handleSequenceImportClick}>
-                          Load sequence file
-                        </button>
-                        <button
-                          type="button"
-                          className="button button-secondary"
-                          onClick={handleApplyFirstTwoImportedSources}
-                          disabled={!sequenceImportResult?.records.length || (isFragmentALocked && isFragmentBLocked)}
-                        >
-                          Apply first two records
-                        </button>
-                        <button
-                          type="button"
-                          className="button button-secondary"
-                          onClick={() => {
-                            setSequenceImportText('');
-                            setSequenceImportError('');
-                            setSequenceImportResult(null);
-                          }}
-                        >
-                          Clear import
-                        </button>
-                      </div>
-
-                      {sequenceImportError ? <p className="status-note status-note-alert">{sequenceImportError}</p> : null}
-                      {sequenceImportResult ? (
-                        <div className="import-result-stack">
-                          <p className="status-note status-note-success">
-                            Parsed {sequenceImportResult.records.length} record(s) as {sequenceImportResult.format}.
-                          </p>
-                          {sequenceImportResult.warnings.length ? (
-                            <div className="status-block">
-                              <p className="status-title">Import warnings</p>
-                              <ul className="status-list">
-                                {sequenceImportResult.warnings.map((warning) => (
-                                  <li key={warning}>{warning}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : null}
-                          <div className="import-record-grid">
-                            {sequenceImportResult.records.map((record) => (
-                              <article key={`${record.name}-${record.checksum}`} className="primer-card">
-                                <div className="panel-header">
-                                  <div>
-                                    <h3>{record.name}</h3>
-                                    <p>
-                                      {record.format} | {record.topology} | {record.sequence.length} bp
-                                    </p>
-                                  </div>
-                                  <span className="pill pill-muted">{record.checksum}</span>
-                                </div>
-                                <div className="metric-grid compact-grid">
-                                  <div className="metric">
-                                    <span>Ambiguous bases</span>
-                                    <strong>{record.ambiguousBases.join(', ') || 'None'}</strong>
-                                  </div>
-                                  <div className="metric">
-                                    <span>Features</span>
-                                    <strong>{record.features.length}</strong>
-                                  </div>
-                                </div>
-                                <code className="sequence-preview compact-preview">{record.sequence}</code>
-                                <div className="action-row">
-                                  <button type="button" className="button button-secondary" onClick={() => handleImportedSourceSelection('fragmentA', record)} disabled={isFragmentALocked}>
-                                    Use for fragment A
-                                  </button>
-                                  <button type="button" className="button button-secondary" onClick={() => handleImportedSourceSelection('fragmentB', record)} disabled={isFragmentBLocked}>
-                                    Use for fragment B
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="button button-secondary"
-                                    onClick={() =>
-                                      setSequenceImportResult((current) =>
-                                        current
-                                          ? {
-                                              ...current,
-                                              records: current.records.map((item) => (item.checksum === record.checksum ? flipImportedSource(item) : item)),
-                                            }
-                                          : current,
-                                      )
-                                    }
-                                  >
-                                    Reverse complement
-                                  </button>
-                                </div>
-                              </article>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                    </section>
-
-                    {mutationMode && !isPublicDesignMode(project.mode) ? (
-                      <section className="panel workspace-section mutation-panel">
-                        <div className="panel-header">
-                          <div>
-                            <p className="eyebrow">Mutation planner</p>
-                            <h2>Recipient-to-flank workflow</h2>
-                          </div>
-                          <span className="pill pill-muted">{mutationMode}</span>
-                        </div>
-
-                        <div className="field-grid">
-                          <label className="field-card">
-                            <span className="field-label">Recipient fragment</span>
-                            <select
-                              className="text-input"
-                              value={mutationRecipientKey}
-                              onChange={(event) => {
-                                const nextRecipient = event.target.value as 'fragmentA' | 'fragmentB';
-                                setMutationRecipientKey(nextRecipient);
-                                if (nextRecipient === mutationDonorKey) {
-                                  setMutationDonorKey(nextRecipient === 'fragmentA' ? 'fragmentB' : 'fragmentA');
-                                }
-                              }}
-                            >
-                              <option value="fragmentA">Fragment A</option>
-                              <option value="fragmentB">Fragment B</option>
-                            </select>
-                          </label>
-
-                          <label className="field-card">
-                            <span className="field-label">Payload source</span>
-                            <select
-                              className="text-input"
-                              value={mutationPayloadSource}
-                              disabled={mutationMode === 'deletion'}
-                              onChange={(event) => setMutationPayloadSource(event.target.value as MutationPayloadSource)}
-                            >
-                              <option value="manual">Manual payload</option>
-                              <option value="donor-selection">Donor selected range</option>
-                            </select>
-                          </label>
-
-                          {mutationMode === 'insertion' ? (
-                            <label className="field-card">
-                              <span className="field-label">Insertion coordinate</span>
-                              <input aria-label="Insertion coordinate" className="text-input" type="number" min={1} step="1" value={mutationCoordinate} onChange={(event) => setMutationCoordinate(Math.max(1, Number(event.target.value) || 1))} />
-                            </label>
-                          ) : (
-                            <>
-                              <label className="field-card">
-                                <span className="field-label">Mutation start</span>
-                                <input className="text-input" type="number" min={1} step="1" value={mutationStart} onChange={(event) => setMutationStart(Math.max(1, Number(event.target.value) || 1))} />
-                              </label>
-                              <label className="field-card">
-                                <span className="field-label">Mutation end</span>
-                                <input className="text-input" type="number" min={1} step="1" value={mutationEnd} onChange={(event) => setMutationEnd(Math.max(1, Number(event.target.value) || 1))} />
-                              </label>
-                            </>
-                          )}
-                        </div>
-
-                        {mutationPayloadSource === 'donor-selection' && mutationMode !== 'deletion' ? (
-                          <div className="field-grid">
-                            <label className="field-card">
-                              <span className="field-label">Donor fragment</span>
-                              <select className="text-input" value={mutationDonorKey} onChange={(event) => setMutationDonorKey(event.target.value as 'fragmentA' | 'fragmentB')}>
-                                <option value="fragmentA" disabled={mutationRecipientKey === 'fragmentA'}>
-                                  Fragment A
-                                </option>
-                                <option value="fragmentB" disabled={mutationRecipientKey === 'fragmentB'}>
-                                  Fragment B
-                                </option>
-                              </select>
-                            </label>
-                            <div className="field-card">
-                              <span className="field-label">Donor selected range</span>
-                              <code className="inline-sequence-preview">{mutationPayload || 'No donor selection available.'}</code>
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {mutationPayloadSource === 'manual' && mutationMode !== 'deletion' ? (
-                          <label className="field-card">
-                            <span className="field-label">{mutationMode === 'domain-swap' ? 'Swap payload' : 'Mutation payload'}</span>
-                            <textarea aria-label="Mutation payload" className="sequence-input short-input" value={mutationPayloadInput} onChange={(event) => setMutationPayloadInput(event.target.value)} placeholder={mutationMode === 'insertion' ? 'Inserted DNA' : 'Replacement DNA'} spellCheck={false} />
-                          </label>
-                        ) : null}
-
-                        <div className="status-block">
-                          <p className="status-title">Planned construct preview</p>
-                          {mutationPreview ? (
-                            <>
-                              <ul className="status-list">
-                                <li>{mutationPreview.summary}</li>
-                                <li>Left flank: {mutationPreview.leftFragment.sequence.length} bp</li>
-                                <li>Removed region: {mutationPreview.removedSequence.length} bp</li>
-                                <li>Payload: {mutationPreview.insertSequence.length} bp</li>
-                                <li>Right flank: {mutationPreview.rightFragment.sequence.length} bp</li>
-                              </ul>
-                              <SequencePreview title="Planned target product" sequence={mutationPreview.targetSequence} />
-                            </>
-                          ) : (
-                            <p>Fill in valid recipient coordinates and payload settings to preview the planned construct.</p>
-                          )}
-                        </div>
-
-                        <button type="button" className="button button-secondary" onClick={handleApplyMutationWorkflow} disabled={!mutationPreview}>
-                          Apply mutation workflow
-                        </button>
-                      </section>
-                    ) : null}
-
-                    <section className="workspace-two-column">
-                      <section className="panel workspace-section fragment-editor">
-                        <div className="panel-header">
-                          <div>
-                            <p className="eyebrow">Fragment A</p>
-                            <h2>{project.fragmentA.label}</h2>
-                          </div>
-                          <span className="pill pill-muted">{fragmentAMetrics.length} bp</span>
-                        </div>
-
-                        <div className="field-grid">
-                          <label className="field-card">
-                            <span className="field-label">Label</span>
-                            <input className="text-input" value={project.fragmentA.label} disabled={isFragmentALocked} onChange={(event) => updateFragment('fragmentA', 'label', event.target.value)} />
-                          </label>
-                          <label className="field-card">
-                            <span className="field-label">GC</span>
-                            <input className="text-input" value={`${fragmentAMetrics.gcPercentage.toFixed(1)}%`} readOnly />
-                          </label>
-                        </div>
-
-                        <label className="field-card">
-                          <span className="field-label">Sequence</span>
-                          <textarea className="sequence-input" value={project.fragmentA.sequence} disabled={isFragmentALocked} onChange={(event) => updateFragmentSequence('fragmentA', event.target.value)} placeholder="Paste fragment A DNA sequence" spellCheck={false} />
-                        </label>
-
-                        <div className="action-row">
-                          <button type="button" className="button button-secondary" onClick={() => reverseComplementFragment('fragmentA')} disabled={isFragmentALocked}>
-                            Reverse complement A
-                          </button>
-                          <button type="button" className="button button-secondary" onClick={() => updateProject('fragmentA', createEmptyFragment('Fragment A'))} disabled={isFragmentALocked}>
-                            Reset fragment A
-                          </button>
-                        </div>
-
-                        <div className="field-grid range-grid">
-                          <label className="field-card">
-                            <span className="field-label">Start</span>
-                            <input className="text-input" type="number" value={project.fragmentA.start} disabled={isFragmentALocked || project.editorLocks.fragmentABoundaries} onChange={(event) => updateFragment('fragmentA', 'start', Number(event.target.value) || 1)} />
-                          </label>
-                          <label className="field-card">
-                            <span className="field-label">End</span>
-                            <input className="text-input" type="number" value={project.fragmentA.end} disabled={isFragmentALocked || project.editorLocks.fragmentABoundaries} onChange={(event) => updateFragment('fragmentA', 'end', Number(event.target.value) || 1)} />
-                          </label>
-                        </div>
-
-                        {project.fragmentA.features.length ? (
-                          <div className="status-block">
-                            <p className="status-title">GenBank features</p>
-                            <ul className="status-list">
-                              {project.fragmentA.features.slice(0, 6).map((feature, index) => {
-                                const selectionSummary = describeFeatureSelection(feature, project.fragmentA.topology);
-                                const parsed = parseFeatureSelection(feature.location, project.fragmentA.topology);
-                                return (
-                                  <li key={`${feature.key}-${feature.location}`}>
-                                    {feature.label} ({feature.key}) at {feature.location} - {selectionSummary}
-                                    <button type="button" className="button button-secondary inline-button" onClick={() => applyFeatureSelection('fragmentA', index)} disabled={isFragmentALocked || project.editorLocks.fragmentABoundaries || !parsed?.supported}>
-                                      Use feature range
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                              {featureSelectionMessage ? <li>{featureSelectionMessage}</li> : null}
-                            </ul>
-                          </div>
-                        ) : null}
-                      </section>
-
-                      <section className="panel workspace-section fragment-editor">
-                        <div className="panel-header">
-                          <div>
-                            <p className="eyebrow">Fragment B</p>
-                            <h2>{project.fragmentB.label}</h2>
-                          </div>
-                          <span className="pill pill-muted">{fragmentBMetrics.length} bp</span>
-                        </div>
-
-                        <div className="field-grid">
-                          <label className="field-card">
-                            <span className="field-label">Label</span>
-                            <input className="text-input" value={project.fragmentB.label} disabled={isFragmentBLocked} onChange={(event) => updateFragment('fragmentB', 'label', event.target.value)} />
-                          </label>
-                          <label className="field-card">
-                            <span className="field-label">GC</span>
-                            <input className="text-input" value={`${fragmentBMetrics.gcPercentage.toFixed(1)}%`} readOnly />
-                          </label>
-                        </div>
-
-                        <label className="field-card">
-                          <span className="field-label">Sequence</span>
-                          <textarea className="sequence-input" value={project.fragmentB.sequence} disabled={isFragmentBLocked} onChange={(event) => updateFragmentSequence('fragmentB', event.target.value)} placeholder="Paste fragment B DNA sequence" spellCheck={false} />
-                        </label>
-
-                        <div className="action-row">
-                          <button type="button" className="button button-secondary" onClick={() => reverseComplementFragment('fragmentB')} disabled={isFragmentBLocked}>
-                            Reverse complement B
-                          </button>
-                          <button type="button" className="button button-secondary" onClick={() => updateProject('fragmentB', createEmptyFragment('Fragment B'))} disabled={isFragmentBLocked}>
-                            Reset fragment B
-                          </button>
-                        </div>
-
-                        <div className="field-grid range-grid">
-                          <label className="field-card">
-                            <span className="field-label">Start</span>
-                            <input className="text-input" type="number" value={project.fragmentB.start} disabled={isFragmentBLocked || project.editorLocks.fragmentBBoundaries} onChange={(event) => updateFragment('fragmentB', 'start', Number(event.target.value) || 1)} />
-                          </label>
-                          <label className="field-card">
-                            <span className="field-label">End</span>
-                            <input className="text-input" type="number" value={project.fragmentB.end} disabled={isFragmentBLocked || project.editorLocks.fragmentBBoundaries} onChange={(event) => updateFragment('fragmentB', 'end', Number(event.target.value) || 1)} />
-                          </label>
-                        </div>
-
-                        {project.fragmentB.features.length ? (
-                          <div className="status-block">
-                            <p className="status-title">GenBank features</p>
-                            <ul className="status-list">
-                              {project.fragmentB.features.slice(0, 6).map((feature, index) => {
-                                const selectionSummary = describeFeatureSelection(feature, project.fragmentB.topology);
-                                const parsed = parseFeatureSelection(feature.location, project.fragmentB.topology);
-                                return (
-                                  <li key={`${feature.key}-${feature.location}`}>
-                                    {feature.label} ({feature.key}) at {feature.location} - {selectionSummary}
-                                    <button type="button" className="button button-secondary inline-button" onClick={() => applyFeatureSelection('fragmentB', index)} disabled={isFragmentBLocked || project.editorLocks.fragmentBBoundaries || !parsed?.supported}>
-                                      Use feature range
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                              {featureSelectionMessage ? <li>{featureSelectionMessage}</li> : null}
-                            </ul>
-                          </div>
-                        ) : null}
-                      </section>
-                    </section>
-
-                    <details className="panel workspace-section advanced-disclosure">
-                      <summary>Advanced settings</summary>
-
-                      <section className="editor-panel advanced-section">
-                        <div className="panel-header">
-                          <div>
-                            <p className="eyebrow">Editing workspace</p>
-                            <h3>Explicit reversible fragment operations</h3>
-                          </div>
-                          <span className="pill pill-muted">{canUndo || canRedo ? 'Undo history available' : 'No undo history yet'}</span>
-                        </div>
-
-                        <div className="field-grid">
-                          <label className="field-card">
-                            <span className="field-label">Active fragment</span>
-                            <select className="text-input" value={activeFragmentKey} onChange={(event) => setActiveFragmentKey(event.target.value as 'fragmentA' | 'fragmentB')}>
-                              <option value="fragmentA">Fragment A</option>
-                              <option value="fragmentB">Fragment B</option>
-                            </select>
-                          </label>
-                          <label className="field-card">
-                            <span className="field-label">Trim amount</span>
-                            <input className="text-input" type="number" min={1} step="1" value={trimAmount} onChange={(event) => setTrimAmount(Math.max(1, Number(event.target.value) || 1))} />
-                          </label>
-                          <label className="field-card">
-                            <span className="field-label">Edit position</span>
-                            <input className="text-input" type="number" min={1} step="1" value={editPosition} onChange={(event) => setEditPosition(Math.max(1, Number(event.target.value) || 1))} />
-                          </label>
-                          <label className="field-card">
-                            <span className="field-label">Payload / linker / tag</span>
-                            <input className="text-input" value={editPayload} onChange={(event) => setEditPayload(event.target.value)} placeholder="DNA payload for insert or replace" />
-                          </label>
-                        </div>
-
-                        <div className="toggle-grid">
-                          <label className="toggle-card"><input type="checkbox" checked={project.editorLocks.fragmentA} onChange={() => toggleEditorLock('fragmentA')} /><span>Lock fragment A</span></label>
-                          <label className="toggle-card"><input type="checkbox" checked={project.editorLocks.fragmentB} onChange={() => toggleEditorLock('fragmentB')} /><span>Lock fragment B</span></label>
-                          <label className="toggle-card"><input type="checkbox" checked={project.editorLocks.fragmentABoundaries} onChange={() => toggleEditorLock('fragmentABoundaries')} /><span>Lock A boundaries</span></label>
-                          <label className="toggle-card"><input type="checkbox" checked={project.editorLocks.fragmentBBoundaries} onChange={() => toggleEditorLock('fragmentBBoundaries')} /><span>Lock B boundaries</span></label>
-                          <label className="toggle-card"><input type="checkbox" checked={project.editorLocks.insertSequence} onChange={() => toggleEditorLock('insertSequence')} /><span>Lock inserted sequence</span></label>
-                          <label className="toggle-card"><input type="checkbox" checked={project.editorLocks.polymeraseSettings} onChange={() => toggleEditorLock('polymeraseSettings')} /><span>Lock polymerase settings</span></label>
-                        </div>
-
-                        <div className="action-row">
-                          <button type="button" className="button button-secondary" onClick={() => handleTrim('left')} disabled={activeFragmentLocked}>Trim left</button>
-                          <button type="button" className="button button-secondary" onClick={() => handleTrim('right')} disabled={activeFragmentLocked}>Trim right</button>
-                          <button type="button" className="button button-secondary" onClick={handleExtractSelection} disabled={activeFragmentLocked}>Extract selection</button>
-                          <button type="button" className="button button-secondary" onClick={handleDuplicateSelection} disabled={activeFragmentLocked}>Duplicate selection</button>
-                          <button type="button" className="button button-secondary" onClick={handleDeleteSelection} disabled={activeFragmentLocked}>Delete selection</button>
-                          <button type="button" className="button button-secondary" onClick={handleReplaceSelection} disabled={activeFragmentLocked || !editPayload.trim()}>Replace selection</button>
-                          <button type="button" className="button button-secondary" onClick={handleInsertPayload} disabled={activeFragmentLocked || !editPayload.trim()}>Insert payload</button>
-                          <button type="button" className="button button-secondary" onClick={handleSplitActiveFragment} disabled={activeFragmentLocked || counterpartFragmentLocked}>Split to A/B</button>
-                          <button type="button" className="button button-secondary" onClick={handleDuplicateSelectionToInsert} disabled={isInsertLocked}>Duplicate to insert</button>
-                        </div>
-                      </section>
-
-                      {project.mode === 'protein-fusion' ? (
-                        <section className="advanced-section protein-form">
-                          <div className="panel-header">
-                            <div>
-                              <p className="eyebrow">Coding intent</p>
-                              <h3>Frame and codon handling</h3>
-                            </div>
-                            <span className={`pill ${design.proteinValidation?.framePreserved ? 'pill-success' : 'pill-watch'}`}>{design.proteinValidation?.framePreserved ? 'Frame preserved' : 'Check frame'}</span>
-                          </div>
-
-                          <div className="field-grid">
-                            <label className="field-card">
-                              <span className="field-label">Upstream frame</span>
-                              <select className="text-input" value={project.coding.upstreamFrame} onChange={(event) => updateCoding('upstreamFrame', Number(event.target.value) as 0 | 1 | 2)}>
-                                <option value={0}>0</option>
-                                <option value={1}>1</option>
-                                <option value={2}>2</option>
-                              </select>
-                            </label>
-                            <label className="field-card">
-                              <span className="field-label">Downstream frame</span>
-                              <select className="text-input" value={project.coding.downstreamFrame} onChange={(event) => updateCoding('downstreamFrame', Number(event.target.value) as 0 | 1 | 2)}>
-                                <option value={0}>0</option>
-                                <option value={1}>1</option>
-                                <option value={2}>2</option>
-                              </select>
-                            </label>
-                          </div>
-
-                          <div className="toggle-grid">
-                            <label className="toggle-card"><input type="checkbox" checked={project.coding.retainUpstreamStop} onChange={(event) => updateCoding('retainUpstreamStop', event.target.checked)} /><span>Retain upstream stop codon</span></label>
-                            <label className="toggle-card"><input type="checkbox" checked={project.coding.retainDownstreamStart} onChange={(event) => updateCoding('retainDownstreamStart', event.target.checked)} /><span>Retain downstream start codon</span></label>
-                            <label className="toggle-card"><input type="checkbox" checked={project.coding.linkerRequired} onChange={(event) => updateCoding('linkerRequired', event.target.checked)} /><span>Require inserted linker</span></label>
-                            <label className="toggle-card"><input type="checkbox" checked={project.coding.preserveProtein} onChange={(event) => updateCoding('preserveProtein', event.target.checked)} /><span>Preserve amino-acid sequence near junction</span></label>
-                          </div>
-
-                          <label className="field-card">
-                            <span className="field-label">Flexible codons</span>
-                            <input className="text-input" type="number" min={0} value={project.coding.flexibleCodons} onChange={(event) => updateCoding('flexibleCodons', Math.max(0, Number(event.target.value) || 0))} />
-                          </label>
-
-                          <div className="status-block">
-                            <p className="status-title">Sequence change approvals</p>
-                            {design.sequenceChangeProposals.length ? (
-                              <div className="proposal-stack">
-                                {design.sequenceChangeProposals.map((proposal) => (
-                                  <article key={proposal.id} className="proposal-card">
-                                    <div>
-                                      <strong>{proposal.label}</strong>
-                                      <p className="field-helper">{proposal.description}</p>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      className={`button ${proposal.approved ? 'button-primary' : 'button-secondary'}`}
-                                      onClick={() => {
-                                        if (proposal.kind === 'remove-upstream-stop') {
-                                          toggleChangeApproval('removeUpstreamStop');
-                                          return;
-                                        }
-                                        if (proposal.kind === 'remove-downstream-start') {
-                                          toggleChangeApproval('removeDownstreamStart');
-                                          return;
-                                        }
-                                        toggleSynonymousChangeApproval(proposal.id);
-                                      }}
-                                    >
-                                      {proposal.approved ? 'Approved' : 'Approve'}
-                                    </button>
-                                  </article>
-                                ))}
-                              </div>
-                            ) : (
-                              <p>No proposed coding-sequence changes are pending for the current protein-fusion design.</p>
-                            )}
-                          </div>
-                        </section>
-                      ) : null}
-
-                      <section className="advanced-section thermo-panel">
-                        <div className="panel-header">
-                          <div>
-                            <p className="eyebrow">Thermodynamics</p>
-                            <h3>Nearest-neighbour calculation conditions</h3>
-                          </div>
-                        </div>
-                        <div className="field-grid">
-                          <label className="field-card"><span className="field-label">Monovalent ions (mM)</span><input className="text-input" type="number" min={0} step="0.1" value={project.reactionConditions.monovalentMillimolar} disabled={isPolymeraseLocked} onChange={(event) => updateReactionCondition('monovalentMillimolar', Math.max(0, Number(event.target.value) || 0))} /></label>
-                          <label className="field-card"><span className="field-label">Magnesium (mM)</span><input className="text-input" type="number" min={0} step="0.01" value={project.reactionConditions.magnesiumMillimolar} disabled={isPolymeraseLocked} onChange={(event) => updateReactionCondition('magnesiumMillimolar', Math.max(0, Number(event.target.value) || 0))} /></label>
-                          <label className="field-card"><span className="field-label">dNTP total (mM)</span><input className="text-input" type="number" min={0} step="0.01" value={project.reactionConditions.dntpMillimolar} disabled={isPolymeraseLocked} onChange={(event) => updateReactionCondition('dntpMillimolar', Math.max(0, Number(event.target.value) || 0))} /></label>
-                          <label className="field-card"><span className="field-label">Oligo concentration (nM)</span><input className="text-input" type="number" min={0.001} step="1" value={project.reactionConditions.oligoNanomolar} disabled={isPolymeraseLocked} onChange={(event) => updateReactionCondition('oligoNanomolar', Math.max(0.001, Number(event.target.value) || 0.001))} /></label>
-                          <label className="field-card"><span className="field-label">DMSO (%)</span><input className="text-input" type="number" min={0} step="0.1" value={project.reactionConditions.dmsoPercent} disabled={isPolymeraseLocked} onChange={(event) => updateReactionCondition('dmsoPercent', Math.max(0, Number(event.target.value) || 0))} /></label>
-                          <label className="field-card"><span className="field-label">DMSO factor (C/% )</span><input className="text-input" type="number" min={0} step="0.01" value={project.reactionConditions.dmsoFactor} disabled={isPolymeraseLocked} onChange={(event) => updateReactionCondition('dmsoFactor', Math.max(0, Number(event.target.value) || 0))} /></label>
-                        </div>
-                      </section>
-
-                      <section className="advanced-section specificity-panel">
-                        <div className="panel-header">
-                          <div>
-                            <p className="eyebrow">Genomic specificity</p>
-                            <h3>Primer-BLAST handoff</h3>
-                          </div>
-                        </div>
-                        <div className="field-grid">
-                          <label className="field-card"><span className="field-label">Organism</span><input className="text-input" value={project.genomicSpecificity.organism} onChange={(event) => updateGenomicSpecificity('organism', event.target.value)} placeholder="Example: Homo sapiens" /></label>
-                          <label className="field-card"><span className="field-label">Database</span><input className="text-input" value={project.genomicSpecificity.database} onChange={(event) => updateGenomicSpecificity('database', event.target.value)} placeholder="Example: RefSeq representative genomes" /></label>
-                        </div>
-                        <label className="field-card">
-                          <span className="field-label">Handoff notes</span>
-                          <textarea className="sequence-input short-input" value={project.genomicSpecificity.notes} onChange={(event) => updateGenomicSpecificity('notes', event.target.value)} placeholder="Why this external specificity check is needed, target organism, or reviewer notes" />
-                        </label>
-                        <p className="status-note status-note-alert">Exporting or submitting a Primer-BLAST handoff will move primer and target information outside this local-first application.</p>
-                      </section>
-                    </details>
-                  </div>
+                  <SequenceStep
+                    controller={projectController}
+                    design={design}
+                    selectedPublicExampleDescription={selectedPublicExampleDescription}
+                    fragmentAMetrics={fragmentAMetrics}
+                    fragmentBMetrics={fragmentBMetrics}
+                    mutationMode={mutationMode}
+                    mutationPayload={mutationPayload}
+                    mutationPreview={mutationPreview}
+                    isFragmentALocked={isFragmentALocked}
+                    isFragmentBLocked={isFragmentBLocked}
+                    isInsertLocked={isInsertLocked}
+                    isPolymeraseLocked={isPolymeraseLocked}
+                    activeFragmentLocked={activeFragmentLocked}
+                    counterpartFragmentLocked={counterpartFragmentLocked}
+                    onApplyImportedSource={handleImportedSourceSelection}
+                    onApplyFirstTwoImportedSources={handleApplyFirstTwoImportedSources}
+                    onApplyMutationWorkflow={handleApplyMutationWorkflow}
+                  />
                 ) : null}
 
                 {activeStep === 'construct' ? (
@@ -1072,419 +385,48 @@ function App() {
                       setInspectorFocus('primer');
                     }}
                     onShowInspector={() => setShowInspector(true)}
-                    onToggleCanvasTrack={toggleCanvasTrack}
-                    onCaptureComparisonSnapshot={() => captureComparisonSnapshot(comparisonMetrics)}
+                    onToggleCanvasTrack={projectController.toggleCanvasTrack}
+                    onCaptureComparisonSnapshot={() => projectController.captureComparisonSnapshot(comparisonMetrics)}
                     onClearComparisonSnapshot={() => setComparisonSnapshot(null)}
                   />
                 ) : null}
 
                 {activeStep === 'primers' ? (
-                  <div className="workspace-stack">
-                    <section className="panel workspace-section">
-                      <div className="panel-header">
-                        <div>
-                          <p className="eyebrow">Primers</p>
-                          <h2>Primer results</h2>
-                        </div>
-                        <span className="pill pill-muted">{visiblePrimers.length} primer(s)</span>
-                      </div>
-
-                      <div className="result-tabs">
-                        {([
-                          ['overview', 'Overview'],
-                          ['sequences', 'Primer sequences'],
-                          ['structures', 'Structures'],
-                          ['specificity', 'Specificity'],
-                          ['alternatives', 'Alternatives'],
-                        ] as Array<[PrimerResultTab, string]>).map(([tab, label]) => (
-                          <button key={tab} type="button" className={`tab-button ${primerResultTab === tab ? 'tab-button-active' : ''}`} onClick={() => setPrimerResultTab(tab)}>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {primerResultTab === 'overview' ? (
-                        <>
-                          <div className="metric-grid">
-                            <div className="metric"><span>Primer count</span><strong>{design.primers.length}</strong></div>
-                            <div className="metric"><span>Overlap sequence</span><strong>{design.overlapSequence.length} nt</strong></div>
-                            <div className="metric"><span>Unintended products</span><strong>{design.offTargetAmplicons.length}</strong></div>
-                          </div>
-                          <div className="primer-grid">
-                            {visiblePrimers.map((primer) => (
-                              <PrimerCard
-                                key={primer.name}
-                                primer={primer}
-                                selected={selectedPrimer?.name === primer.name}
-                                onSelect={() => {
-                                  setSelectedPrimerName(primer.name);
-                                  setInspectorFocus('primer');
-                                  setShowInspector(true);
-                                }}
-                              />
-                            ))}
-                          </div>
-                        </>
-                      ) : null}
-
-                      {primerResultTab === 'sequences' ? (
-                        <div className="primer-grid">
-                          {visiblePrimers.map((primer) => (
-                            <PrimerCard
-                              key={primer.name}
-                              primer={primer}
-                              selected={selectedPrimer?.name === primer.name}
-                              onSelect={() => {
-                                setSelectedPrimerName(primer.name);
-                                setInspectorFocus('primer');
-                                setShowInspector(true);
-                              }}
-                            />
-                          ))}
-                        </div>
-                      ) : null}
-
-                      {primerResultTab === 'structures' ? (
-                        <div className="workspace-two-column">
-                          <div className="status-block">
-                            <p className="status-title">Approximate structure summary</p>
-                            <ul className="status-list">
-                              {visiblePrimers.map((primer) => (
-                                <li key={`${primer.name}-structure`}>
-                                  {primer.name}: hairpin {primer.structure.hairpin ? `${primer.structure.hairpin.deltaG} kcal/mol` : 'none'}, homodimer {primer.structure.homodimer ? `${primer.structure.homodimer.deltaG} kcal/mol` : 'none'}, 3 prime {primer.structure.threePrimeHomodimer?.threePrimePairedBasesA ?? 0}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="status-block">
-                            <p className="status-title">Primer pair interactions</p>
-                            <ul className="status-list">
-                              {design.primerPairInteractions.length ? (
-                                design.primerPairInteractions.slice(0, 8).map((pair) => (
-                                  <li key={`${pair.primerAName}-${pair.primerBName}`}>
-                                    {pair.primerAName}/{pair.primerBName}: {pair.interaction ? `${pair.interaction.risk}, dG ${pair.interaction.deltaG} kcal/mol` : 'none'}{pair.intended ? ' (intended overlap pair)' : ''}
-                                  </li>
-                                ))
-                              ) : (
-                                <li>No pairwise interactions were computed.</li>
-                              )}
-                            </ul>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {primerResultTab === 'specificity' ? (
-                        <div className="workspace-two-column">
-                          <div className="status-block">
-                            <p className="status-title">Intended amplicons</p>
-                            <ul className="status-list">
-                              {design.intendedAmplicons.length ? (
-                                design.intendedAmplicons.map((amplicon) => (
-                                  <li key={`intended-${amplicon.templateId}-${amplicon.forwardPrimerName}-${amplicon.reversePrimerName}-${amplicon.start}`}>
-                                    Intended: {amplicon.templateName} {amplicon.forwardPrimerName}/{amplicon.reversePrimerName} predicts {amplicon.length} bp
-                                  </li>
-                                ))
-                              ) : (
-                                <li>No intended amplicon models were classified for the current design.</li>
-                              )}
-                            </ul>
-                          </div>
-                          <div className="status-block">
-                            <p className="status-title">Unintended amplicons</p>
-                            <ul className="status-list">
-                              {design.offTargetAmplicons.length ? (
-                                design.offTargetAmplicons.slice(0, 8).map((amplicon) => (
-                                  <li key={`${amplicon.templateId}-${amplicon.forwardPrimerName}-${amplicon.reversePrimerName}-${amplicon.start}`}>
-                                    {amplicon.templateName}: {amplicon.forwardPrimerName}/{amplicon.reversePrimerName} predicts {amplicon.length} bp ({amplicon.risk})
-                                  </li>
-                                ))
-                              ) : (
-                                <li>No unintended amplicons detected by the current local scan.</li>
-                              )}
-                            </ul>
-                            <p className="field-helper">Exporting a handoff package keeps the app local by default, but submitting it to Primer-BLAST is an external genomic-specificity check.</p>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {primerResultTab === 'alternatives' ? (
-                        <>
-                          {comparisonSnapshot ? (
-                            <div className="compare-table" role="table" aria-label="Design comparison">
-                              <div className="compare-row compare-header" role="row">
-                                <span role="columnheader">Metric</span>
-                                <strong role="columnheader">Current</strong>
-                                <strong role="columnheader">Pinned</strong>
-                              </div>
-                              {compareRows.map((row) => (
-                                <div key={row.label} className="compare-row" role="row">
-                                  <span role="cell">{row.label}</span>
-                                  <strong role="cell">{row.current}</strong>
-                                  <strong role="cell">{row.baseline}</strong>
-                                </div>
-                              ))}
-                            </div>
-                          ) : null}
-                          <div className="candidate-stack">
-                            {design.alternativeDesigns.length ? (
-                              design.alternativeDesigns.map((candidate) => (
-                                <article key={candidate.id} className="candidate-card">
-                                  <div className="panel-header">
-                                    <div>
-                                      <h3>{candidate.label}</h3>
-                                      <p className="field-helper">{candidate.priority}</p>
-                                    </div>
-                                    <span className="pill pill-muted">{candidate.qualityScore.toFixed(3)}</span>
-                                  </div>
-                                  <ul className="status-list">
-                                    <li>Total oligo nt: {candidate.totalOligoLength}</li>
-                                    <li>Overlap Tm: {candidate.overlapTm.toFixed(1)} C</li>
-                                    <li>Tm spread: {candidate.tmSpread.toFixed(1)} C</li>
-                                    <li>Worst non-intended dimer dG: {candidate.worstNonIntendedDimerDeltaG !== null ? `${candidate.worstNonIntendedDimerDeltaG.toFixed(1)} kcal/mol` : 'n/a'}</li>
-                                    <li>High-risk off-targets: {candidate.highRiskOffTargets}</li>
-                                  </ul>
-                                </article>
-                              ))
-                            ) : (
-                              <div className="status-block">
-                                <p className="status-title">No alternatives</p>
-                                <p>No ranked alternatives were generated for the current search space.</p>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      ) : null}
-                    </section>
-                  </div>
+                  <PrimerStep
+                    design={design}
+                    visiblePrimers={visiblePrimers}
+                    selectedPrimerName={selectedPrimer?.name ?? null}
+                    primerResultTab={primerResultTab}
+                    comparisonSnapshot={comparisonSnapshot}
+                    compareRows={compareRows}
+                    onPrimerResultTabChange={setPrimerResultTab}
+                    onSelectPrimer={(primerName) => {
+                      setSelectedPrimerName(primerName);
+                      setInspectorFocus('primer');
+                      setShowInspector(true);
+                    }}
+                  />
                 ) : null}
 
                 {activeStep === 'protocol' ? (
-                  <div className="workspace-stack">
-                    <section className="panel workspace-section">
-                      <div className="panel-header">
-                        <div>
-                          <p className="eyebrow">Protocol & Export</p>
-                          <h2>Reaction planning and deliverables</h2>
-                        </div>
-                        <span className="pill pill-muted">{project.protocolSettings.mixStrategy}</span>
-                      </div>
-
-                      <div className="result-tabs">
-                        {([
-                          ['overview', 'Overview'],
-                          ['setup', 'Reaction setup'],
-                          ['cycling', 'Cycling'],
-                          ['pipetting', 'Pipetting'],
-                          ['products', 'Expected products'],
-                        ] as Array<[ProtocolResultTab, string]>).map(([tab, label]) => (
-                          <button key={tab} type="button" className={`tab-button ${protocolResultTab === tab ? 'tab-button-active' : ''}`} onClick={() => setProtocolResultTab(tab)}>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {protocolResultTab === 'overview' ? (
-                        <div className="reaction-stack">
-                          {(selectedReaction ? [selectedReaction] : design.reactions).map((reaction) => (
-                            <ReactionCard
-                              key={reaction.name}
-                              reaction={reaction}
-                              selected={activeReaction?.name === reaction.name}
-                              onSelect={() => {
-                                setSelectedStage(reaction.name === 'PCR 1A' ? 'pcr1a' : reaction.name === 'PCR 1B' ? 'pcr1b' : 'fusion');
-                                setInspectorFocus('reaction');
-                                setShowInspector(true);
-                              }}
-                            />
-                          ))}
-                        </div>
-                      ) : null}
-
-                      {protocolResultTab === 'setup' ? (
-                        <>
-                          <div className="field-grid">
-                            <label className="field-card"><span className="field-label">Stage A concentration (ng/uL)</span><input className="text-input" type="number" min={0.0001} step="0.1" value={project.protocolSettings.stageAConcentrationNgPerUl} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('stageAConcentrationNgPerUl', Math.max(0.0001, Number(event.target.value) || 0.0001))} /></label>
-                            <label className="field-card"><span className="field-label">Stage B concentration (ng/uL)</span><input className="text-input" type="number" min={0.0001} step="0.1" value={project.protocolSettings.stageBConcentrationNgPerUl} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('stageBConcentrationNgPerUl', Math.max(0.0001, Number(event.target.value) || 0.0001))} /></label>
-                            <label className="field-card"><span className="field-label">Total target DNA (pmol)</span><input className="text-input" type="number" min={0.000001} step="0.01" value={project.protocolSettings.totalTemplatePmol} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('totalTemplatePmol', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Mix strategy</span><select className="text-input" value={project.protocolSettings.mixStrategy} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('mixStrategy', event.target.value as ProtocolSettings['mixStrategy'])}><option value="equimolar">1:1 equimolar</option><option value="user-defined">User-defined ratio</option><option value="limiting-a">Fragment A limiting</option><option value="limiting-b">Fragment B limiting</option></select></label>
-                            <label className="field-card"><span className="field-label">Mix ratio A</span><input className="text-input" type="number" min={0.000001} step="0.1" value={project.protocolSettings.stageMixRatioA} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('stageMixRatioA', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Mix ratio B</span><input className="text-input" type="number" min={0.000001} step="0.1" value={project.protocolSettings.stageMixRatioB} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('stageMixRatioB', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Primer stock (uM)</span><input className="text-input" type="number" min={0.000001} step="0.1" value={project.protocolSettings.primerStockMicromolar} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('primerStockMicromolar', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Primer working (uM)</span><input className="text-input" type="number" min={0.000001} step="0.1" value={project.protocolSettings.primerWorkingMicromolar} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('primerWorkingMicromolar', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Working stock prep (uL)</span><input className="text-input" type="number" min={0.000001} step="1" value={project.protocolSettings.workingStockPrepMicroliters} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('workingStockPrepMicroliters', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Primer per reaction (uL)</span><input className="text-input" type="number" min={0.000001} step="0.1" value={project.protocolSettings.primerPerReactionMicroliters} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('primerPerReactionMicroliters', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Stage 1 template / reaction (uL)</span><input className="text-input" type="number" min={0.000001} step="0.1" value={project.protocolSettings.stage1TemplatePerReactionMicroliters} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('stage1TemplatePerReactionMicroliters', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Reaction volume (uL)</span><input className="text-input" type="number" min={0.000001} step="1" value={project.protocolSettings.reactionVolumeMicroliters} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('reactionVolumeMicroliters', Math.max(0.000001, Number(event.target.value) || 0.000001))} /></label>
-                            <label className="field-card"><span className="field-label">Stage 1 reactions / product</span><input className="text-input" type="number" min={1} step="1" value={project.protocolSettings.stage1ReactionCountPerProduct} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('stage1ReactionCountPerProduct', Math.max(1, Number(event.target.value) || 1))} /></label>
-                            <label className="field-card"><span className="field-label">Final reactions</span><input className="text-input" type="number" min={1} step="1" value={project.protocolSettings.finalReactionCount} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('finalReactionCount', Math.max(1, Number(event.target.value) || 1))} /></label>
-                            <label className="field-card"><span className="field-label">Overfill (%)</span><input className="text-input" type="number" min={0} step="1" value={project.protocolSettings.overfillPercent} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('overfillPercent', Math.max(0, Number(event.target.value) || 0))} /></label>
-                            <label className="field-card"><span className="field-label">Stage 1 cycles</span><input className="text-input" type="number" min={1} step="1" value={project.protocolSettings.stage1Cycles} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('stage1Cycles', Math.max(1, Number(event.target.value) || 1))} /></label>
-                            <label className="field-card"><span className="field-label">Final cycles</span><input className="text-input" type="number" min={1} step="1" value={project.protocolSettings.finalCycles} disabled={isPolymeraseLocked} onChange={(event) => updateProtocolSetting('finalCycles', Math.max(1, Number(event.target.value) || 1))} /></label>
-                          </div>
-
-                          <div className="workspace-two-column">
-                            <div className="status-block">
-                              <p className="status-title">Protocol plan</p>
-                              <ul className="status-list">
-                                {design.protocolPlan.stageMixEntries.map((entry) => (
-                                  <li key={entry.label}>
-                                    {entry.label}: {entry.targetPmol.toFixed(3)} pmol, {entry.requiredMassNg.toFixed(2)} ng, {entry.requiredVolumeUl.toFixed(2)} uL at {entry.concentrationNgPerUl} ng/uL
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div className="status-block">
-                              <p className="status-title">Reaction mixes</p>
-                              <ul className="status-list">
-                                {design.protocolPlan.reactionMixes.map((mix) => (
-                                  <li key={mix.name}>
-                                    {mix.name}: {mix.totalMasterMixVolumeUl.toFixed(2)} uL total master mix, {mix.cycleCount} cycles, {mix.overfilledReactionCount.toFixed(2)} effective reactions
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        </>
-                      ) : null}
-
-                      {protocolResultTab === 'cycling' ? (
-                        <div className="reaction-stack">
-                          {design.reactions.map((reaction) => (
-                            <ReactionCard key={reaction.name} reaction={reaction} selected={activeReaction?.name === reaction.name} onSelect={() => setInspectorFocus('reaction')} />
-                          ))}
-                        </div>
-                      ) : null}
-
-                      {protocolResultTab === 'pipetting' ? (
-                        <div className="workspace-two-column">
-                          <div className="status-block">
-                            <p className="status-title">Primer usage</p>
-                            <ul className="status-list">
-                              {design.protocolPlan.primerUsage.map((entry) => (
-                                <li key={entry.primerName}>
-                                  {entry.primerName}: {entry.totalWorkingVolumeUl.toFixed(2)} uL total working stock across {entry.reactionsUsingPrimer} reactions
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="status-block">
-                            <p className="status-title">Reaction recipes</p>
-                            <div className="recipe-stack">
-                              {design.protocolPlan.reactionRecipes.map((recipe) => (
-                                <article key={recipe.name} className="recipe-card">
-                                  <div className="panel-header">
-                                    <div>
-                                      <h3>{recipe.name}</h3>
-                                      <p className="field-helper">{recipe.totalVolumeUl.toFixed(2)} uL total setup volume</p>
-                                    </div>
-                                  </div>
-                                  <ul className="status-list">
-                                    {recipe.entries.map((entry) => (
-                                      <li key={`${recipe.name}-${entry.label}`}>
-                                        {entry.label}: {entry.perReactionVolumeUl.toFixed(2)} uL/reaction, {entry.totalVolumeUl.toFixed(2)} uL total
-                                        {entry.note ? ` (${entry.note})` : ''}
-                                      </li>
-                                    ))}
-                                    {recipe.note ? <li>{recipe.note}</li> : null}
-                                  </ul>
-                                </article>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {protocolResultTab === 'products' ? (
-                        <div className="workspace-two-column">
-                          {getStageSequencePreviews(design, selectedStage).map((preview) => (
-                            <SequencePreview key={preview.label} title={preview.label} sequence={preview.sequence} />
-                          ))}
-                        </div>
-                      ) : null}
-
-                      <section className="panel workspace-section">
-                        <div className="panel-header">
-                          <div>
-                            <p className="eyebrow">Export</p>
-                            <h2>Public MVP artifacts</h2>
-                          </div>
-                          <span className={`pill ${hasExportableDesign ? 'pill-success' : 'pill-watch'}`}>{hasExportableDesign ? 'Export ready' : 'Awaiting runnable design'}</span>
-                        </div>
-
-                        <div className="export-grid">
-                          <button type="button" className="button button-primary" onClick={() => downloadText('fusionpcr-primers.csv', buildPrimerCsv(design), 'text/csv')} disabled={!hasExportableDesign}>Download oligo CSV</button>
-                          <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-primers.fasta', buildPrimerFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export primer FASTA</button>
-                          <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-final-construct.fasta', buildFinalConstructFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export final construct FASTA</button>
-                          <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-protocol.txt', buildProtocolText(design), 'text/plain')} disabled={!hasExportableDesign}>Export printable protocol</button>
-                          <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-project.json', buildProjectJson(project), 'application/json')} disabled={!hasExportableDesign}>Export project JSON</button>
-                        </div>
-
-                        <div className="workspace-two-column">
-                          <div className="status-block">
-                            <p className="status-title">Project model</p>
-                            <ul className="status-list">
-                              <li>Schema version: {design.project.schemaVersion}</li>
-                              <li>Engine version: {design.project.engineVersion}</li>
-                              <li>Revision: {project.revision}</li>
-                              <li>Project hash: {project.projectHash}</li>
-                            </ul>
-                          </div>
-                          <div className="status-block">
-                            <p className="status-title">Export readiness</p>
-                            <ul className="status-list">
-                              <li>{design.primers.length} primer(s) available</li>
-                              <li>{design.reactions.length} reaction plan entry(ies)</li>
-                              <li>Final product length: {design.finalProduct.length} bp</li>
-                              <li>Exact verification: {design.finalProductVerified ? 'pass' : 'pending'}</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </section>
-                    </section>
-                  </div>
-                ) : null}
-
-                {activeStep === 'export' ? (
-                  <div className="workspace-stack">
-                    <section className="panel workspace-section">
-                      <div className="panel-header">
-                        <div>
-                          <p className="eyebrow">Export</p>
-                          <h2>Project, sequence, and protocol artifacts</h2>
-                        </div>
-                        <span className={`pill ${hasExportableDesign ? 'pill-success' : 'pill-watch'}`}>{hasExportableDesign ? 'Export ready' : 'Awaiting runnable design'}</span>
-                      </div>
-
-                      <div className="export-grid">
-                        <button type="button" className="button button-primary" onClick={() => downloadText('fusionpcr-primers.csv', buildPrimerCsv(design), 'text/csv')} disabled={!hasExportableDesign}>Download oligo CSV</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-primers.fasta', buildPrimerFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export primer FASTA</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-final-construct.fasta', buildFinalConstructFasta(design), 'text/plain')} disabled={!hasExportableDesign}>Export final construct FASTA</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-protocol.txt', buildProtocolText(design), 'text/plain')} disabled={!hasExportableDesign}>Export printable protocol</button>
-                        <button type="button" className="button button-secondary" onClick={() => downloadText('fusionpcr-project.json', buildProjectJson(project), 'application/json')} disabled={!hasExportableDesign}>Export project JSON</button>
-                      </div>
-
-                      <div className="workspace-two-column">
-                        <div className="status-block">
-                          <p className="status-title">Project model</p>
-                          <ul className="status-list">
-                            <li>Schema version: {design.project.schemaVersion}</li>
-                            <li>Engine version: {design.project.engineVersion}</li>
-                            <li>Created: {new Date(design.project.createdAt).toLocaleString()}</li>
-                            <li>Modified: {new Date(design.project.modifiedAt).toLocaleString()}</li>
-                          </ul>
-                        </div>
-                        <div className="status-block">
-                          <p className="status-title">Export readiness</p>
-                          <ul className="status-list">
-                            <li>{design.primers.length} primer(s) available</li>
-                            <li>{design.reactions.length} reaction plan entry(ies)</li>
-                            <li>Final product length: {design.finalProduct.length} bp</li>
-                            <li>Exact verification: {design.finalProductVerified ? 'pass' : 'pending'}</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </section>
-                  </div>
+                  <ProtocolExportStep
+                    controller={projectController}
+                    project={project}
+                    design={design}
+                    protocolResultTab={protocolResultTab}
+                    selectedStage={selectedStage}
+                    activeReactionName={activeReaction?.name ?? null}
+                    selectedReactionName={selectedReaction?.name ?? null}
+                    hasExportableDesign={hasExportableDesign}
+                    isPolymeraseLocked={isPolymeraseLocked}
+                    onProtocolResultTabChange={setProtocolResultTab}
+                    onSelectOverviewReaction={(reactionName) => {
+                      setSelectedStage(reactionName === 'PCR 1A' ? 'pcr1a' : reactionName === 'PCR 1B' ? 'pcr1b' : 'fusion');
+                      setInspectorFocus('reaction');
+                      setShowInspector(true);
+                    }}
+                    onInspectReaction={() => setInspectorFocus('reaction')}
+                  />
                 ) : null}
               </section>
 
@@ -1512,29 +454,13 @@ function App() {
               />
             </section>
 
-            <section className="timeline-dock panel">
-              <div className="panel-header">
-                <div>
-                  <p className="eyebrow">Reaction timeline</p>
-                  <h2>Stage filter</h2>
-                </div>
-              </div>
-              <div className="workflow-stage-row">
-                {(['overview', 'pcr1a', 'pcr1b', 'fusion', 'verification'] as WorkflowStage[]).map((stage) => (
-                  <button
-                    key={stage}
-                    type="button"
-                    className={`timeline-step ${selectedStage === stage ? 'timeline-step-active' : ''}`}
-                    onClick={() => {
-                      setSelectedStage(stage);
-                      setInspectorFocus(stage === 'overview' || stage === 'verification' ? 'junction' : 'reaction');
-                    }}
-                  >
-                    {getWorkflowStageLabel(stage)}
-                  </button>
-                ))}
-              </div>
-            </section>
+            <ReactionTimeline
+              selectedStage={selectedStage}
+              onSelectStage={(stage) => {
+                setSelectedStage(stage);
+                setInspectorFocus(stage === 'overview' || stage === 'verification' ? 'junction' : 'reaction');
+              }}
+            />
           </>
         )}
         <ConfirmationDialog

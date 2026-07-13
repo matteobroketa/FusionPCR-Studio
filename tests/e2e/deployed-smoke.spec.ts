@@ -6,6 +6,6 @@ test('public Pages deployment loads without browser/runtime faults', async ({ pa
   await openWorkbenchStep(page, 'Protocol & Export');
 
   await expect(page.getByRole('button', { name: 'Export project JSON' })).toBeVisible();
-  await expect(page.getByText('Exact verification: pass')).toBeVisible();
+  await expect(page.getByText('Sequence reconstruction verified: pass')).toBeVisible();
   await expect(page.locator('header').getByText('Calculation complete')).toBeVisible();
 });

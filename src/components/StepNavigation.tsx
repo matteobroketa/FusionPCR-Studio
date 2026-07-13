@@ -83,7 +83,7 @@ export function StepNavigation({
           <strong>{targetLength} bp</strong>
         </div>
         <div className="metric compact-metric">
-          <span>Exact verification</span>
+          <span>Sequence reconstruction</span>
           <strong>{exactVerification ? 'Pass' : 'Pending'}</strong>
         </div>
         <div className="metric compact-metric">
