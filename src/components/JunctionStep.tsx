@@ -81,15 +81,40 @@ export function JunctionStep({
             <span>Fragment B</span>
           </div>
           <div className="construct-strip">
-            <button type="button" className={`construct-block block-a construct-button ${inspectorFocus === 'fragment-a' ? 'construct-active' : ''}`} style={{ flexGrow: Math.max(design.selectedA.length, 1) }} onClick={() => onInspectorFocusChange('fragment-a')} aria-pressed={inspectorFocus === 'fragment-a'}>
+            <button
+              type="button"
+              className={`construct-block block-a construct-button ${inspectorFocus === 'fragment-a' ? 'construct-active' : ''}`}
+              style={{ flexGrow: Math.max(design.selectedA.length, 1) }}
+              onClick={() => onInspectorFocusChange('fragment-a')}
+              aria-label={`Fragment A block: ${projectNameA}, ${design.selectedA.length} base pairs`}
+              aria-pressed={inspectorFocus === 'fragment-a'}
+            >
               <span>{projectNameA}</span>
               <strong>{design.selectedA.length} bp</strong>
             </button>
-            <button type="button" className={`construct-block block-insert construct-button ${inspectorFocus === 'junction' ? 'construct-active' : ''}`} style={{ flexGrow: Math.max(design.insertSequence.length || design.overlapSequence.length, 1) }} onClick={() => onInspectorFocusChange('junction')} aria-pressed={inspectorFocus === 'junction'}>
+            <button
+              type="button"
+              className={`construct-block block-insert construct-button ${inspectorFocus === 'junction' ? 'construct-active' : ''}`}
+              style={{ flexGrow: Math.max(design.insertSequence.length || design.overlapSequence.length, 1) }}
+              onClick={() => onInspectorFocusChange('junction')}
+              aria-label={
+                design.insertSequence.length
+                  ? `Inserted sequence block at the junction, ${design.insertSequence.length} base pairs`
+                  : `Overlap junction block, ${design.overlapSequence.length} base pair overlap`
+              }
+              aria-pressed={inspectorFocus === 'junction'}
+            >
               <span>{design.insertSequence ? 'J1' : 'Join'}</span>
               <strong>{design.insertSequence.length ? `${design.insertSequence.length} bp` : `${design.overlapSequence.length} bp overlap`}</strong>
             </button>
-            <button type="button" className={`construct-block block-b construct-button ${inspectorFocus === 'fragment-b' ? 'construct-active' : ''}`} style={{ flexGrow: Math.max(design.selectedB.length, 1) }} onClick={() => onInspectorFocusChange('fragment-b')} aria-pressed={inspectorFocus === 'fragment-b'}>
+            <button
+              type="button"
+              className={`construct-block block-b construct-button ${inspectorFocus === 'fragment-b' ? 'construct-active' : ''}`}
+              style={{ flexGrow: Math.max(design.selectedB.length, 1) }}
+              onClick={() => onInspectorFocusChange('fragment-b')}
+              aria-label={`Fragment B block: ${projectNameB}, ${design.selectedB.length} base pairs`}
+              aria-pressed={inspectorFocus === 'fragment-b'}
+            >
               <span>{projectNameB}</span>
               <strong>{design.selectedB.length} bp</strong>
             </button>
@@ -102,6 +127,7 @@ export function JunctionStep({
               key={primer.name}
               type="button"
               className={`primer-direction-card ${selectedPrimerName === primer.name ? 'primer-direction-card-active' : ''}`}
+              aria-label={`Primer arrow ${primer.name}, ${primer.bodyLength} base body in ${primer.reaction}`}
               onClick={() => {
                 onSelectPrimer(primer.name);
                 onShowInspector();

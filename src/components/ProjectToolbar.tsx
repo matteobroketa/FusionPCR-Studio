@@ -1,6 +1,7 @@
 type ProjectToolbarProps = {
   projectName: string;
   showWorkbench: boolean;
+  readOnlyReviewMode: boolean;
   saveStateLabel: string;
   persistenceState: 'idle' | 'saving' | 'saved' | 'failed';
   calculationStateLabel: string;
@@ -23,6 +24,7 @@ type ProjectToolbarProps = {
 export function ProjectToolbar({
   projectName,
   showWorkbench,
+  readOnlyReviewMode,
   saveStateLabel,
   persistenceState,
   calculationStateLabel,
@@ -61,25 +63,36 @@ export function ProjectToolbar({
         ) : null}
         {showWorkbench ? (
           <>
-            <label className="topbar-project">
-              <span className="sr-only">Project name</span>
-              <input
-                aria-label="Project name"
-                className="text-input"
-                value={projectName}
-                onChange={(event) => onProjectNameChange(event.target.value)}
-              />
-            </label>
+            {readOnlyReviewMode ? (
+              <div className="topbar-project topbar-project-readonly" aria-label="Project name">
+                <span className="eyebrow">Project</span>
+                <strong>{projectName}</strong>
+              </div>
+            ) : (
+              <label className="topbar-project">
+                <span className="sr-only">Project name</span>
+                <input
+                  aria-label="Project name"
+                  className="text-input"
+                  value={projectName}
+                  onChange={(event) => onProjectNameChange(event.target.value)}
+                />
+              </label>
+            )}
             <div className="topbar-status">
               <span className={`pill ${persistenceState === 'failed' ? 'pill-alert' : persistenceState === 'saved' ? 'pill-success' : 'pill-watch'}`}>{saveStateLabel}</span>
               <span className={`pill ${calculationStateTone === 'alert' ? 'pill-alert' : calculationStateTone === 'success' ? 'pill-success' : 'pill-watch'}`}>{calculationStateLabel}</span>
             </div>
-            <button type="button" className="button button-secondary" onClick={onUndo} disabled={!canUndo}>
-              Undo
-            </button>
-            <button type="button" className="button button-secondary" onClick={onRedo} disabled={!canRedo}>
-              Redo
-            </button>
+            {!readOnlyReviewMode ? (
+              <>
+                <button type="button" className="button button-secondary" onClick={onUndo} disabled={!canUndo}>
+                  Undo
+                </button>
+                <button type="button" className="button button-secondary" onClick={onRedo} disabled={!canRedo}>
+                  Redo
+                </button>
+              </>
+            ) : null}
           </>
         ) : null}
         <div className="topbar-menu">

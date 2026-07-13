@@ -133,6 +133,11 @@ code,
   min-width: 0;
 }
 
+.topbar-project-readonly {
+  display: grid;
+  gap: 2px;
+}
+
 .topbar-actions {
   justify-content: flex-end;
   flex-wrap: wrap;
@@ -361,6 +366,8 @@ select.text-input,
   gap: var(--space-4);
   position: sticky;
   top: var(--space-4);
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .workflow-step-list,
@@ -440,10 +447,18 @@ select.text-input,
 
 .workspace-pane {
   min-width: 0;
+  overflow-x: hidden;
+}
+
+.inspector-pane {
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .workspace-section {
   padding: var(--space-4);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .workspace-two-column {
@@ -460,6 +475,8 @@ select.text-input,
 .toggle-grid {
   display: grid;
   gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .field-grid {
@@ -509,6 +526,8 @@ select.text-input,
   margin-top: 6px;
   font-size: 1.1rem;
   line-height: 1.15;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .compact-metric strong {
@@ -521,6 +540,8 @@ select.text-input,
 .property-list {
   display: grid;
   gap: 10px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .status-list {
@@ -535,6 +556,9 @@ select.text-input,
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-secondary);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .status-note-success {
@@ -592,9 +616,62 @@ select.text-input,
 
 .object-select-button {
   justify-self: start;
-  min-height: 28px;
+  min-height: 36px;
   padding: 0 10px;
   background: var(--surface);
+}
+
+.phone-primer-selector {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 4px;
+}
+
+.phone-primer-chip {
+  min-height: 44px;
+  padding: 0 14px;
+  white-space: nowrap;
+  background: var(--surface);
+}
+
+.phone-primer-chip-active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #eff6ff;
+}
+
+.phone-primer-detail {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.issue-drawer {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.issue-preview-list,
+.issue-sections {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.issue-preview-item {
+  display: grid;
+  gap: 10px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-secondary);
+}
+
+.issue-preview-item p {
+  margin: 0;
+  color: var(--text-secondary);
 }
 
 .advanced-disclosure {
@@ -772,7 +849,7 @@ select.text-input,
 
 .property-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   padding: 10px 12px;
   background: var(--surface-secondary);
@@ -784,6 +861,18 @@ select.text-input,
 
 .property-row span {
   color: var(--text-secondary);
+}
+
+.property-row > :last-child {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.panel-header,
+.action-row {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .compare-table {
@@ -903,21 +992,58 @@ select.text-input,
   .workbench-mobile-actions {
     display: flex;
     gap: var(--space-2);
+    justify-content: flex-end;
   }
 
   .workbench-layout {
     grid-template-columns: 1fr;
   }
 
-  .workflow-sidebar,
-  .inspector-pane {
-    display: none;
+  .workflow-sidebar {
     position: static;
+    padding: var(--space-3);
   }
 
-  .workflow-sidebar.is-open,
+  .workflow-step-list {
+    display: flex;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .workflow-step {
+    min-width: 190px;
+    flex: 0 0 auto;
+  }
+
+  .sidebar-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .inspector-pane {
+    position: fixed;
+    top: var(--space-3);
+    right: var(--space-3);
+    bottom: var(--space-3);
+    width: min(360px, calc(100vw - (var(--space-3) * 2)));
+    z-index: 30;
+    overflow: auto;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(calc(100% + var(--space-3)));
+    transition:
+      transform 160ms ease,
+      opacity 160ms ease,
+      visibility 160ms ease;
+  }
+
   .inspector-pane.is-open {
     display: grid;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
   }
 }
 
@@ -944,11 +1070,29 @@ select.text-input,
     align-items: stretch;
   }
 
+  .sidebar-header,
+  .sidebar-summary,
+  .sidebar-actions {
+    display: none;
+  }
+
   .compare-row {
     grid-template-columns: 1fr;
   }
 
   .construct-strip {
     flex-direction: column;
+  }
+
+  .button,
+  .tab-button,
+  .timeline-step,
+  .object-select-button,
+  .phone-primer-chip {
+    min-height: 44px;
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
   }
 }

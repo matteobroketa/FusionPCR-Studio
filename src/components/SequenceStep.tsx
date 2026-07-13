@@ -75,6 +75,7 @@ type SequenceStepProps = {
   controller: ProjectController;
   design: FusionDesign;
   selectedPublicExampleDescription: string;
+  phoneReviewMode: boolean;
   fragmentAMetrics: SequenceMetrics;
   fragmentBMetrics: SequenceMetrics;
   mutationMode: MutationPlannerMode | null;
@@ -99,6 +100,7 @@ export function SequenceStep({
   controller,
   design,
   selectedPublicExampleDescription,
+  phoneReviewMode,
   fragmentAMetrics,
   fragmentBMetrics,
   mutationMode,
@@ -115,6 +117,69 @@ export function SequenceStep({
   onApplyMutationWorkflow,
 }: SequenceStepProps) {
   const { project } = controller;
+
+  if (phoneReviewMode) {
+    return (
+      <div className="workspace-stack">
+        <section className="panel workspace-section">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Sequence review</p>
+              <h2>Read-only project summary</h2>
+            </div>
+            <span className="pill pill-watch">Phone review mode</span>
+          </div>
+
+          <p className="status-note status-note-alert">Use a tablet or desktop to edit sequence designs.</p>
+
+          <div className="metric-grid">
+            <div className="metric">
+              <span>Built-in example</span>
+              <strong>{selectedPublicExampleDescription}</strong>
+            </div>
+            <div className="metric">
+              <span>Design mode</span>
+              <strong>{project.mode}</strong>
+            </div>
+            <div className="metric">
+              <span>Polymerase</span>
+              <strong>{polymeraseProfiles[project.polymeraseId].label}</strong>
+            </div>
+            <div className="metric">
+              <span>Inserted sequence</span>
+              <strong>{project.insertSequence.length} bp</strong>
+            </div>
+          </div>
+
+          <div className="workspace-two-column">
+            <div className="status-block">
+              <p className="status-title">Fragment A</p>
+              <ul className="status-list">
+                <li>{project.fragmentA.label}</li>
+                <li>Selected range: {project.fragmentA.start}-{project.fragmentA.end}</li>
+                <li>Full length: {fragmentAMetrics.length} bp</li>
+                <li>Selected contribution: {design.selectedA.length} bp</li>
+              </ul>
+            </div>
+            <div className="status-block">
+              <p className="status-title">Fragment B</p>
+              <ul className="status-list">
+                <li>{project.fragmentB.label}</li>
+                <li>Selected range: {project.fragmentB.start}-{project.fragmentB.end}</li>
+                <li>Full length: {fragmentBMetrics.length} bp</li>
+                <li>Selected contribution: {design.selectedB.length} bp</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="workspace-two-column">
+            <SequencePreview title={`${project.fragmentA.label} selected slice`} sequence={design.selectedA} />
+            <SequencePreview title={`${project.fragmentB.label} selected slice`} sequence={design.selectedB} />
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="workspace-stack">

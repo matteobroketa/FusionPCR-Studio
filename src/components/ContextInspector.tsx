@@ -43,6 +43,8 @@ export function ContextInspector({
   onRetryPersistence,
   showInspector,
 }: ContextInspectorProps) {
+  const headerTone = workerError || persistenceError || importError ? 'pill-alert' : 'pill-muted';
+  const headerLabel = workerError ? 'Calculation failed' : persistenceError ? 'Local save failed' : importError ? 'Import error' : 'Context details';
   const heading =
     inspectorFocus === 'fragment-a'
       ? project.fragmentA.label
@@ -61,7 +63,7 @@ export function ContextInspector({
           <p className="eyebrow">Inspector</p>
           <h2>{heading}</h2>
         </div>
-        <span className={`pill ${design.issues.length ? 'pill-alert' : 'pill-success'}`}>{design.issues.length ? `${design.issues.length} issue(s)` : 'Calculation complete'}</span>
+        <span className={`pill ${headerTone}`}>{headerLabel}</span>
       </div>
 
       {inspectorFocus === 'junction' ? (
@@ -161,35 +163,6 @@ export function ContextInspector({
         </div>
       ) : null}
       {importError ? <p className="status-note status-note-alert">{importError}</p> : null}
-      {design.issues.length ? (
-        <div className="status-block">
-          <p className="status-title">Blocking issues</p>
-          <ul className="status-list">
-            {design.issues.map((issue) => (
-              <li key={issue}>{issue}</li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <p className="status-note status-note-success">The simulated final product matches the requested target sequence exactly.</p>
-      )}
-
-      <div className="status-block">
-        <p className="status-title">Warnings</p>
-        <ul className="status-list">
-          {(design.warnings.length ? design.warnings : ['No warnings for the current design.']).map((warning) => (
-            <li key={warning}>{warning}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="status-block">
-        <p className="status-title">Scientific scope</p>
-        <ul className="status-list">
-          <li>{design.intendedAmplicons.length} intended amplicon model(s) are reported separately from unintended penalties.</li>
-          <li>Structure and quality outputs are heuristic approximations, not experimentally calibrated success probabilities.</li>
-        </ul>
-      </div>
     </aside>
   );
 }

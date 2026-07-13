@@ -41,8 +41,9 @@ test.describe('FusionPCR Studio production build', () => {
     await openWorkbenchStep(page, 'Junction');
 
     await expect(page.getByText('Calculation pending')).toBeVisible();
+    await expect(page.getByText('Review issues')).toBeVisible();
     await expect(page.getByText(/Fragment A contains unsupported bases: B/)).toBeVisible();
-    await expect(page.getByText('2 issue(s)')).toBeVisible();
+    await expect(page.getByText('2 item(s) need review')).toBeVisible();
   });
 
   test('exports the public MVP artifacts from the production build', async ({ page }, testInfo) => {
@@ -102,5 +103,51 @@ test.describe('FusionPCR Studio production build', () => {
       expect(content).not.toMatch(/\b(?:NaN|-?Infinity)\b/);
       exportCase.assertContent(content);
     }
+  });
+
+  test('keeps global design warnings out of the contextual inspector', async ({ page }) => {
+    await page.goto('./');
+    await loadRunnableExample(page);
+
+    await page.locator('.block-insert').click();
+
+    await expect(page.getByText('Review issues')).toBeVisible();
+    await expect(page.getByText('Upstream stop codon removal is proposed but not yet approved.')).toBeVisible();
+    await expect(page.locator('.inspector-pane').getByText('Upstream stop codon removal is proposed but not yet approved.')).toHaveCount(0);
+    await expect(page.locator('.inspector-pane').getByText('Scientific scope')).toHaveCount(0);
+  });
+});
+
+test.describe('FusionPCR Studio responsive review', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  test('keeps the workflow step bar visible on tablet without relying on a Show steps toggle', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto('./');
+    await loadRunnableExample(page);
+
+    await expect(page.getByRole('button', { name: 'Sequences step' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Junction step' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Primers step' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Protocol & Export step' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Show steps' })).toHaveCount(0);
+  });
+
+  test('shows read-only phone review and one primer detail at a time', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('./');
+    await loadRunnableExample(page);
+
+    await openWorkbenchStep(page, 'Sequences');
+    await expect(page.getByText('Use a tablet or desktop to edit sequence designs.')).toBeVisible();
+    await expect(page.getByPlaceholder('Paste fragment A DNA sequence')).toHaveCount(0);
+
+    await openWorkbenchStep(page, 'Primers');
+    await expect(page.locator('.phone-primer-selector')).toBeVisible();
+    await expect(page.locator('.phone-primer-detail .primer-card')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'B_outer_R' }).click();
+    await expect(page.locator('.phone-primer-detail .primer-card')).toHaveCount(1);
+    await expect(page.locator('.phone-primer-detail').getByRole('heading', { name: 'B_outer_R', exact: true })).toBeVisible();
   });
 });

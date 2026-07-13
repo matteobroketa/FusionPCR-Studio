@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { ContextInspector } from './components/ContextInspector';
 import { ExperimentalNotice } from './components/ExperimentalNotice';
+import { IssueDrawer } from './components/IssueDrawer';
 import { JunctionStep } from './components/JunctionStep';
 import { PrimerStep, type PrimerResultTab } from './components/PrimerStep';
 import { ProtocolExportStep, type ProtocolResultTab } from './components/ProtocolExportStep';
@@ -14,6 +15,7 @@ import { exampleProjectOptions } from './data/example';
 import { useFusionDesign } from './hooks/useFusionDesign';
 import { useProjectController } from './hooks/useProjectController';
 import { useProjectPersistence } from './hooks/useProjectPersistence';
+import { useViewportMode } from './hooks/useViewportMode';
 import { summarizeSequenceMetrics } from './utils/fusion';
 import { buildMutationPlan, selectedFragmentSequence, type MutationPlannerMode } from './utils/mutation';
 import {
@@ -76,10 +78,13 @@ function App() {
   const [primerResultTab, setPrimerResultTab] = useState<PrimerResultTab>('overview');
   const [protocolResultTab, setProtocolResultTab] = useState<ProtocolResultTab>('overview');
   const [selectedPrimerName, setSelectedPrimerName] = useState<string | null>(null);
+  const viewportMode = useViewportMode();
   const { design, calculationState, isDesignPending, isDesignCurrent, workerError, retry } = useFusionDesign(project);
   const { persistenceState, persistenceError, retryPersistence } = useProjectPersistence(STORAGE_KEY, project);
   const fragmentAMetrics = summarizeSequenceMetrics(project.fragmentA.sequence);
   const fragmentBMetrics = summarizeSequenceMetrics(project.fragmentB.sequence);
+  const isPhoneViewport = viewportMode === 'phone';
+  const isCompactViewport = viewportMode !== 'desktop';
   const activeFragment = project[projectController.activeFragmentKey];
   const isFragmentALocked = project.editorLocks.fragmentA;
   const isFragmentBLocked = project.editorLocks.fragmentB;
@@ -270,6 +275,7 @@ function App() {
         <ProjectToolbar
           projectName={project.name}
           showWorkbench={showWorkbench}
+          readOnlyReviewMode={isPhoneViewport && showWorkbench}
           saveStateLabel={saveStateLabel}
           persistenceState={persistenceState}
           calculationStateLabel={calculationStateLabel}
@@ -313,9 +319,6 @@ function App() {
         ) : (
           <>
             <div className="workbench-mobile-actions">
-              <button type="button" className="button button-secondary" onClick={() => setShowSidebar((current) => !current)}>
-                {showSidebar ? 'Hide steps' : 'Show steps'}
-              </button>
               <button type="button" className="button button-secondary" onClick={() => setShowInspector((current) => !current)}>
                 {showInspector ? 'Hide inspector' : 'Show inspector'}
               </button>
@@ -324,7 +327,7 @@ function App() {
             <section className="workbench-layout">
               <StepNavigation
                 activeStep={activeStep as 'sequences' | 'construct' | 'primers' | 'protocol'}
-                showSidebar={showSidebar}
+                showSidebar={isCompactViewport ? true : showSidebar}
                 targetLength={design.targetSequence.length}
                 exactVerification={design.finalProductVerified}
                 canUndo={projectController.canUndo}
@@ -342,11 +345,14 @@ function App() {
               />
 
               <section className="workspace-pane">
+                <IssueDrawer issues={design.issues} warnings={design.warnings} />
+
                 {activeStep === 'sequences' ? (
                   <SequenceStep
                     controller={projectController}
                     design={design}
                     selectedPublicExampleDescription={selectedPublicExampleDescription}
+                    phoneReviewMode={isPhoneViewport}
                     fragmentAMetrics={fragmentAMetrics}
                     fragmentBMetrics={fragmentBMetrics}
                     mutationMode={mutationMode}
@@ -397,6 +403,7 @@ function App() {
                     visiblePrimers={visiblePrimers}
                     selectedPrimerName={selectedPrimer?.name ?? null}
                     primerResultTab={primerResultTab}
+                    phoneReviewMode={isPhoneViewport}
                     comparisonSnapshot={comparisonSnapshot}
                     compareRows={compareRows}
                     onPrimerResultTabChange={setPrimerResultTab}

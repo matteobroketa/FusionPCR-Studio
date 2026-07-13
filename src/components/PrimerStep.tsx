@@ -15,6 +15,7 @@ type PrimerStepProps = {
   visiblePrimers: PrimerDesign[];
   selectedPrimerName: string | null;
   primerResultTab: PrimerResultTab;
+  phoneReviewMode: boolean;
   comparisonSnapshot: ComparisonSnapshot | null;
   compareRows: CompareRow[];
   onPrimerResultTabChange: (tab: PrimerResultTab) => void;
@@ -34,11 +35,77 @@ export function PrimerStep({
   visiblePrimers,
   selectedPrimerName,
   primerResultTab,
+  phoneReviewMode,
   comparisonSnapshot,
   compareRows,
   onPrimerResultTabChange,
   onSelectPrimer,
 }: PrimerStepProps) {
+  const selectedPrimer =
+    visiblePrimers.find((primer) => primer.name === selectedPrimerName) ??
+    visiblePrimers[0] ??
+    null;
+
+  if (phoneReviewMode) {
+    return (
+      <div className="workspace-stack">
+        <section className="panel workspace-section">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Primers</p>
+              <h2>Primer review</h2>
+            </div>
+            <span className="pill pill-muted">{visiblePrimers.length} primer(s)</span>
+          </div>
+
+          <div className="metric-grid">
+            <div className="metric">
+              <span>Primer count</span>
+              <strong>{design.primers.length}</strong>
+            </div>
+            <div className="metric">
+              <span>Overlap sequence</span>
+              <strong>{design.overlapSequence.length} nt</strong>
+            </div>
+            <div className="metric">
+              <span>Unintended products</span>
+              <strong>{design.offTargetAmplicons.length}</strong>
+            </div>
+            <div className="metric">
+              <span>Sequence reconstruction</span>
+              <strong>{design.finalProductVerified ? 'Pass' : 'Pending'}</strong>
+            </div>
+          </div>
+
+          <div className="phone-primer-selector" role="tablist" aria-label="Primer selector">
+            {visiblePrimers.map((primer) => (
+              <button
+                key={primer.name}
+                type="button"
+                className={`phone-primer-chip ${selectedPrimer?.name === primer.name ? 'phone-primer-chip-active' : ''}`}
+                aria-pressed={selectedPrimer?.name === primer.name}
+                onClick={() => onSelectPrimer(primer.name)}
+              >
+                {primer.name}
+              </button>
+            ))}
+          </div>
+
+          {selectedPrimer ? (
+            <div className="phone-primer-detail">
+              <PrimerCard primer={selectedPrimer} selected />
+            </div>
+          ) : (
+            <div className="status-block">
+              <p className="status-title">No primer set</p>
+              <p>No primer details are available for the current review state.</p>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="workspace-stack">
       <section className="panel workspace-section">

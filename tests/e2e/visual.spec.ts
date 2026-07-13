@@ -19,6 +19,11 @@ async function gotoApp(page: Page) {
   await expect(page.getByText('FusionPCR Studio').first()).toBeVisible();
 }
 
+async function expectNoHorizontalOverflow(page: Page) {
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(hasOverflow).toBe(false);
+}
+
 async function loadExample(page: Page, exampleId: 'protein-fusion' | 'exact-fusion') {
   await page.getByRole('button', { name: exampleId === 'exact-fusion' ? 'Load exact fusion example' : 'Load protein fusion example' }).click();
   await expect(page.getByText('Sequence reconstruction verified.')).toBeVisible();
@@ -30,6 +35,7 @@ for (const viewport of viewports) {
 
     test('empty state', async ({ page }) => {
       await gotoApp(page);
+      await expectNoHorizontalOverflow(page);
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`empty-state-${viewport.width}x${viewport.height}.png`, screenshotOptions);
     });
@@ -37,6 +43,7 @@ for (const viewport of viewports) {
     test('exact fusion example', async ({ page }) => {
       await gotoApp(page);
       await loadExample(page, 'exact-fusion');
+      await expectNoHorizontalOverflow(page);
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`exact-fusion-${viewport.width}x${viewport.height}.png`, screenshotOptions);
     });
@@ -45,6 +52,7 @@ for (const viewport of viewports) {
       await gotoApp(page);
       await loadExample(page, 'protein-fusion');
       await page.locator('.block-insert').click();
+      await expectNoHorizontalOverflow(page);
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`selected-junction-${viewport.width}x${viewport.height}.png`, screenshotOptions);
     });
@@ -53,11 +61,17 @@ for (const viewport of viewports) {
       await gotoApp(page);
       await loadExample(page, 'protein-fusion');
       await openWorkbenchStep(page, 'Primers');
+      await expectNoHorizontalOverflow(page);
+      if (viewport.label === 'phone') {
+        await expect(page.locator('.phone-primer-detail .primer-card')).toHaveCount(1);
+      }
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`primer-results-${viewport.width}x${viewport.height}.png`, screenshotOptions);
     });
 
     test('blocking design error', async ({ page }) => {
+      test.skip(viewport.label === 'phone', 'Phone view is intentionally read-only and does not expose sequence editing.');
+
       await gotoApp(page);
       await loadExample(page, 'protein-fusion');
       await openWorkbenchStep(page, 'Sequences');
@@ -68,6 +82,7 @@ for (const viewport of viewports) {
         await inspectorToggle.click();
       }
       await expect(page.getByText(/Fragment A contains unsupported bases: B/)).toBeVisible();
+      await expectNoHorizontalOverflow(page);
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`blocking-error-${viewport.width}x${viewport.height}.png`, screenshotOptions);
     });
@@ -77,6 +92,7 @@ for (const viewport of viewports) {
       await loadExample(page, 'protein-fusion');
       await openWorkbenchStep(page, 'Protocol & Export');
       await page.getByRole('button', { name: 'Reaction setup' }).click();
+      await expectNoHorizontalOverflow(page);
 
       await expect(page.locator('.app-shell')).toHaveScreenshot(`protocol-review-${viewport.width}x${viewport.height}.png`, screenshotOptions);
     });
