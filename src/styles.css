@@ -474,6 +474,22 @@ select.text-input,
   gap: var(--space-4);
 }
 
+.fragment-editor-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.fragment-swap-control {
+  display: flex;
+  justify-content: center;
+}
+
+.fragment-swap-control .button {
+  white-space: nowrap;
+}
+
 .field-grid,
 .metric-grid,
 .primer-grid,
@@ -1224,6 +1240,7 @@ select.text-input,
 
   .field-grid,
   .workspace-two-column,
+  .fragment-editor-pair,
   .primer-grid,
   .primer-review-layout,
   .import-record-grid,
@@ -1233,6 +1250,10 @@ select.text-input,
   .metric-grid,
   .primer-direction-grid {
     grid-template-columns: 1fr;
+  }
+
+  .fragment-swap-control {
+    order: 0;
   }
 
   .proposal-card {

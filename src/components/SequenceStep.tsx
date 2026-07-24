@@ -630,7 +630,7 @@ export function SequenceStep({
         </section>
       ) : null}
 
-      <section className="workspace-two-column">
+      <section className="fragment-editor-pair">
         <section className="panel workspace-section fragment-editor">
           <div className="panel-header">
             <div>
@@ -791,6 +791,20 @@ export function SequenceStep({
             </div>
           ) : null}
         </section>
+
+        {isPublicDesignMode(project.mode) ? (
+          <div className="fragment-swap-control">
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={controller.swapFragments}
+              disabled={isFragmentALocked || isFragmentBLocked}
+              aria-label="Swap Fragment A and B"
+            >
+              ⇄ Swap Fragment A and B
+            </button>
+          </div>
+        ) : null}
 
         <section className="panel workspace-section fragment-editor">
           <div className="panel-header">

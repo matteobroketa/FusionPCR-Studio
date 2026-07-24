@@ -145,6 +145,45 @@ describe('App browser flows', () => {
     expect(screen.getByLabelText('Design mode')).toHaveValue('protein-fusion');
   });
 
+  it('swaps complete fragment states as one undoable action', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await loadExampleProject(user, 'exact-fusion');
+    await user.click(screen.getByRole('button', { name: 'Sequences step' }));
+
+    const fragmentASequence = screen.getByPlaceholderText(
+      'Paste fragment A DNA sequence',
+    ) as HTMLTextAreaElement;
+    const fragmentBSequence = screen.getByPlaceholderText(
+      'Paste fragment B DNA sequence',
+    ) as HTMLTextAreaElement;
+    const originalASequence = fragmentASequence.value;
+    const originalBSequence = fragmentBSequence.value;
+
+    fireEvent.change(screen.getByDisplayValue('Fragment A'), {
+      target: { value: 'Upstream fragment' },
+    });
+    fireEvent.change(screen.getByDisplayValue('Fragment B'), {
+      target: { value: 'Downstream fragment' },
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'Swap Fragment A and B' }),
+    );
+
+    expect(fragmentASequence).toHaveValue(originalBSequence);
+    expect(fragmentBSequence).toHaveValue(originalASequence);
+    expect(screen.getByDisplayValue('Downstream fragment')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Upstream fragment')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+    expect(fragmentASequence).toHaveValue(originalASequence);
+    expect(fragmentBSequence).toHaveValue(originalBSequence);
+    expect(screen.getByDisplayValue('Upstream fragment')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Downstream fragment')).toBeInTheDocument();
+  });
+
   it('parses sequence import text and applies the first two records to the project', async () => {
     const user = userEvent.setup();
     render(<App />);

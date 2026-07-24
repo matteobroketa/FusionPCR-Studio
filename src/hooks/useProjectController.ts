@@ -613,6 +613,21 @@ export function useProjectController() {
     });
   };
 
+  const swapFragments = () => {
+    commitProject((current) => {
+      if (current.editorLocks.fragmentA || current.editorLocks.fragmentB) {
+        return current;
+      }
+
+      return {
+        ...current,
+        fragmentA: current.fragmentB,
+        fragmentB: current.fragmentA,
+        modifiedAt: new Date().toISOString(),
+      };
+    });
+  };
+
   const applyFeatureSelection = (
     fragmentKey: ActiveFragmentKey,
     featureIndex: number,
@@ -997,6 +1012,7 @@ export function useProjectController() {
     applyImportedSource,
     applyFirstTwoImportedSources,
     reverseComplementFragment,
+    swapFragments,
     applyFeatureSelection,
     toggleEditorLock,
     toggleCanvasTrack,
