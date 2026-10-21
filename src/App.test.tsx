@@ -65,11 +65,13 @@ class MockDesignWorker {
 function installDownloadSpies() {
   const createObjectURL = vi.fn(() => 'blob:test');
   const revokeObjectURL = vi.fn();
-  vi.stubGlobal('URL', {
-    ...URL,
-    createObjectURL,
-    revokeObjectURL,
-  });
+  vi.stubGlobal(
+    'URL',
+    class extends URL {
+      static createObjectURL = createObjectURL;
+      static revokeObjectURL = revokeObjectURL;
+    },
+  );
   const clickSpy = vi
     .spyOn(HTMLAnchorElement.prototype, 'click')
     .mockImplementation(() => {});
@@ -319,6 +321,35 @@ describe('App browser flows', () => {
     await user.click(exportButton);
     expect(clickSpy).not.toHaveBeenCalled();
   });
+
+  it.each(['getItem', 'removeItem', 'setItem'] as const)(
+    'keeps the workbench and project export usable when storage %s is blocked',
+    async (method) => {
+      vi.spyOn(Storage.prototype, method).mockImplementation(() => {
+        throw new DOMException('Storage access denied', 'SecurityError');
+      });
+      const user = userEvent.setup();
+      const { clickSpy } = installDownloadSpies();
+      render(<App />);
+
+      await loadExampleProject(user, 'exact-fusion');
+      fireEvent.change(screen.getByLabelText('Project name'), {
+        target: { value: 'Unsaved session project' },
+      });
+      expect(screen.getByLabelText('Project name')).toHaveValue(
+        'Unsaved session project',
+      );
+      await user.click(
+        screen.getByRole('button', { name: 'Protocol & Export step' }),
+      );
+      const exportButton = screen.getByRole('button', {
+        name: 'Export project JSON',
+      });
+      await waitFor(() => expect(exportButton).toBeEnabled());
+      await user.click(exportButton);
+      expect(clickSpy).toHaveBeenCalledOnce();
+    },
+  );
 
   it('reloads the saved project state from localStorage on remount', async () => {
     const user = userEvent.setup();

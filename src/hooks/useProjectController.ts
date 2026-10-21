@@ -91,9 +91,14 @@ function loadExperimentalNoticeVisibility() {
     return true;
   }
 
-  return (
-    window.localStorage.getItem(EXPERIMENTAL_NOTICE_STORAGE_KEY) !== 'dismissed'
-  );
+  try {
+    return (
+      window.localStorage.getItem(EXPERIMENTAL_NOTICE_STORAGE_KEY) !==
+      'dismissed'
+    );
+  } catch {
+    return true;
+  }
 }
 
 function hasProjectSequenceContent(project: FusionProjectInput) {
@@ -176,12 +181,17 @@ export function useProjectController() {
       return;
     }
 
-    if (showExperimentalNotice) {
-      window.localStorage.removeItem(EXPERIMENTAL_NOTICE_STORAGE_KEY);
-      return;
-    }
+    try {
+      if (showExperimentalNotice) {
+        window.localStorage.removeItem(EXPERIMENTAL_NOTICE_STORAGE_KEY);
+        return;
+      }
 
-    window.localStorage.setItem(EXPERIMENTAL_NOTICE_STORAGE_KEY, 'dismissed');
+      window.localStorage.setItem(EXPERIMENTAL_NOTICE_STORAGE_KEY, 'dismissed');
+    } catch {
+      // The notice remains usable for this session when browser storage is blocked.
+      // Project persistence reports its own failure and keeps JSON export available.
+    }
   }, [showExperimentalNotice]);
 
   const commitProject = (

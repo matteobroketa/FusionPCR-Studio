@@ -107,7 +107,9 @@ function isFragmentInput(value: unknown): value is FragmentInput {
     typeof candidate.label === 'string' &&
     typeof candidate.sequence === 'string' &&
     typeof candidate.start === 'number' &&
-    typeof candidate.end === 'number'
+    Number.isFinite(candidate.start) &&
+    typeof candidate.end === 'number' &&
+    Number.isFinite(candidate.end)
   );
 }
 
@@ -119,7 +121,15 @@ function isFusionProjectInput(value: unknown): value is FusionProjectInput {
   const candidate = value as Record<string, unknown>;
   return (
     typeof candidate.name === 'string' &&
-    typeof candidate.polymeraseId === 'string' &&
+    (candidate.polymeraseId === 'q5' ||
+      candidate.polymeraseId === 'phusion_plus') &&
+    (candidate.mode === undefined ||
+      candidate.mode === 'exact' ||
+      candidate.mode === 'protein-fusion' ||
+      candidate.mode === 'insertion' ||
+      candidate.mode === 'deletion' ||
+      candidate.mode === 'substitution' ||
+      candidate.mode === 'domain-swap') &&
     typeof candidate.insertSequence === 'string' &&
     typeof candidate.notes === 'string' &&
     isFragmentInput(candidate.fragmentA) &&
@@ -348,12 +358,12 @@ export function loadInitialProject(
     return fallbackProject;
   }
 
-  const stored = window.localStorage.getItem(storageKey);
-  if (!stored) {
-    return fallbackProject;
-  }
-
   try {
+    const stored = window.localStorage.getItem(storageKey);
+    if (!stored) {
+      return fallbackProject;
+    }
+
     const parsed = JSON.parse(stored) as unknown;
     const normalized = normalizeImportedProject(parsed);
     return normalized

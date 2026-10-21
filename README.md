@@ -29,13 +29,19 @@ The repository also includes an emerging Rust workspace with `fusion-core` and `
 
 ## Development
 
+Use Node.js 22 (the CI version) and npm. The Rust checks additionally require the stable Rust toolchain.
+
 ```bash
-npm install
+npm ci
 npm run test
 npm run build
 npm run test:rust
 npm run dev
 ```
+
+Browser setup and the full verification workflow are documented in [VALIDATION.md](./VALIDATION.md).
+
+Browser storage can be unavailable or full. The app remains usable for the current session; use **Export project JSON** to keep a copy if the save status reports a failure.
 
 ## Repository notes
 

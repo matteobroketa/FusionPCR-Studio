@@ -4,10 +4,10 @@ This document describes the saved project JSON used by FusionPCR Studio.
 
 ## Status
 
-The current project schema version is `0.2.0`.
-The engine version is also currently `0.2.0`.
+The current project schema version is `0.1.0-alpha.3`.
+The engine version is also currently `0.1.0-alpha.3`.
 
-Project JSON is exported directly from the in-memory `FusionProjectInput` model in `src/utils/fusion.ts`.
+Project JSON is exported directly from the in-memory `FusionProjectInput` model in `src/utils/fusion-model.ts`.
 
 ## Top-level object
 
@@ -15,6 +15,8 @@ Project JSON is exported directly from the in-memory `FusionProjectInput` model 
 type FusionProjectInput = {
   schemaVersion: string;
   engineVersion: string;
+  revision: number;
+  projectHash: string;
   name: string;
   polymeraseId: 'q5' | 'phusion_plus';
   mode:
@@ -64,7 +66,7 @@ Notes:
 - `sequence` is stored as DNA text and normalized during design-time processing.
 - `start` and `end` are one-based inclusive coordinates into the stored fragment sequence.
 - `features` preserve imported GenBank feature labels and raw locations.
-- `reverseComplemented` is stored in the project model even though the current design engine does not yet fully apply that flag throughout final-product construction.
+- `reverseComplemented` records orientation history. The reverse-complement action changes the stored sequence itself; the engine does not apply the flag a second time.
 
 ## Coding intent
 
@@ -164,8 +166,10 @@ These values are used by the Primer-BLAST handoff export.
 
 ```json
 {
-  "schemaVersion": "0.2.0",
-  "engineVersion": "0.2.0",
+  "schemaVersion": "0.1.0-alpha.3",
+  "engineVersion": "0.1.0-alpha.3",
+  "revision": 1,
+  "projectHash": "",
   "name": "Example fusion",
   "polymeraseId": "q5",
   "mode": "exact",
@@ -260,12 +264,14 @@ These values are used by the Primer-BLAST handoff export.
 
 When a project file is loaded:
 
+- unsupported polymerase IDs and design modes are rejected; a missing legacy mode defaults to `exact`
+- fragment coordinates must be finite numbers
 - missing optional sections are filled from defaults
 - reaction conditions and protocol settings are clamped to safe numeric ranges
 - fragment metadata is normalized
 - timestamps are backfilled if missing
 
-This logic currently lives in `normalizeImportedProject()` in `src/App.tsx` and the normalization helpers in `src/utils/fusion.ts`.
+This logic lives in `normalizeImportedProject()` in `src/utils/project.ts` and the normalization helpers in `src/utils/fusion-model.ts`.
 
 ## Migration strategy
 
