@@ -46,6 +46,8 @@ import {
   type WorkflowStage,
 } from './utils/review';
 
+import { downloadText } from './utils/project';
+
 const STORAGE_KEY = 'fusionpcr-studio-project';
 
 type InspectorFocus =
@@ -99,8 +101,12 @@ function App() {
   const viewportMode = useViewportMode();
   const { design, calculationState, isDesignCurrent, workerError, retry } =
     useFusionDesign(project);
-  const { persistenceState, persistenceError, retryPersistence } =
-    useProjectPersistence(STORAGE_KEY, project);
+  const {
+    persistenceState,
+    persistenceError,
+    recoverySnapshot,
+    retryPersistence,
+  } = useProjectPersistence(STORAGE_KEY, project);
   const { inspectorTriggerRef } = useAppFocusManagement({
     showInspector,
     workerError,
@@ -315,6 +321,32 @@ function App() {
           onRestorePreviousProject={handleRestorePreviousProject}
           onClearProject={handleResetProject}
         />
+
+        {recoverySnapshot !== null ? (
+          <section
+            className="panel status-block"
+            role="alert"
+            aria-label="Saved project recovery"
+          >
+            <p>
+              The saved project could not be opened. Its original contents are
+              preserved. Download the recovery file before continuing.
+            </p>
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() =>
+                downloadText(
+                  'fusionpcr-project-recovery.txt',
+                  recoverySnapshot,
+                  'text/plain;charset=utf-8',
+                )
+              }
+            >
+              Download saved project recovery
+            </button>
+          </section>
+        ) : null}
 
         {showExperimentalNotice ? (
           <ExperimentalNotice

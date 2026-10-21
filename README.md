@@ -43,6 +43,10 @@ Browser setup and the full verification workflow are documented in [VALIDATION.m
 
 Browser storage can be unavailable or full. The app remains usable for the current session; use **Export project JSON** to keep a copy if the save status reports a failure.
 
+If a saved project cannot be read, autosave preserves its original contents and shows **Download saved project recovery**. Download that file for recovery or troubleshooting. Before saving subsequent edits, the app also writes and verifies a separate recovery copy in browser storage; if that fails, the original remains untouched. A recovery file may need repair before it can be imported as a project.
+
+File imports respect your latest selection. A project read that finishes after you edit the workspace asks before replacing those edits, and **Restore previous project** retains the state at confirmation.
+
 ## Repository notes
 
 - [METHODS.md](./METHODS.md) documents the implemented primer-design and product-simulation approach.

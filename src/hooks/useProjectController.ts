@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useTransition,
@@ -175,6 +176,21 @@ export function useProjectController() {
     useState<ExampleProjectId>('protein-fusion');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const sequenceFileInputRef = useRef<HTMLInputElement | null>(null);
+  const currentProjectRef = useRef(project);
+  const projectImportRequestRef = useRef(0);
+  const sequenceImportRequestRef = useRef(0);
+
+  useLayoutEffect(() => {
+    currentProjectRef.current = project;
+  }, [project]);
+
+  useEffect(
+    () => () => {
+      projectImportRequestRef.current += 1;
+      sequenceImportRequestRef.current += 1;
+    },
+    [],
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -418,7 +434,8 @@ export function useProjectController() {
   const requestProjectReplacement = (
     action: NonNullable<ConfirmationState>,
   ) => {
-    if (!isProjectNonEmpty(project)) {
+    projectImportRequestRef.current += 1;
+    if (!isProjectNonEmpty(currentProjectRef.current)) {
       action.onConfirm();
       return;
     }
@@ -429,7 +446,7 @@ export function useProjectController() {
   const loadExample = (exampleId: ExampleProjectId = selectedExampleId) => {
     const runLoad = () => {
       startTransition(() => {
-        preserveRecoverableSnapshot(project);
+        preserveRecoverableSnapshot(currentProjectRef.current);
         commitProject(exampleProjects[exampleId] ?? exampleProject);
         setPastProjects([]);
         setFutureProjects([]);
@@ -457,7 +474,7 @@ export function useProjectController() {
       confirmLabel: 'Clear project',
       onConfirm: () => {
         startTransition(() => {
-          preserveRecoverableSnapshot(project);
+          preserveRecoverableSnapshot(currentProjectRef.current);
           commitProject(emptyProject);
           setPastProjects([]);
           setFutureProjects([]);
@@ -475,6 +492,7 @@ export function useProjectController() {
       return;
     }
 
+    projectImportRequestRef.current += 1;
     startTransition(() => {
       commitProject(recoverableProjectSnapshot);
       setRecoverableProjectSnapshot(null);
@@ -491,7 +509,13 @@ export function useProjectController() {
     sequenceFileInputRef.current?.click();
   };
 
+  const updateSequenceImportText = (rawInput: string) => {
+    sequenceImportRequestRef.current += 1;
+    setSequenceImportText(rawInput);
+  };
+
   const parseSequenceImportText = (rawInput: string) => {
+    sequenceImportRequestRef.current += 1;
     try {
       const parsed = parseSequenceImport(rawInput);
       setSequenceImportResult(parsed);
@@ -883,32 +907,32 @@ export function useProjectController() {
 
   const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
+    if (!file) return;
+    const request = ++projectImportRequestRef.current;
+    // Keep the File itself; reset immediately so an older read cannot clear a
+    // newer selection and the same file can be selected again after a failure.
+    event.target.value = '';
 
     try {
       const raw = await file.text();
-      const parsed = JSON.parse(raw) as unknown;
-      const normalized = normalizeImportedProject(parsed);
-
+      if (request !== projectImportRequestRef.current) return;
+      const normalized = normalizeImportedProject(JSON.parse(raw) as unknown);
       if (!normalized) {
         throw new Error(
           'The selected file is not a FusionPCR Studio project JSON document.',
         );
       }
-
       const applyImportedProject = () => {
+        if (request !== projectImportRequestRef.current) return;
         startTransition(() => {
-          preserveRecoverableSnapshot(project);
+          preserveRecoverableSnapshot(currentProjectRef.current);
           commitProject(normalized);
           setImportError('');
           setShowWorkbench(true);
           setShowMenu(false);
         });
       };
-
-      if (isProjectNonEmpty(project)) {
+      if (isProjectNonEmpty(currentProjectRef.current)) {
         setConfirmationState({
           title: 'Replace current project?',
           message:
@@ -920,11 +944,10 @@ export function useProjectController() {
         applyImportedProject();
       }
     } catch (error) {
+      if (request !== projectImportRequestRef.current) return;
       setImportError(
         error instanceof Error ? error.message : 'Project import failed.',
       );
-    } finally {
-      event.target.value = '';
     }
   };
 
@@ -932,21 +955,20 @@ export function useProjectController() {
     event: ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
+    if (!file) return;
+    const request = ++sequenceImportRequestRef.current;
+    event.target.value = '';
     try {
       const raw = await file.text();
+      if (request !== sequenceImportRequestRef.current) return;
       setSequenceImportText(raw);
       parseSequenceImportText(raw);
     } catch (error) {
+      if (request !== sequenceImportRequestRef.current) return;
       setSequenceImportError(
         error instanceof Error ? error.message : 'Sequence file import failed.',
       );
       setSequenceImportResult(null);
-    } finally {
-      event.target.value = '';
     }
   };
 
@@ -955,7 +977,7 @@ export function useProjectController() {
     importError,
     setImportError,
     sequenceImportText,
-    setSequenceImportText,
+    setSequenceImportText: updateSequenceImportText,
     sequenceImportError,
     setSequenceImportError,
     sequenceImportResult,

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FusionProjectInput } from '../utils/fusion';
+import { normalizeImportedProject } from '../utils/project';
 
 export type PersistenceState = 'idle' | 'saving' | 'saved' | 'failed';
 
 type UseProjectPersistenceResult = {
   persistenceState: PersistenceState;
   persistenceError: string | null;
+  recoverySnapshot: string | null;
   retryPersistence: () => void;
 };
 
@@ -21,6 +23,14 @@ export function useProjectPersistence(
 ): UseProjectPersistenceResult {
   const serializedProject = useMemo(() => serializeProject(project), [project]);
   const lastSavedRef = useRef<string | null>(null);
+  const initialProjectRef = useRef(serializedProject);
+  const initialStorageCheckedRef = useRef(false);
+  const recoveryRef = useRef<{
+    raw: string;
+    key: string;
+    saved: boolean;
+  } | null>(null);
+  const [recoverySnapshot, setRecoverySnapshot] = useState<string | null>(null);
   const [persistenceState, setPersistenceState] =
     useState<PersistenceState>('idle');
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
@@ -39,6 +49,30 @@ export function useProjectPersistence(
     try {
       if (lastSavedRef.current === null) {
         const existing = window.localStorage.getItem(storageKey);
+        if (!initialStorageCheckedRef.current) {
+          if (existing !== null) {
+            let readable = false;
+            try {
+              readable =
+                normalizeImportedProject(JSON.parse(existing)) !== null;
+            } catch {
+              /* Preserve the original bytes below. */
+            }
+            if (!readable) {
+              recoveryRef.current = {
+                raw: existing,
+                key:
+                  storageKey +
+                  '-recovery-' +
+                  Date.now() +
+                  '-' +
+                  Math.random().toString(36).slice(2),
+                saved: false,
+              };
+            }
+          }
+          initialStorageCheckedRef.current = true;
+        }
         if (existing === serializedProject) {
           lastSavedRef.current = serializedProject;
         }
@@ -55,6 +89,22 @@ export function useProjectPersistence(
       };
     }
 
+    const recovery = recoveryRef.current;
+    if (
+      recovery &&
+      !recovery.saved &&
+      serializedProject === initialProjectRef.current
+    ) {
+      const recoveryHandle = window.setTimeout(() => {
+        setRecoverySnapshot(recovery.raw);
+        setPersistenceState('failed');
+        setPersistenceError(
+          'The saved project could not be opened. Its original contents are preserved; download the recovery file before continuing.',
+        );
+      }, 0);
+      return () => window.clearTimeout(recoveryHandle);
+    }
+
     if (lastSavedRef.current === serializedProject) {
       const savedHandle = window.setTimeout(() => {
         setPersistenceState('saved');
@@ -68,11 +118,28 @@ export function useProjectPersistence(
     const idleHandle = window.setTimeout(() => {
       setPersistenceState('idle');
       setPersistenceError(null);
+      if (recovery) setRecoverySnapshot(recovery.raw);
     }, 0);
 
     const debounceHandle = window.setTimeout(() => {
       setPersistenceState('saving');
       try {
+        if (recovery && !recovery.saved) {
+          const existingRecovery = window.localStorage.getItem(recovery.key);
+          if (existingRecovery !== null && existingRecovery !== recovery.raw) {
+            throw new Error(
+              'Recovery storage already exists; the original project has not been overwritten.',
+            );
+          }
+          if (existingRecovery === null)
+            window.localStorage.setItem(recovery.key, recovery.raw);
+          if (window.localStorage.getItem(recovery.key) !== recovery.raw) {
+            throw new Error(
+              'The recovery copy could not be verified. The original project has not been overwritten.',
+            );
+          }
+          recovery.saved = true;
+        }
         window.localStorage.setItem(storageKey, serializedProject);
         lastSavedRef.current = serializedProject;
         setPersistenceState('saved');
@@ -94,6 +161,7 @@ export function useProjectPersistence(
   return {
     persistenceState,
     persistenceError,
+    recoverySnapshot,
     retryPersistence,
   };
 }

@@ -299,6 +299,18 @@ describe('App browser flows', () => {
     const { clickSpy } = installDownloadSpies();
     render(<App />);
     await loadExampleProject(user);
+    await user.click(
+      screen.getByRole('button', { name: 'Protocol & Export step' }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Download oligo CSV' }),
+      ).toBeEnabled(),
+    );
+    // Hold the next calculation pending instead of racing the 200 ms debounce.
+    vi.spyOn(MockDesignWorker.prototype, 'postMessage').mockImplementation(
+      () => {},
+    );
 
     await user.click(screen.getByRole('button', { name: 'Sequences step' }));
     fireEvent.change(

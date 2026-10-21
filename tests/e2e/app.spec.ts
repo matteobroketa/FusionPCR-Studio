@@ -210,12 +210,12 @@ test.describe('FusionPCR Studio production build', () => {
   test('uses a compact primer table with one detail panel and copy controls', async ({
     page,
   }) => {
+    await page.goto('./');
     await page
       .context()
       .grantPermissions(['clipboard-read', 'clipboard-write'], {
-        origin: 'http://127.0.0.1:4173',
+        origin: new URL(page.url()).origin,
       });
-    await page.goto('./');
     await loadRunnableExample(page);
     await openWorkbenchStep(page, 'Primers');
 
@@ -493,4 +493,116 @@ test.describe('FusionPCR Studio responsive review', () => {
         .getByRole('heading', { name: 'B_outer_R', exact: true }),
     ).toBeVisible();
   });
+});
+
+test('a delayed project file asks before replacing new edits and can restore them', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const originalText = File.prototype.text;
+    File.prototype.text = function () {
+      const readText = originalText.bind(this);
+      return new Promise<string>((resolve, reject) => {
+        (
+          window as unknown as { finishProjectRead: () => void }
+        ).finishProjectRead = () => {
+          void readText().then(resolve, reject);
+        };
+      });
+    };
+  });
+  await page.goto('./');
+  const importedSequence = 'ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG';
+  await page
+    .locator('input[type="file"][accept="application/json"]')
+    .setInputFiles({
+      name: 'delayed-project.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(
+        JSON.stringify({
+          name: 'Imported synthetic project',
+          polymeraseId: 'q5',
+          mode: 'exact',
+          insertSequence: '',
+          notes: '',
+          fragmentA: {
+            label: 'Imported A',
+            sequence: importedSequence,
+            start: 1,
+            end: importedSequence.length,
+          },
+          fragmentB: {
+            label: 'Imported B',
+            sequence: importedSequence,
+            start: 1,
+            end: importedSequence.length,
+          },
+        }),
+      ),
+    });
+  await page.getByRole('button', { name: 'Import sequences' }).click();
+  const editedSequence = 'ACGTACGTACGTACGTACGTACGTACGTACGT';
+  await page
+    .getByPlaceholder('Paste fragment A DNA sequence')
+    .fill(editedSequence);
+  await page.evaluate(() =>
+    (
+      window as unknown as { finishProjectRead: () => void }
+    ).finishProjectRead(),
+  );
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  await expect(
+    page.getByPlaceholder('Paste fragment A DNA sequence'),
+  ).toHaveValue(editedSequence);
+  await page
+    .getByRole('button', { name: 'Import project', exact: true })
+    .click();
+  await expect(page.getByLabel('Project name')).toHaveValue(
+    'Imported synthetic project',
+  );
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page
+    .getByRole('menuitem', { name: 'Restore previous project' })
+    .click();
+  await openWorkbenchStep(page, 'Sequences');
+  await expect(
+    page.getByPlaceholder('Paste fragment A DNA sequence'),
+  ).toHaveValue(editedSequence);
+});
+
+test('downloads unreadable saved bytes and preserves them before saving a new project', async ({
+  page,
+}, testInfo) => {
+  const raw = '  {broken project JSON\n';
+  await page.addInitScript(
+    (value) => localStorage.setItem('fusionpcr-studio-project', value),
+    raw,
+  );
+  await page.goto('./');
+  await expect(
+    page.getByRole('alert', { name: 'Saved project recovery' }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem('fusionpcr-studio-project')),
+    )
+    .toBe(raw);
+  const pendingDownload = page.waitForEvent('download');
+  await page
+    .getByRole('button', { name: 'Download saved project recovery' })
+    .click();
+  const download = await pendingDownload;
+  const recoveryPath = testInfo.outputPath('saved-project-recovery.txt');
+  await download.saveAs(recoveryPath);
+  expect(readFileSync(recoveryPath, 'utf8')).toBe(raw);
+  await loadRunnableExample(page);
+  await expect(page.getByText('Saved locally', { exact: true })).toBeVisible();
+  const saved = await page.evaluate(() => ({
+    project: JSON.parse(localStorage.getItem('fusionpcr-studio-project')!),
+    recovery: Object.keys(localStorage)
+      .filter((key) => key.startsWith('fusionpcr-studio-project-recovery-'))
+      .map((key) => localStorage.getItem(key)),
+  }));
+  expect(saved.project.name).toBe('Protein fusion demo');
+  expect(saved.recovery).toEqual([raw]);
 });
